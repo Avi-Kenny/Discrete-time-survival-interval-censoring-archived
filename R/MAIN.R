@@ -45,7 +45,32 @@ if (run_main) {
         parallel = "cluster",
         packages = c("dplyr", "mice", "survival")
       )
-      # sim %<>% add_constant(alpha=log(0.1))
+      
+      # Specify seroconversion conditional probabilities (discrete hazards)
+      # We assume an individual "of age X" has lived exactly X years
+      # For an individual of age X, the number in the corresponding age bin
+      #     represents the probability that that individual seroconverted
+      #     between age X-1 and age X, given that they did not seroconvert by
+      #     age X-1
+      # !!!!! Change the actual numbers later based on AHRI cohort data
+      p_sero_year <- list(
+        male = list(
+          "1"=0.03, "2-10"=0, "11-15"=0, "16-20"=0.01, "21-25"=0.02,
+          "26-30"=0.03, "31-35"=0.02, "36-40"=0.01, "41-45"=0.005, "46-50"=0.005
+        ),
+        female = list(
+          "1"=0.03, "2-10"=0, "11-15"=0.005, "16-20"=0.02, "21-25"=0.03,
+          "26-30"=0.02, "31-35"=0.015, "36-40"=0.01, "41-45"=0.005, "46-50"=0
+        )
+      )
+      
+      sim %<>% add_constant(
+        m_probs = construct_probs(p_sero_year),
+        m = 5, # Number of MI replicates
+        num_patients = 50, # !!!!!
+        start_year = 2000,
+        end_year = 2020
+      )
       
       # Add functions to simulation object
       source("generate_dataset.R")
@@ -55,8 +80,8 @@ if (run_main) {
       
       # Set levels
       sim %<>% set_levels(
-        n_clusters = 24,
-        n_time_points = 7
+        hr_hiv = 1.8,
+        hr_art = 1.2
       )
       
     },
@@ -120,6 +145,16 @@ if (FALSE) {
     # Get coefficient of hiv_status(3)
     coeff_ideal <- summary(cox_model_ideal)$coefficients[2,1]
     coeff_mi <- pooled_model$pooled[2,1]
+  }
+  
+  # Convert yearly probabilities to monthly probabilities
+  {
+    convert_to_monthly_prob <- function(p) { 1 - (1-p)^(1/12) }
+    psero <- list(
+      mtct = psero_year$mtct,
+      male = lapply(psero_year$male, convert_to_monthly_prob),
+      female = lapply(psero_year$female, convert_to_monthly_prob)
+    )
   }
   
 }

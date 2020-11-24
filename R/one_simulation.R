@@ -1,22 +1,21 @@
 #' Run a single simulation replicate
 #'
-#' @param x TO DO
 #' @return A list containing the following:
-#'     x: descr
-#'     y: descr
+#'     est_complete: HR estimate from complete data
+#'     est_missing: HR estimate from MI procedure
+#'     se_complete: SE of HR estimate from complete data
+#'     se_missing: SE of HR estimate from MI procedure
 
-one_simulation <- function(rel_risk) {
-  
-  # Set local variables
-  # num_patients <- 1000
-  # end_date <- (2019-1900)*12
-  m <- 5 # Number of MI replicates
+one_simulation <- function() {
   
   # Create dataset with known cascade status dates
   df_complete <- generate_dataset(
-    rel_risk = rel_risk,
-    num_patients, end_date,
-    rel_risk, missingness
+    num_patients = C$num_patients,
+    start_date = C$start_date,
+    end_date = C$end_date,
+    hr_hiv = L$hr_hiv,
+    hr_art = L$hr_art,
+    m_probs = C$m_probs
   )
   
   # Create second dataset by imposing missingness structure
@@ -24,7 +23,7 @@ one_simulation <- function(rel_risk) {
   
   # Perform MI on second dataset
   dfs_mi <- list()
-  for (i in 1:m) {
+  for (i in 1:(C$m)) {
     dfs_mi[[i]] <- perform_imputation(df_missing)
   }
   
