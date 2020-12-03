@@ -11,11 +11,11 @@ one_simulation <- function() {
   # Create dataset with known cascade status dates
   df_complete <- generate_dataset(
     num_patients = C$num_patients,
-    start_date = C$start_date,
-    end_date = C$end_date,
-    hr_hiv = L$hr_hiv,
-    hr_art = L$hr_art,
-    m_probs = C$m_probs
+    start_year = C$start_year,
+    end_year = C$end_year,
+    hazard_ratios = list("hiv"=L$hr_hiv, "art"=L$hr_art),
+    p_sero_year = C$p_sero_year,
+    u_mult = list("sero"=L$u_mult_sero, "death"=L$u_mult_death)
   )
   
   # Create second dataset by imposing missingness structure

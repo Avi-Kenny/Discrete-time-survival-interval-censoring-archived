@@ -32,18 +32,22 @@ if (Sys.getenv("USERDOMAIN")=="AVI-KENNY-T460") {
 if (run_main) {
   
   library(simba)
-  library(magrittr)
   
   run_on_cluster(
     
     first = {
+      
+      # Declare functions
+      source("generate_dataset.R")
+      source("one_simulation.R")
+      source("helpers.R")
       
       # Set up and configure simulation object
       sim <- new_sim()
       sim %<>% set_config(
         num_sim = 10, # !!!!!
         parallel = "cluster",
-        packages = c("dplyr", "mice", "survival")
+        packages = c("dplyr", "survival") # mice
       )
       
       # Specify seroconversion conditional probabilities (discrete hazards)
@@ -63,9 +67,12 @@ if (run_main) {
           "26-30"=0.02, "31-35"=0.015, "36-40"=0.01, "41-45"=0.005, "46-50"=0
         )
       )
+      p_sero_year <- convert_p_sero(p_sero_year)
+      
+      p_death_year <- p_death_year() # !!!!! Specify a multiplier as a param?
       
       sim %<>% add_constant(
-        m_probs = construct_probs(p_sero_year),
+        p_sero_year = p_sero_year,
         m = 5, # Number of MI replicates
         num_patients = 50, # !!!!!
         start_year = 2000,
@@ -73,15 +80,16 @@ if (run_main) {
       )
       
       # Add functions to simulation object
-      source("generate_dataset.R")
-      source("one_simulation.R")
       sim %<>% add_creator(generate_dataset)
       sim %<>% add_script(one_simulation)
+      sim %<>% add_method(expit) # !!!!! add others
       
       # Set levels
       sim %<>% set_levels(
         hr_hiv = 1.8,
-        hr_art = 1.2
+        hr_art = 1.2,
+        u_mult_sero = 1.5,
+        u_mult_death = 1.3
       )
       
     },

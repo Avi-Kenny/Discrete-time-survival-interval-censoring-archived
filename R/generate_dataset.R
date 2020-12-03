@@ -3,9 +3,11 @@
 #' @param num_patients Number of patients in cohort
 #' @param start_year Year of cohort enrollment
 #' @param end_year Last date at which we have cohort patient data
-#' @param hr_hiv Hazard ratio of HIV+ ART- status (relative to HIV-)
-#' @param hr_art Hazard ratio of HIV+ ART+ status (relative to HIV-)
-#' @param m_probs List of multinomial probabilities returned by construct_probs()
+#' @param hazard_ratios List of hazard ratios for HIV+/ART- status and
+#'     HIV+/ART+ status (relative to HIV-)
+#' @param p_sero_year List of yearly discrete hazards of seroconversion, by sex
+#' @param p_death_year List of yearly discrete hazards of death
+#' @param u_mult List of hazard multipliers
 #' @return A dataframe containing the following:
 #'     patient_id: patient ID number
 #'     dob: date of birth
@@ -24,34 +26,37 @@
 #'       of months since January 1st, 1900
 
 generate_dataset <- function(
-  num_patients, start_year, end_year, hr_hiv, hr_art, m_probs
+  num_patients, start_year, end_year, hr_hiv, hr_art, p_sero_year, p_death_year,
+  u_mult
 ) {
   
-  # !!!!! Testing
-  {
-    p_sero_year <- list(male = list("1"=0.03, "2-10"=0, "11-15"=0, "16-20"=0.01, "21-25"=0.02,"26-30"=0.03, "31-35"=0.02, "36-40"=0.01, "41-45"=0.005, "46-50"=0.005),female = list("1"=0.03, "2-10"=0, "11-15"=0.005, "16-20"=0.02, "21-25"=0.03,"26-30"=0.02, "31-35"=0.015, "36-40"=0.01, "41-45"=0.005, "46-50"=0))
-    num_patients <- 5
-    start_year <- 2000
-    end_year <- 2020
-    hr_hiv <- 1.7
-    hr_art <- 1.2
-    m_probs <- construct_probs(p_sero_year)
-  }
+  # !!!!! TESTING: START !!!!!
+  p_sero_year <- convert_p_sero(list(male = list("1"=0.03, "2-10"=0, "11-15"=0, "16-20"=0.01, "21-25"=0.02,"26-30"=0.03, "31-35"=0.02, "36-40"=0.01, "41-45"=0.005, "46-50"=0.005),female = list("1"=0.03, "2-10"=0, "11-15"=0.005, "16-20"=0.02, "21-25"=0.03,"26-30"=0.02, "31-35"=0.015, "36-40"=0.01, "41-45"=0.005, "46-50"=0)))
+  p_death_year <- c() # !!!!!
+  num_patients = 10
+  start_year = 2000
+  end_year = 2020
+  hazard_ratios = list("hiv"=1.8, "art"=1.2)
+  u_mult = list("sero"=1.5, "death"=1.3)
+  p_death_year <- p_death_year() # !!!!!
+  # !!!!! TESTING: END !!!!!
+  
+  # Generate probabilities for baseline serostatus
+  m_probs = construct_probs(p_sero_year)
   
   # Generate patient_id, dob, sex
-  # Assumes that sex is independent of DOB
-  # !!!!! d_dob is placeholder; replace with actual distribution of patient ages
   d_patient_id <- c(1:num_patients)
-  d_age <- sample(1:100, size=num_patients, replace=TRUE)
-  d_birthyear <- end_year - d_age
+  d_age <- sample(1:100, size=num_patients, replace=TRUE) # !!!!!
+  d_birthyear <- start_year - d_age
   d_sex <- sample(c(0,1), size=num_patients, replace=TRUE)
+  d_u <- sample(c(0,1), size=num_patients, replace=TRUE, prob=0.3) # !!!!!
   
-  # Sample seroconversion age from multinomial
+  # Sample baseline seroconversion age from multinomial
   d_sero_age <- sapply(d_patient_id, function(i) {
     age <- d_age[i]
     sex <- ifelse(d_sex[i], "male", "female")
     probs <- m_probs[[sex]][[min(age,50)]]
-    mult <- as.numeric(rmultinom(n=1, size=1, prob=probs))
+    mult <- as.numeric(rmultinom(n=1, size=1, prob=probs)) # !!!!! Incorporate u ?????
     pos <- which(mult==1)
     if (pos==length(probs)) {
       return (NA)
@@ -60,29 +65,70 @@ generate_dataset <- function(
     }
   })
   
-  d_sero_year <- end_year - d_sero_age
+  d_sero_year <- start_year - d_sero_age
   
   # For now, ART initiation is assumed to happen exactly 12 months after
   #     seroconversion
   d_art_init <- d_sero_year + 1
   
-  # alive + dod // this is our outcome for now; depends on cascade status
-  d_dods <- rep(NA, num_patients)
-  for (year in c((start_year+1):end_year)) {
+  # Sample cohort events
+  d_other <- sapply(d_patient_id, function(i) {
     
-    # !!!!! CONTINUE HERE
+    age <- d_age[i]
+    sex <- d_sex[i]
+    u <- d_u[i]
+    sero_age <- d_sero_age[i]
+    sero_year <- d_sero_year[i]
+    birthyear <- d_birthyear[i]
+    deathyear <- NA
     
-    p_death <- 0.05 # !!!!! should be a function of age/sex
-    p_death_hiv <- hr_hiv * p_death
-    p_death_art <- hr_art * p_death
+    # Set baseline status (one of "HIV-", "HIV+ART-", "HIV+ART+")
+    status <- ifelse(is.na(sero_year), "HIV-", ifelse(
+      sero_year==year, "HIV+ART-", "HIV+ART+" # !!!!! check the condition
+    ))
     
-    # probs <- 
+    for (year in c((start_year+1):end_year)) {
+      
+      age <- year - birthyear
+      
+      # !!!!! ART starts one year after seroconversion
+      if (staus=="HIV+ART-") {
+        status <- "HIV+ART+"
+        art_init <- year
+      }
+      
+      # Determine whether patient seroconverted
+      if (status=="HIV-") {
+        p_sero <- p_sero_year[[sex]][age] * (u*u_mult[["sero"]])
+        if (p_sero>1) { warning("Probability of death exceeded one.") }
+        if (runif(1)<p_sero) {
+          sero_age <- age
+          sero_year <- year
+          status <- "HIV+ART-"
+        }
+      }
+      
+      # Determine whether patient died
+      hr <- ifelse(status=="HIV+ART-", hazard_ratios$hiv,
+        ifelse(status=="HIV+ART+", hazard_ratios$art, 1
+      ))
+      p_death <- p_death_year[age] * (u*u_mult[["death"]]) * hr
+      if (p_death>1) { warning("Probability of death exceeded one.") }
+      
+      if (runif(1)<p_death) {
+        deathyear <- year
+      }
+      
+    }
     
-    unifs <- runif(num_patients)
-    # deaths <- 
+    return (list(
+      
+    ))
     
-  }
+  })
   
+  
+
   
   # testing case (case 1, case 2, etc.)
   # testing dates (last_test_neg, first_test_pos)

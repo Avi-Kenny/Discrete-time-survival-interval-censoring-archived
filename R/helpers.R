@@ -1,3 +1,61 @@
+# #' Expit function
+# #' @param x number
+# #' @return Expit of x
+# 
+# expit <- function(x) { exp(x) / (1+exp(x)) }
+
+
+
+#' Format converter for p_sero_year
+#' @param p_sero_year number
+#' @return p_sero_year, but with individual years instead of buckets
+#' 
+convert_p_sero <- function(p_sero_year) {
+  
+  new_list <- list()
+  for (sex in c("male", "female")) {
+    p <- p_sero_year[[sex]]
+    new_probs <- c(
+      rep(p[["1"]],1), rep(p[["2-10"]],9), rep(p[["11-15"]],5),
+      rep(p[["16-20"]],5), rep(p[["21-25"]],5), rep(p[["26-30"]],5),
+      rep(p[["31-35"]],5), rep(p[["36-40"]],5), rep(p[["41-45"]],5),
+      rep(p[["46-50"]],5), rep(0, 50)
+    )
+    new_list[[sex]] <- new_probs
+  }
+  
+  return (new_list)
+  
+}
+
+
+
+#' Return discrete hazards of death, by age
+#' @return A vector of discrete hazards, indexed by age
+#' 
+p_death_year <- function() {
+  
+  # !!!!! Need to update these numbers
+  # !!!!! Make this a function of age as well?
+  
+  return (c(
+    0.02, rep(0.01, 9), # 1-10
+    rep(0.004, 10), # 11-20
+    rep(0.004, 10), # 21-30
+    rep(0.01, 10), # 31-40
+    rep(0.02, 10), # 41-50
+    rep(0.04, 10), # 51-60
+    rep(0.05, 10), # 61-70
+    rep(0.1, 10), # 71-80
+    rep(0.2, 10), # 81-90
+    rep(0.3, 10), # 91-100
+    1
+  ))
+  
+}
+
+
+
 #' Perform imputation on a dataset with missingness
 #'
 #' @param p_sero_year A list of List of monthly seroconversion probabilities
