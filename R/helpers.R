@@ -48,7 +48,7 @@ p_death_year <- function() {
     rep(0.05, 10), # 61-70
     rep(0.1, 10), # 71-80
     rep(0.2, 10), # 81-90
-    rep(0.3, 10), # 91-100
+    rep(0.3, 9), # 91-99
     1
   ))
   
@@ -70,25 +70,13 @@ p_death_year <- function() {
 
 construct_probs <- function(p_sero_year) {
   
-  pm0 <- p_sero_year$male
-  pf0 <- p_sero_year$female
-  pm <- c(
-    pm0[["1"]],
-    rep(pm0[["2-10"]],9), rep(pm0[["11-15"]],5), rep(pm0[["16-20"]],5),
-    rep(pm0[["21-25"]],5), rep(pm0[["26-30"]],5), rep(pm0[["31-35"]],5),
-    rep(pm0[["36-40"]],5), rep(pm0[["41-45"]],5), rep(pm0[["46-50"]],5)
-  )
-  pf <- c(
-    pf0[["1"]],
-    rep(pf0[["2-10"]],9), rep(pf0[["11-15"]],5), rep(pf0[["16-20"]],5),
-    rep(pf0[["21-25"]],5), rep(pf0[["26-30"]],5), rep(pf0[["31-35"]],5),
-    rep(pf0[["36-40"]],5), rep(pf0[["41-45"]],5), rep(pf0[["46-50"]],5)
-  )
+  pm <- p_sero_year$male
+  pf <- p_sero_year$female
   
   p_sero_m <- list(c(pm[1],1-pm[1]))
   p_sero_f <- list(c(pf[1],1-pf[1]))
   
-  for (age in 2:50) {
+  for (age in 2:100) {
     
     # Set next item to previous item (without last prob)
     p_sero_m[[age]] <- p_sero_m[[age-1]][1:(age-1)]

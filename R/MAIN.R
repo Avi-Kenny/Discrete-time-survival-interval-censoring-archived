@@ -12,7 +12,7 @@
 # If running this locally in RStudio, skip this section and click "Session" >>
 #     "Set working directory" >> "To Source File Location"
 if (Sys.getenv("USERDOMAIN")=="AVI-KENNY-T460") {
-  setwd("C:/Users/avike/OneDrive/Desktop/Avi/Biostats + Research/Research/Jim Hughes/Project - Stepped wedge/z.stepped.wedge/R")
+  setwd("C:/Users/avike/OneDrive/Desktop/Avi/Biostats + Research/Research/Mark Siedner/Project - HIVMI/HIV.multiple.imputation/R")
 } else {
   setwd("z.stepped.wedge/R")
 }
@@ -47,7 +47,7 @@ if (run_main) {
       sim %<>% set_config(
         num_sim = 10, # !!!!!
         parallel = "cluster",
-        packages = c("dplyr", "survival") # mice
+        packages = c("dplyr", "survival", "data.table") # mice
       )
       
       # Specify seroconversion conditional probabilities (discrete hazards)
