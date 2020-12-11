@@ -47,7 +47,7 @@ if (run_main) {
       sim %<>% set_config(
         num_sim = 10, # !!!!!
         parallel = "cluster",
-        packages = c("dplyr", "survival", "data.table") # mice
+        packages = c("dplyr", "survival", "data.table", "tidyr") # mice
       )
       
       # Specify seroconversion conditional probabilities (discrete hazards)

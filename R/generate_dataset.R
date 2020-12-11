@@ -34,11 +34,13 @@ generate_dataset <- function(
   # !!!!! TESTING: START !!!!!
   source("helpers.R")
   library(dplyr)
+  library(tidyr)
+  library(magrittr)
   library(data.table)
-  num_patients = 100
+  num_patients = 10000
   start_year = 2000
   end_year = 2020
-  hazard_ratios = list("hiv"=1.8, "art"=1.2)
+  hazard_ratios = list("hiv"=1.8, "art"=1.3)
   p_sero_year <- convert_p_sero(list(male = list("1"=0.03, "2-10"=0, "11-15"=0, "16-20"=0.01, "21-25"=0.02,"26-30"=0.03, "31-35"=0.02, "36-40"=0.01, "41-45"=0.005, "46-50"=0.005),female = list("1"=0.03, "2-10"=0, "11-15"=0.005, "16-20"=0.02, "21-25"=0.03,"26-30"=0.02, "31-35"=0.015, "36-40"=0.01, "41-45"=0.005, "46-50"=0)))
   p_death_year <- p_death_year() # !!!!!
   u_mult = list("sero"=1.5, "death"=1.3)
@@ -49,7 +51,7 @@ generate_dataset <- function(
   
   # Generate patient_id, dob, sex
   d_patient_id <- c(1:num_patients)
-  d_age <- sample(1:99, size=num_patients, replace=TRUE)
+  d_age <- sample(1:80, size=num_patients, replace=TRUE) # !!!!!
   d_birthyear <- start_year - d_age
   d_sex <- sample(c(0,1), size=num_patients, replace=TRUE)
   d_u <- rbinom(n=num_patients, size=1, prob=0.3)
@@ -83,6 +85,7 @@ generate_dataset <- function(
     
     # Set other baseline variables
     sex_mf <- ifelse(d_sex[i], "male", "female")
+    d2_died <- 0
     d2_death_year <- NA
     d2_art_init <- d_art_init[i]
     d2_sero_age <- d_sero_age[i]
@@ -122,25 +125,19 @@ generate_dataset <- function(
         }
         
         # Determine whether patient died
-        hr <- ifelse(d2_status=="HIV+ART-", hazard_ratios$hiv,
-                     ifelse(d2_status=="HIV+ART+", hazard_ratios$art, 1
-                     ))
+        hr <- ifelse(
+          d2_status=="HIV+ART-", hazard_ratios$hiv,
+            ifelse(d2_status=="HIV+ART+", hazard_ratios$art, 1)
+        )
         p_death <- p_death_year[current_age] * hr *
           ifelse(d_u[i],u_mult[["death"]],1)
-        if (is.na(p_death)) {
-          # print("START")
-          # print(current_age)
-          # print(p_death_year[current_age])
-          # print(hr)
-          # print(d_u[i])
-          # print(u_mult[["death"]])
-        }
         if (p_death>1) {
           p_death <- 1
           warning("Probability of death exceeded one.")
         }
         
         if (runif(1)<p_death) {
+          d2_died <- 1
           d2_death_year <- year
         }
         
@@ -154,7 +151,8 @@ generate_dataset <- function(
       baseline_age = d_age[i],
       sex = d_sex[i],
       u = d_u[i],
-      status = d2_status,
+      baseline_status = d2_status,
+      died = d2_died,
       death_year = d2_death_year,
       art_init = d2_art_init,
       sero_age = d2_sero_age,
@@ -165,7 +163,18 @@ generate_dataset <- function(
   
   df <- rbindlist(df)
   
+  attr(df, "start_year") <- start_year
+  attr(df, "end_year") <- end_year
+  
+  
+  
   # !!!!! Generate testing data
+  
+  # testing_case <- which(rmultinom(n=1, size=1, prob=c(0.1,0.3,0.6))==1)
+  
+  df %<>% mutate(
+    
+  )
   
   return (df)
   
