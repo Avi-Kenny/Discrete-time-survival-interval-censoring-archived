@@ -33,7 +33,7 @@ run_analysis <- function(dataset, start_year, end_year) {
     
     # Create time-varying age bucket variable
     dataset_cp %<>% mutate(
-      age_bin = case_when(
+      age_bin = factor(case_when(
         age %in% c(1:9) ~ 0,
         age %in% c(10:19) ~ 1,
         age %in% c(20:29) ~ 2,
@@ -45,29 +45,55 @@ run_analysis <- function(dataset, start_year, end_year) {
         age %in% c(80:89) ~ 8,
         age %in% c(90:99) ~ 9,
         age %in% c(100:109) ~ 10
-      )
-    )
+      ), levels=c(5,0,1,2,3,4,6,7,8,9,10) # Reference group is 50-59
+    ))
     
   }
   
-  # Fit time-varying Cox model
-  fit <- coxph(
-    Surv(start_year, end_year, died) ~ art_status + factor(age_bin) +
+  # Fit time-varying Cox model ("ideal")
+  fit_ideal <- coxph(
+    Surv(start_year, end_year, died) ~ art_status + age_bin +
                                        cluster(patient_id),
     data = dataset_cp
   )
+  summ_ideal <- summary(fit_ideal)$coefficients
   
-  # fit <- coxph(
-  #   Surv(start_time, end_time, had_event)~factor(hiv_status),
-  #   data = dataset
-  # )
-  summ <- summary(fit)$coefficients
-  results <- list(
-    exp_est = exp(summ["art_status","coef"]),
-    est = summ["art_status","coef"],
-    se = summ["art_status","se(coef)"]
+  # Fit time-varying Cox model ("censor")
+  fit_censor <- coxph(
+    # !!!!! TO DO
+    # Surv(start_year, end_year, died) ~ art_status + age_bin +
+    #   cluster(patient_id),
+    # data = dataset_cp
   )
-  print(results) # !!!!!
+  summ_censor <- summary(fit_censor)$coefficients
+  
+  # Fit time-varying Cox model ("MI")
+  fit_mi <- coxph(
+    # !!!!! TO DO
+    # Surv(start_year, end_year, died) ~ art_status + age_bin +
+    #   cluster(patient_id),
+    # data = dataset_cp
+  )
+  summ_mi <- summary(fit_mi)$coefficients
+  
+  results <- list(
+    "ideal" = list(
+      exp_est = exp(summ_ideal["art_status","coef"]),
+      est = summ_ideal["art_status","coef"],
+      se = summ_ideal["art_status","se(coef)"]
+    ),
+    "censor" = list(
+      exp_est = exp(summ_censor["art_status","coef"]),
+      est = summ_censor["art_status","coef"],
+      se = summ_censor["art_status","se(coef)"]
+    ),
+    "mi" = list(
+      exp_est = exp(summ_mi["art_status","coef"]),
+      est = summ_mi["art_status","coef"],
+      se = summ_mi["art_status","se(coef)"]
+    )
+  )
+  # print(results) # !!!!!
   
   return(results)
   

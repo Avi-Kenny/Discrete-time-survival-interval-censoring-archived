@@ -40,28 +40,42 @@ generate_dataset <- function(
   num_patients = 10000
   start_year = 2000
   end_year = 2020
-  hazard_ratios = list("hiv"=1.8, "art"=1.3)
+  hazard_ratios = list("hiv"=1.7, "art"=1.4)
   p_sero_year <- convert_p_sero(list(male = list("1"=0.03, "2-10"=0, "11-15"=0, "16-20"=0.01, "21-25"=0.02,"26-30"=0.03, "31-35"=0.02, "36-40"=0.01, "41-45"=0.005, "46-50"=0.005),female = list("1"=0.03, "2-10"=0, "11-15"=0.005, "16-20"=0.02, "21-25"=0.03,"26-30"=0.02, "31-35"=0.015, "36-40"=0.01, "41-45"=0.005, "46-50"=0)))
   p_death_year <- p_death_year() # !!!!!
   u_mult = list("sero"=1.5, "death"=1.3)
   # !!!!! TESTING: END !!!!!
   
+  # !!!!! Remove unused variables
+  
   # Generate probabilities for baseline serostatus
   m_probs = construct_probs(p_sero_year)
   
-  # Generate patient_id, dob, sex
+  # Generate baseline variables: patient_id, age, birthyear, sex, u
   d_patient_id <- c(1:num_patients)
   d_age <- sample(1:80, size=num_patients, replace=TRUE) # !!!!!
   d_birthyear <- start_year - d_age
   d_sex <- sample(c(0,1), size=num_patients, replace=TRUE)
-  d_u <- rbinom(n=num_patients, size=1, prob=0.3)
+  d_u <- rbinom(n=num_patients, size=1, prob=0.3) # !!!!! Set prob=0 in some replicates to remove correlations induced by U
   
-  # Sample baseline seroconversion age from multinomial
+  # Generate baseline variables: testing_prob
+  # These will be the indices of the testing prob vector c(0,0.1,0.2,0.5,1)
+  multinom_probs_u0 <- c(0.2,0.2,0.2,0.2,0.2) # !!!!! Pass this in
+  multinom_probs_u1 <- c(0.2,0.2,0.2,0.2,0.2) # !!!!! Pass this in
+  d_testing_prob_u0 <- rmultinom(n=num_patients, size=1, prob=multinom_probs_u0)
+  d_testing_prob_u1 <- rmultinom(n=num_patients, size=1, prob=multinom_probs_u1)
+  d_testing_prob_u0 <- apply(d_testing_prob_u0, 2, function(x){which(x==1)})
+  d_testing_prob_u1 <- apply(d_testing_prob_u1, 2, function(x){which(x==1)})
+  d_testing_prob_index <- (1-d_u)*d_testing_prob_u0 + d_u*d_testing_prob_u1
+  testing_probs <- c(0,0.1,0.2,0.5,1)
+  
+  # !!!!! Baseline testing status ?
+  
+  # Generate baseline variables: cascade status and seroconversion date
   d_sero_age <- sapply(d_patient_id, function(i) {
     sex_mf <- ifelse(d_sex[i], "male", "female")
     probs <- m_probs[[sex_mf]][[min(d_age[i],50)]]
-    mult <- as.numeric(rmultinom(n=1, size=1, prob=probs)) # !!!!! Incorporate u ?????
-    pos <- which(mult==1)
+    pos <- which(as.numeric(rmultinom(n=1, size=1, prob=probs))==1) # !!!!! Incorporate u ?????
     if (pos==length(probs)) {
       return (NA)
     } else {
@@ -90,6 +104,7 @@ generate_dataset <- function(
     d2_art_init <- d_art_init[i]
     d2_sero_age <- d_sero_age[i]
     d2_sero_year <- d_sero_year[i]
+    d2_tests <- c()
     
     for (year in c((start_year+1):end_year)) {
       
@@ -98,21 +113,22 @@ generate_dataset <- function(
       if (is.na(d2_death_year)) {
         
         # !!!!! ART starts one year after seroconversion
+        # !!!!! Change this to "patient starts ART after first positive test"
         if (d2_status=="HIV+ART-") {
           d2_status <- "HIV+ART+"
           d2_art_init <- year
+        }
+        
+        # Determine whether patient was tested
+        p_test <- testing_probs[d_testing_prob_index[d_patient_id]]
+        if (runif(1)<p_test) {
+          d2_tests <- c(d2_tests, year)
         }
         
         # Determine whether patient seroconverted
         if (d2_status=="HIV-") {
           p_sero <- p_sero_year[[sex_mf]][current_age] * 
             ifelse(d_u[i],u_mult[["sero"]],1)
-          if (is.na(p_sero)) {
-            print("sex_mf")
-            print(sex_mf)
-            print("current_age")
-            print(current_age)
-          }
           if (p_sero>1) {
             p_sero <- 1
             warning("Probability of death exceeded one.")
@@ -156,12 +172,23 @@ generate_dataset <- function(
       death_year = d2_death_year,
       art_init = d2_art_init,
       sero_age = d2_sero_age,
-      sero_year = d2_sero_year
+      sero_year = d2_sero_year,
+      tests = d2_tests
     ))
     
   })
   
-  df <- rbindlist(df)
+  df2 <- lapply(df, function(l) {
+    l$tests <- NULL
+    return(l)
+  })
+  
+  df3 <- lapply(df, function(l) {
+    return(l$tests)
+  })
+  
+  df_patients <- rbindlist(df2)
+  df_testing <- rbindlist(df3)
   
   attr(df, "start_year") <- start_year
   attr(df, "end_year") <- end_year
@@ -179,87 +206,13 @@ generate_dataset <- function(
   return (df)
   
   # testing case (case 1, case 2, etc.)
+  
+  # `testing_probs` is 
+  testing_probs <- 
   # testing dates (last_test_neg, first_test_pos)
   
   
-  
-  
-  
-  
-  # # !!!!! Recycle code below this point
-  # switch(case,
-  #        
-  #        # Case 1: First HIV test was pos
-  #        "1" = {
-  #          last_test_neg <- NA
-  #          first_test_pos <- ifelse(
-  #            dob != last_date,
-  #            sample(dob:last_date, size=1),
-  #            dob
-  #          )
-  #          art_init <- ifelse(runif(1)<0.5,
-  #                             ifelse(
-  #                               first_test_pos != last_date,
-  #                               sample(first_test_pos:last_date, size=1),
-  #                               first_test_pos
-  #                             ),
-  #                             NA
-  #          )
-  #        },
-  #        
-  #        # Case 2: 1+ neg tests followed by a pos test
-  #        "2" = {
-  #          last_test_neg <- ifelse(
-  #            dob != last_date,
-  #            sample(dob:last_date, size=1),
-  #            dob
-  #          )
-  #          first_test_pos <- ifelse(
-  #            last_test_neg != last_date,
-  #            sample(last_test_neg:last_date, size=1),
-  #            last_test_neg
-  #          )
-  #          art_init <- ifelse(runif(1)<0.5,
-  #                             ifelse(
-  #                               first_test_pos != last_date,
-  #                               sample(first_test_pos:last_date, size=1),
-  #                               first_test_pos
-  #                             ),
-  #                             NA
-  #          )
-  #        },
-  #        
-  #        # Case 3: 1+ neg tests and no pos test (and is alive)
-  #        "3" = {
-  #          last_test_neg <- ifelse(
-  #            dob != last_date,
-  #            sample(dob:last_date, size=1),
-  #            dob
-  #          )
-  #          first_test_pos <- NA
-  #          art_init <- NA
-  #        },
-  #        
-  #        # Case 4: 1+ neg tests and no pos test (and is dead)
-  #        "4" = {
-  #          last_test_neg <- ifelse(
-  #            dob != last_date,
-  #            sample(dob:last_date, size=1),
-  #            dob
-  #          )
-  #          first_test_pos <- NA
-  #          art_init <- NA
-  #        },
-  #        
-  #        # Case 5: no testing data
-  #        "5" = {
-  #          last_test_neg <- NA
-  #          first_test_pos <- NA
-  #          art_init <- NA
-  #        }
-  #        
-  # )
-  
+
   return (data.frame(
     patient_id = d_patient_id
   ))
