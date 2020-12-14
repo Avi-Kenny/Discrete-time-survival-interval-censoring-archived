@@ -2,16 +2,15 @@
 #'
 #' @param dataset A dataset returned by either generate_dataset() or
 #'     perform_imputation()
+#' @param method One of c("ideal", "censor", "mi")
 #' @return A list containing the following:
 #'     est: point estimate of exposure coefficient
 #'     se: standard error of exposure coefficient estimate
 
-run_analysis <- function(dataset, start_year, end_year) {
+run_analysis <- function(dataset, method) {
   
   # Transform dataset
   {
-    # dataset <- df # !!!!!
-    
     # Data cleaning
     dataset$start_year <- attributes(dataset)$start_year
     dataset$death_year <- replace_na(dataset$death_year,
@@ -22,13 +21,17 @@ run_analysis <- function(dataset, start_year, end_year) {
     dataset_cp <- survSplit(
       formula = Surv(start_year, end_year, died) ~.,
       data = dataset,
-      cut = c(start_year:end_year)
+      cut = c((attributes(dataset)$start_year):(attributes(dataset)$end_year))
     )
     
-    # Create time-varying exposure variable
+    # Create time-varying covariates
     dataset_cp %<>% mutate(
-      art_status = replace_na(ifelse(start_year>=art_init, 1, 0),0),
-      age = start_year - birthyear
+      casc_status = ifelse(
+        is.na(sero_year), "HIV-", ifelse(
+          (start_year>=sero_year) & (start_year<replace_na(art_init,9999)),
+          "HIV+ART-", "HIV+ART+")
+      ),
+      age = start_year - birth_year
     )
     
     # Create time-varying age bucket variable
@@ -50,50 +53,63 @@ run_analysis <- function(dataset, start_year, end_year) {
     
   }
   
+  # Create "censor" dataset
+  if (type=="censor") {
+    
+    # !!!!! Clean this up, given changes to generate_dataset()
+    
+    # Set up censoring variable: c0.x == don't censor, c1.x == censor
+    dataset_cp$censor <- "c0.0"
+    
+    # Don't censor any observations for baseline HIV+ART+ patients
+    # !!!!! This should be redundant now
+    dataset_cp %<>% mutate(
+      censor = ifelse(baseline_status=="HIV+ART+", "c0.1", censor)
+    )
+    # xtabs(~censor, data=dataset_cp, addNA=T)
+    
+    # Censor all obs for patients with no testing data
+    dataset_cp %<>% mutate(
+      censor = ifelse(baseline_status!="HIV+ART+" & is.na(first_test),
+                      "c1.1", censor)
+    )
+    
+    # For baseline HIV- or HIV+ART- patients, censor obs before first test
+    dataset_cp %<>% mutate(
+      censor = ifelse(
+        baseline_status!="HIV+ART+" & !is.na(first_test) &
+          start_year<first_test, "c1.2", censor)
+    )
+    
+    # For patients who only had negative tests, censor obs after last test
+    dataset_cp %<>% mutate(
+      censor = ifelse(
+        baseline_status!="HIV+ART+" & !is.na(last_neg_test) &
+          is.na(first_pos_test) & start_year>last_neg_test, "c1.3", censor)
+    )
+
+    # !!!!! "c0.2", "c0.3", etc.
+    dataset_cp %<>% filter(censor %in% c("c0.0","c0.1"))
+    
+    # xtabs(~casc_status, data=dataset_cp_censor, addNA=T)
+
+    # !!!!! Check censoring manually
+  }
+  
   # Fit time-varying Cox model ("ideal")
-  fit_ideal <- coxph(
-    Surv(start_year, end_year, died) ~ art_status + age_bin +
-                                       cluster(patient_id),
+  fit <- coxph(
+    Surv(start_year, end_year, died) ~ factor(casc_status) + age_bin +
+      cluster(patient_id),
     data = dataset_cp
   )
-  summ_ideal <- summary(fit_ideal)$coefficients
-  
-  # Fit time-varying Cox model ("censor")
-  fit_censor <- coxph(
-    # !!!!! TO DO
-    # Surv(start_year, end_year, died) ~ art_status + age_bin +
-    #   cluster(patient_id),
-    # data = dataset_cp
-  )
-  summ_censor <- summary(fit_censor)$coefficients
-  
-  # Fit time-varying Cox model ("MI")
-  fit_mi <- coxph(
-    # !!!!! TO DO
-    # Surv(start_year, end_year, died) ~ art_status + age_bin +
-    #   cluster(patient_id),
-    # data = dataset_cp
-  )
-  summ_mi <- summary(fit_mi)$coefficients
+  summ <- summary(fit)$coefficients
   
   results <- list(
-    "ideal" = list(
-      exp_est = exp(summ_ideal["art_status","coef"]),
-      est = summ_ideal["art_status","coef"],
-      se = summ_ideal["art_status","se(coef)"]
-    ),
-    "censor" = list(
-      exp_est = exp(summ_censor["art_status","coef"]),
-      est = summ_censor["art_status","coef"],
-      se = summ_censor["art_status","se(coef)"]
-    ),
-    "mi" = list(
-      exp_est = exp(summ_mi["art_status","coef"]),
-      est = summ_mi["art_status","coef"],
-      se = summ_mi["art_status","se(coef)"]
-    )
+    est_hiv = summ["factor(casc_status)HIV+ART-","coef"],
+    se_hiv = summ["factor(casc_status)HIV+ART-","se(coef)"],
+    est_art = summ["factor(casc_status)HIV+ART+","coef"],
+    se_art = summ["factor(casc_status)HIV+ART+","se(coef)"]
   )
-  # print(results) # !!!!!
   
   return(results)
   

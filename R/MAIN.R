@@ -39,15 +39,17 @@ if (run_main) {
       
       # Declare functions
       source("generate_dataset.R")
+      source("run_analysis.R")
+      source("perform_imputation.R")
       source("one_simulation.R")
       source("helpers.R")
       
       # Set up and configure simulation object
       sim <- new_sim()
       sim %<>% set_config(
-        num_sim = 10, # !!!!!
+        num_sim = 1, # !!!!!
         parallel = "cluster",
-        packages = c("dplyr", "survival", "data.table", "tidyr") # mice
+        packages = c("dplyr", "survival", "data.table", "tidyr")
       )
       
       # Specify seroconversion conditional probabilities (discrete hazards)
@@ -57,7 +59,7 @@ if (run_main) {
       #     between age X-1 and age X, given that they did not seroconvert by
       #     age X-1
       # !!!!! Change the actual numbers later based on AHRI cohort data
-      p_sero_year <- list(
+      p_sero_year <- convert_p_sero(list(
         male = list(
           "1"=0.03, "2-10"=0, "11-15"=0, "16-20"=0.01, "21-25"=0.02,
           "26-30"=0.03, "31-35"=0.02, "36-40"=0.01, "41-45"=0.005, "46-50"=0.005
@@ -66,15 +68,13 @@ if (run_main) {
           "1"=0.03, "2-10"=0, "11-15"=0.005, "16-20"=0.02, "21-25"=0.03,
           "26-30"=0.02, "31-35"=0.015, "36-40"=0.01, "41-45"=0.005, "46-50"=0
         )
-      )
-      p_sero_year <- convert_p_sero(p_sero_year)
+      ))
       
-      p_death_year <- p_death_year() # !!!!! Specify a multiplier as a param?
-      
-      sim %<>% add_constant(
+      sim %<>% add_constants(
         p_sero_year = p_sero_year,
+        p_death_year = p_death_year(), # !!!!! Specify a multiplier as a param?
         m = 5, # Number of MI replicates
-        num_patients = 50, # !!!!!
+        num_patients = 10, # !!!!!
         start_year = 2000,
         end_year = 2020
       )
@@ -82,15 +82,21 @@ if (run_main) {
       # Add functions to simulation object
       sim %<>% add_creator(generate_dataset)
       sim %<>% add_script(one_simulation)
-      sim %<>% add_method(expit) # !!!!! add others
+      sim %<>% add_method(convert_p_sero)
+      sim %<>% add_method(construct_m_probs)
+      sim %<>% add_method(run_analysis)
+      sim %<>% add_method(perform_imputation)
       
       # Set levels
       sim %<>% set_levels(
-        hr_hiv = 1.8,
-        hr_art = 1.2,
-        u_mult_sero = 1.5,
-        u_mult_death = 1.3
+        method = c("ideal", "censor", "mi"),
+        hr_hiv = 1.7,
+        hr_art = 1.4,
+        u_mult_sero = 1, # 1.5
+        u_mult_death = 1 # 1.3
       )
+      
+      # sim %<>% run("one_simulation") # !!!!!
       
     },
     

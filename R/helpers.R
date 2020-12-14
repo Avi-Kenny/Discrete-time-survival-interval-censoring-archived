@@ -55,7 +55,7 @@ p_death_year <- function() {
 
 
 
-#' Perform imputation on a dataset with missingness
+#' Construct multinomial probabilities
 #'
 #' @param p_sero_year A list of List of monthly seroconversion probabilities
 #'     (see simulation constants)
@@ -67,7 +67,7 @@ p_death_year <- function() {
 #'     prob that the individual seroconverted by age 2, etc. The last entry is
 #'     the prob that the individual never seroconverted.
 
-construct_probs <- function(p_sero_year) {
+construct_m_probs <- function(p_sero_year) {
   
   pm <- p_sero_year$male
   pf <- p_sero_year$female

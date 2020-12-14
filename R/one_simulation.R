@@ -9,48 +9,62 @@
 one_simulation <- function() {
   
   # Create dataset with known cascade status dates
-  df_complete <- generate_dataset(
+  dataset <- generate_dataset(
     num_patients = C$num_patients,
     start_year = C$start_year,
     end_year = C$end_year,
     hazard_ratios = list("hiv"=L$hr_hiv, "art"=L$hr_art),
     p_sero_year = C$p_sero_year,
+    p_death_year = C$p_death_year,
     u_mult = list("sero"=L$u_mult_sero, "death"=L$u_mult_death)
   )
   
-  # Create second dataset by imposing missingness structure
-  df_missing <- impose_missingness(df_complete)
-  
-  # Perform MI on second dataset
-  dfs_mi <- list()
-  for (i in 1:(C$m)) {
-    dfs_mi[[i]] <- perform_imputation(df_missing)
+  if (L$method=="ideal") {
+    # Run Cox PH analysis
+    results <- run_analysis(dataset, method="ideal")
   }
   
-  # Perform Cox PH regression on complete dataset
-  results_complete <- run_analysis(df_complete)
-  
-  # Perform Cox PH regression on imputed datasets
-  results_mi <- list()
-  for (i in 1:m) {
-    results_mi[[i]] <- run_analysis(df_complete)
+  if (L$method=="censor") {
+    # Remove unknown seroconversion info
+    # dataset %<>% mutate(sero_year=NA)
+    
+    # !!!!! Need to remove sero info and impute; ask Mark what he does currently
+    
+    # Run Cox PH analysis
+    results <- run_analysis(dataset, method="censor")
   }
   
-  # Combine MI estimates (using "Rubin's Rules")
-  # !!!!! Check this
-  # !!!!! May need to multiply var(estimates) by m/(m-1)
-  estimates <- sapply(results_mi, function(x) {x$est})
-  vars <- sapply(results_mi, function(x) {x$se^2})
-  results_mi_combined <- list(
-    est = mean(estimates),
-    se = sqrt( var(estimates) + mean(vars) )
-  )
+  if (L$method=="mi") {
+    
+    # Remove unknown seroconversion info
+    dataset %<>% mutate(sero_year=NA)
+    
+    # Perform MI on second dataset
+    datasets_mi <- list()
+    for (i in 1:C$m) {
+      datasets_mi[[i]] <- perform_imputation(dataset, C$p_sero_year)
+    }
+    
+    # Perform Cox PH regression on imputed datasets
+    results_mi <- list()
+    for (i in 1:C$m) {
+      results_mi[[i]] <- run_analysis(datasets_mi[[i]], method="mi")
+    }
+    
+    # Combine MI estimates
+    est_hiv <- sapply(results_mi, function(res) {res$est_hiv})
+    var_hiv <- sapply(results_mi, function(res) {x$se_hiv^2})
+    est_art <- sapply(results_mi, function(res) {res$est_art})
+    var_art <- sapply(results_mi, function(res) {x$se_art^2})
+    results <- list(
+      est_hiv = mean(est_hiv),
+      se_hiv = sqrt( var(est_hiv) + mean(var_hiv) ), # !!!!! May need to multiply by m/(m-1)
+      est_art = mean(est_art),
+      se_art = sqrt( var(est_art) + mean(var_art) ) # !!!!! May need to multiply by m/(m-1)
+    )
+    
+  }
   
-  return (list(
-    est_complete = results_complete$est,
-    est_missing = results_mi_combined$est,
-    se_complete = results_complete$se,
-    se_missing = results_mi_combined$se
-  ))
+  return (results)
   
 }
