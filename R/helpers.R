@@ -1,10 +1,3 @@
-# #' Expit function
-# #' @param x number
-# #' @return Expit of x
-# 
-# expit <- function(x) { exp(x) / (1+exp(x)) }
-
-
 
 #' Format converter for p_sero_year
 #' @param p_sero_year number
@@ -33,23 +26,24 @@ convert_p_sero <- function(p_sero_year) {
 #' Return discrete hazards of death, by age
 #' @return A vector of discrete hazards, indexed by age
 #' 
-p_death_year <- function() {
+p_death_year <- function(mult) {
   
   # !!!!! Need to update these numbers
-
-  return (c(
+  probs <- c(
     rep(0.01, 9), # 1-9
-    rep(0.004, 10), # 10-19
-    rep(0.004, 10), # 20-29
-    rep(0.01, 10), # 30-39
-    rep(0.02, 10), # 40-49
-    rep(0.04, 10), # 50-59
-    rep(0.05, 10), # 60-69
-    rep(0.1, 10), # 70-79
-    rep(0.2, 10), # 80-89
-    rep(0.3, 10), # 90-99
+    rep(0.002, 10), # 10-19
+    rep(0.002, 10), # 20-29
+    rep(0.004, 10), # 30-39
+    rep(0.004, 10), # 40-49
+    rep(0.01, 10), # 50-59
+    rep(0.01, 10), # 60-69
+    rep(0.03, 10), # 70-79
+    rep(0.03, 10), # 80-89
+    rep(0.1, 10), # 90-99
     rep(0.5, 10) # 100-109
-  ))
+  )
+  
+  return (mult*probs)
   
 }
 

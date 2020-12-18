@@ -15,13 +15,18 @@ one_simulation <- function() {
     end_year = C$end_year,
     hazard_ratios = list("hiv"=L$hr_hiv, "art"=L$hr_art),
     p_sero_year = C$p_sero_year,
-    p_death_year = C$p_death_year,
+    p_death_year = p_death_year(L$p_death_mult),
     u_mult = list("sero"=L$u_mult_sero, "death"=L$u_mult_death)
   )
   
   if (L$method=="ideal") {
-    # Run Cox PH analysis
-    results <- run_analysis(dataset, method="ideal")
+    # Transform data and run Cox PH analysis
+    dataset_cp <- transform_dataset(dataset)
+    results <- run_analysis(
+      dataset_cp = dataset_cp,
+      method = "ideal",
+      include_no_testers = L$include_no_testers
+    )
   }
   
   if (L$method=="censor") {
@@ -30,14 +35,16 @@ one_simulation <- function() {
     
     # !!!!! Need to remove sero info and impute; ask Mark what he does currently
     
-    # Run Cox PH analysis
-    results <- run_analysis(dataset, method="censor")
+    # Transform data and run Cox PH analysis
+    dataset_cp <- transform_dataset(dataset)
+    results <- run_analysis(
+      dataset_cp = dataset_cp,
+      method = "censor",
+      include_no_testers = FALSE
+    )
   }
   
   if (L$method=="mi") {
-    
-    # Remove unknown seroconversion info
-    dataset %<>% mutate(sero_year=NA)
     
     # Perform MI on second dataset
     datasets_mi <- list()
@@ -45,22 +52,26 @@ one_simulation <- function() {
       datasets_mi[[i]] <- perform_imputation(dataset, C$p_sero_year)
     }
     
-    # Perform Cox PH regression on imputed datasets
+    # Transform data and run Cox PH analysis on imputed datasets
     results_mi <- list()
     for (i in 1:C$m) {
-      results_mi[[i]] <- run_analysis(datasets_mi[[i]], method="mi")
+      results_mi[[i]] <- run_analysis(
+        dataset_cp = transform_dataset(datasets_mi[[i]]),
+        method = "mi",
+        include_no_testers = L$include_no_testers
+      )
     }
     
     # Combine MI estimates
     est_hiv <- sapply(results_mi, function(res) {res$est_hiv})
-    var_hiv <- sapply(results_mi, function(res) {x$se_hiv^2})
+    var_hiv <- sapply(results_mi, function(res) {res$se_hiv^2})
     est_art <- sapply(results_mi, function(res) {res$est_art})
-    var_art <- sapply(results_mi, function(res) {x$se_art^2})
+    var_art <- sapply(results_mi, function(res) {res$se_art^2})
     results <- list(
       est_hiv = mean(est_hiv),
-      se_hiv = sqrt( var(est_hiv) + mean(var_hiv) ), # !!!!! May need to multiply by m/(m-1)
+      se_hiv = sqrt( mean(var_hiv) + (1+(1/C$m))*var(est_hiv) ),
       est_art = mean(est_art),
-      se_art = sqrt( var(est_art) + mean(var_art) ) # !!!!! May need to multiply by m/(m-1)
+      se_art = sqrt( mean(var_art) + (1+(1/C$m))*var(est_art) )
     )
     
   }

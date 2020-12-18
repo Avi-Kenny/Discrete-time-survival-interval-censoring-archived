@@ -7,67 +7,86 @@
 
 perform_imputation <- function(dataset, p_sero_year) {
   
+  # Remove unknown seroconversion info
+  # dataset$sero_year2 <- dataset$sero_year # !!!!!
+  dataset$sero_year <- NA
+  
   m_probs <- construct_m_probs(p_sero_year)
   
-  dataset$sero_year <- sapply(c(1:nrow(dataset)), function(i) {
-    
-    d <- dataset[i,]
-    sex_mf <- ifelse(d$sex, "male", "female")
-    end_year <- ifelse(d$died==1, d$death_year, attributes(dataset)$end_year)
-    
-    # !!!!! When generating data, make sure everyone falls into the proper category (particularly for baseline data)
-    # !!!!! Then, modify run_analysis() accordingly
-    
-    # Case 1: no testing data
-    if (is.na(d$last_neg_test) & is.na(d$first_pos_test)) {
-      age_end <- end_year - d$birth_year
-      probs <- m_probs[[sex_mf]][[age_end]]
-      sero_age <- which(as.numeric(rmultinom(n=1, size=1, prob=probs))==1)
-      if (sero_age==length(probs)) {
-        return(NA)
-      } else {
-        return(end_year-(age_end-sero_age))
+  dataset$sero_year <- apply(
+  # dataset$sero_year3 <- apply( # !!!!!
+    X = dataset,
+    MARGIN = 1,
+    end_year = attributes(dataset)$end_year,
+    FUN = function(r, end_year) {
+      
+      for (var in c("sex","died","death_year","last_neg_test","first_pos_test",
+                    "birth_year", "case")) {
+        assign(var, as.numeric(r[[var]]))
       }
-    }
-    
-    # Case 2: most recent test was negative
-    # Iteratively sample using discrete hazards
-    if (!is.na(d$last_neg_test) & is.na(d$first_pos_test)) {
-      age_start <- d$last_neg_test - d$birth_year + 1
-      age_end <- end_year - d$birth_year
-      sero_year <- NA
-      age <- age_start
-      while (is.na(sero_year) && age<=age_end) {
-        if (runif(1)<p_sero_year[[sex_mf]][age]) {
-          sero_year <- d$birth_year + age
+      
+      sex_mf <- ifelse(sex, "male", "female")
+      end_year <- ifelse(died==1, death_year+1, end_year)
+      
+      # !!!!! When generating data, make sure everyone falls into the proper category (particularly for baseline data)
+      # !!!!! Then, modify run_analysis() accordingly
+      
+      # Case 1: no testing data
+      if (case==1) {
+        age_end <- end_year - birth_year
+        probs <- m_probs[[sex_mf]][[age_end]]
+        pos <- which(as.numeric(rmultinom(n=1, size=1, prob=probs))==1)
+        if (pos==length(probs)) {
+          return (NA)
+        } else {
+          return (birth_year+pos-1)
         }
-        age <- age + 1
       }
-      return(sero_year)
+      
+      # Case 2: most recent test was negative
+      # Iteratively sample using discrete hazards
+      if (case==2) {
+        age_start <- last_neg_test - birth_year + 2
+        age_end <- end_year - birth_year
+        sero_year <- NA
+        age <- age_start
+        while (is.na(sero_year) && age<=age_end) {
+          if (runif(1)<p_sero_year[[sex_mf]][age]) {
+            sero_year <- birth_year + age - 1
+          }
+          age <- age + 1
+        }
+        return(sero_year)
+      }
+      
+      # Case 3: negative test followed by a positive test
+      # Sample from a multinomial with probs proportional to discrete hazards
+      if (case==3) {
+        age_start <- last_neg_test - birth_year + 2
+        age_end <- first_pos_test - birth_year + 1
+        probs <- p_sero_year[[sex_mf]][c(age_start:age_end)]
+        pos <- which(as.numeric(rmultinom(n=1, size=1, prob=probs))==1)
+        return(last_neg_test + pos)
+      }
+      
+      # Case 4: first test was positive
+      # Sample from a multinomial with probs proportional to discrete hazards
+      if (case==4) {
+        age_start <- 1
+        age_end <- first_pos_test - birth_year + 1
+        probs <- p_sero_year[[sex_mf]][c(age_start:age_end)]
+        pos <- which(as.numeric(rmultinom(n=1, size=1, prob=probs))==1)
+        return(birth_year + pos - 1)
+      }
+      
     }
-    
-    # Case 3: negative test followed by a positive test
-    # Sample from a multinomial with probs proportional to discrete hazards
-    if (!is.na(d$last_neg_test) & !is.na(d$first_pos_test)) {
-      age_start <- d$last_neg_test - d$birth_year
-      age_end <- d$first_pos_test - d$birth_year
-      probs <- p_sero_year[[sex_mf]][c(age_start:age_end)]
-      pos <- which(as.numeric(rmultinom(n=1, size=1, prob=probs))==1)
-      sero_age <- c(age_start:age_end)[pos]
-      return(d$first_pos_test-(age_end-sero_age))
-    }
-    
-    # Case 4: first test was positive
-    # Sample from a multinomial with probs proportional to discrete hazards
-    if (is.na(d$last_neg_test) & !is.na(d$first_pos_test)) {
-      age_end <- d$first_pos_test - d$birth_year
-      probs <- m_probs[[sex_mf]][[age_end]]
-      probs <- probs[1:(length(probs)-1)]
-      sero_age <- which(as.numeric(rmultinom(n=1, size=1, prob=probs))==1)
-      return(d$first_pos_test-(age_end-sero_age))
-    }
-    
-  })
+  )
+  
+  # # !!!!! If condition holds, give imputed version
+  # dataset %<>% mutate(
+  #   sero_year = ifelse(case==2, sero_year3, sero_year2)
+  # )
+  # # !!!!!
   
   return(dataset)
   
