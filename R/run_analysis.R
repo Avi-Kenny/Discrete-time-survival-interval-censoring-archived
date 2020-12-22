@@ -2,16 +2,13 @@
 #'
 #' @param dataset_cp A dataset returned by transform_dataset()
 #' @param method One of c("ideal", "censor", "mi")
-#' @param include_no_testers Binary; whether to include individuals in the
-#'     analysis who have no testing data; this is always TRUE for
-#'     method=="censor"
 #' @return A list containing the following:
 #'     est_hiv: point estimate of HIV+ART- exposure coefficient
 #'     se_hiv: standard error of HIV+ART- exposure coefficient
 #'     est_art: point estimate of HIV+ART+ exposure coefficient
 #'     se_art: standard error of HIV+ART+ exposure coefficient
 
-run_analysis <- function(dataset_cp, method, include_no_testers) {
+run_analysis <- function(dataset_cp, method) {
   
   # !!!!! `method` argument currently ignored for "ideal" and "mi"
   
@@ -33,16 +30,6 @@ run_analysis <- function(dataset_cp, method, include_no_testers) {
     )
     
     # !!!!! Check censoring manually
-    
-  }
-  
-  if (method %in% c("ideal", "mi")) {
-    
-    # !!!!! Archive this functionality; it creates severe selection bias
-    
-    if (include_no_testers==FALSE) {
-      dataset_cp %<>% filter(case!=1)
-    }
     
   }
   

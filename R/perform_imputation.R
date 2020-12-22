@@ -7,11 +7,16 @@
 
 perform_imputation <- function(dataset, p_sero_year) {
   
+  # !!!!! The fundamental flaw is that the imputation model MUST include the outcome
+  # !!!!! These are placeholders
+  hr_hiv_est <- ifelse(exists("L"), L$hr_hiv, 1.7) # !!!!!
+  
   # Remove unknown seroconversion info
   # dataset$sero_year2 <- dataset$sero_year # !!!!!
   dataset$sero_year <- NA
   
   m_probs <- construct_m_probs(p_sero_year)
+  m_probs2 <- construct_m_probs(lapply(p_sero_year, function(x){x*hr_hiv_est})) # !!!!!
   
   dataset$sero_year <- apply(
   # dataset$sero_year3 <- apply( # !!!!!
@@ -28,13 +33,18 @@ perform_imputation <- function(dataset, p_sero_year) {
       sex_mf <- ifelse(sex, "male", "female")
       end_year <- ifelse(died==1, death_year+1, end_year)
       
-      # !!!!! When generating data, make sure everyone falls into the proper category (particularly for baseline data)
-      # !!!!! Then, modify run_analysis() accordingly
-      
       # Case 1: no testing data
       if (case==1) {
         age_end <- end_year - birth_year
-        probs <- m_probs[[sex_mf]][[age_end]]
+        
+        # probs <- m_probs[[sex_mf]][[age_end]]
+        # !!!!! TESTING
+        if (died==0) {
+          probs <- m_probs[[sex_mf]][[age_end]]
+        } else {
+          probs <- m_probs2[[sex_mf]][[age_end]]
+        }
+        
         pos <- which(as.numeric(rmultinom(n=1, size=1, prob=probs))==1)
         if (pos==length(probs)) {
           return (NA)
@@ -51,7 +61,8 @@ perform_imputation <- function(dataset, p_sero_year) {
         sero_year <- NA
         age <- age_start
         while (is.na(sero_year) && age<=age_end) {
-          if (runif(1)<p_sero_year[[sex_mf]][age]) {
+          mult <- ifelse(died,hr_hiv_est,1) # !!!!!
+          if (runif(1)<(p_sero_year[[sex_mf]][age])*mult) { # !!!!!
             sero_year <- birth_year + age - 1
           }
           age <- age + 1

@@ -22,6 +22,7 @@ if (Sys.getenv("USERDOMAIN")=="AVI-KENNY-T460") {
   run_main <- TRUE
   run_results <- FALSE
   run_checks <- FALSE
+  run_mini_sim <- FALSE
 }
 
 
@@ -36,8 +37,8 @@ if (run_main) {
   
   # Commands for submission on Bionic cluster:
   # sbatch --export=run='first',cluster='bionic',type='R',project='z.hivmi' -e ./io/slurm-%A_%a.out -o ./io/slurm-%A_%a.out run_r.sh
-  # sbatch --depend=afterok:101 --array=1-32 --export=run='main',cluster='bionic',type='R',project='z.hivmi' -e ./io/slurm-%A_%a.out -o ./io/slurm-%A_%a.out run_r.sh
-  # sbatch --depend=afterok:102 --export=run='last',cluster='bionic',type='R',project='z.hivmi' -e ./io/slurm-%A_%a.out -o ./io/slurm-%A_%a.out run_r.sh
+  # sbatch --depend=afterok:56922721 --array=1-32 --export=run='main',cluster='bionic',type='R',project='z.hivmi' -e ./io/slurm-%A_%a.out -o ./io/slurm-%A_%a.out run_r.sh
+  # sbatch --depend=afterok:56922722 --export=run='last',cluster='bionic',type='R',project='z.hivmi' -e ./io/slurm-%A_%a.out -o ./io/slurm-%A_%a.out run_r.sh
   
   run_on_cluster(
     
@@ -61,10 +62,10 @@ if (run_main) {
       # Set up and configure simulation object
       sim <- new_sim()
       sim %<>% set_config(
-        num_sim = 1, # !!!!!
-        # stop_at_error = TRUE,
-        # parallel = "outer",
-        packages = c("dplyr", "survival", "data.table", "tidyr")
+        num_sim = 10, # !!!!!
+        stop_at_error = TRUE,
+        parallel = "outer",
+        packages = c("dplyr", "survival", "data.table", "tidyr", "mice")
       )
       
       # Specify seroconversion conditional probabilities (discrete hazards)
@@ -94,7 +95,7 @@ if (run_main) {
       
       # Add functions to simulation object
       sim %<>% add_creator(generate_dataset)
-      sim %<>% add_script(one_simulation)
+      sim %<>% set_script(one_simulation)
       sim %<>% add_method(convert_p_sero)
       sim %<>% add_method(construct_m_probs)
       sim %<>% add_method(run_analysis)
@@ -104,26 +105,65 @@ if (run_main) {
       
       # Set levels
       sim %<>% set_levels(
-        method = c("ideal", "mi"),
-        # method = c("ideal", "censor", "mi"),
-        hr_hiv = c(0.5,1.0,1.4,1.8),
-        hr_art = c(0.5,1.0,1.4,1.8),
+        method = c("ideal", "mi"), # c("ideal", "mi", "censor")
+        hr_hiv = c(0.6,1.0,1.4,1.8),
+        hr_art = 0.7,
         p_death_mult = 1,
-        include_no_testers = TRUE,
-        # include_no_testers = c(TRUE,FALSE), # FALSE by default for "censor" method
-        u_mult_sero = 1, # 1.5
-        u_mult_death = 1 # 1.3
+        u_mult_sero = 1,
+        u_mult_death = 1
       )
       
     },
     
     main = {
-      sim %<>% run("one_simulation")
+      sim %<>% run()
     },
     
     last = {
+      
       # !!!!! Calculate bias, variance inflation, power
-      print(sim$results)
+      
+      library(ggplot2)
+      
+      sim$results %<>% mutate(
+        est_hr_hiv = exp(est_hiv),
+        est_hr_art = exp(est_art),
+        hr_hiv_lab = paste("HIV+ HR:",hr_hiv),
+        hr_art_lab = paste("ART+ HR:",hr_art),
+        method = ifelse(method=="ideal", "Ideal",
+                        ifelse(method=="mi","MI","error")),
+        log_hr_hiv = log(hr_hiv),
+        log_hr_art = log(hr_art)
+      )
+      
+      # HIV graph
+      # Export PDF 3x8
+      ggplot(sim$results, aes(x=method, y=est_hr_hiv, color=method)) +
+        geom_point(alpha=0.2, size=2) +
+        geom_hline(aes(yintercept=hr_hiv), linetype="dotted") +
+        facet_wrap(~hr_hiv_lab, ncol=4) +
+        theme(legend.position="none") +
+        labs(title="Point estimates (50 simulation replicates per level)",
+           x="Method", y="Estimated hazard ratio (HIV+ART-)")
+      
+      # Coverage plots
+      summ <- sim %>% summary(
+        coverage = list(
+          name="cov_hiv", estimate="est_hiv", truth="log_hr_hiv", se="se_hiv"
+        )
+      ) %>% mutate(
+        hr_hiv_lab = paste("HIV+ HR:",hr_hiv),
+        hr_art_lab = paste("ART+ HR:",hr_art),
+      )
+      
+      ggplot(summ, aes(x=method, y=cov_hiv, color=method)) +
+        geom_point(size=3) +
+        geom_hline(aes(yintercept=0.95), linetype="dotted") +
+        facet_wrap(~hr_hiv_lab, ncol=4) +
+        theme(legend.position="none") +
+        labs(title="Coverage (50 simulation replicates per level)",
+             x="Method", y="95% CI Coverage (HIV+ART-)")
+      
     },
     
     cluster_config = list(
@@ -183,16 +223,16 @@ if (run_checks) {
     u_mult = list("sero"=1, "death"=1)
   )
   
-  # # !!!!!
-  # dataset_orig2
-  # dataset_imp2
-  
   # Create "imputed" dataset
   dataset_imp <- perform_imputation(dataset_orig, p_sero_year)
   
   # Create transformed datasets
   dataset_cp_orig <- transform_dataset(dataset_orig)
   dataset_cp_imp <- transform_dataset(dataset_imp)
+  
+  # !!!!! MICE TESTING: START
+  # !!!!! TO DO
+  # !!!!! MICE TESTING: END
   
   # Check 1: Compare overall seroconversion rates
   print(1-sum(is.na(dataset_orig$sero_year))/nrow(dataset_orig))
@@ -232,8 +272,6 @@ if (run_checks) {
       case==2 ~ "2. Last test was neg",
       case==3 ~ "3. Neg test then pos test",
       case==4 ~ "4. First test was pos"
-      # case==1 ~ "1. No testing data",
-      # case>=2 ~ "2/3/4. Some testing data"
     )
   ) %>% group_by(start_year, casc_status, case) %>% summarize(num=n())
   ggplot(d4_orig, aes(x=start_year, y=num, color=casc_status)) +
@@ -244,15 +282,12 @@ if (run_checks) {
       case==2 ~ "2. Last test was neg",
       case==3 ~ "3. Neg test then pos test",
       case==4 ~ "4. First test was pos"
-      # case==1 ~ "1. No testing data",
-      # case>=2 ~ "2/3/4. Some testing data"
     )
   ) %>% group_by(start_year, casc_status, case) %>% summarize(num=n())
   ggplot(d4_imp, aes(x=start_year, y=num, color=casc_status)) +
     geom_line() + facet_wrap(~case, ncol=2)
   
   # Check 5: examine cascade status by case
-  # !!!!! Should these actually be similar ?????
   d5 <- dataset_cp_orig %>% group_by(case, casc_status) %>%
     summarize(count=n())
   d5_imp <- dataset_cp_imp %>% group_by(case, casc_status) %>% summarize(count=n())
@@ -264,8 +299,12 @@ if (run_checks) {
   print(d5 %>% filter(casc_status=="HIV+ART-") %>% mutate(diff=imp-orig))
   
   # Check 6: run analysis on both datasets; should yield comparable SEs
-  run_analysis(dataset_cp_orig, method="ideal", include_no_testers=TRUE)
-  run_analysis(dataset_cp_imp, method="ideal", include_no_testers=TRUE)
+  run_analysis(dataset_cp_orig, method="ideal")
+  run_analysis(dataset_cp_imp, method="ideal")
+  
+  # !!!!!!
+  run_analysis(dataset_cp_orig, method="censor")
+  run_analysis(dataset_cp_imp, method="censor")
   
   # Check 7: Examine case counts
   xtabs(~case, data=dataset_orig)
@@ -274,6 +313,7 @@ if (run_checks) {
   xtabs(~died, data=dataset_orig)
   
   # Check 9: Compare death counts by casc_status
+  # !!!!! This illustrates the source of the bias
   xtabs(~casc_status, data=filter(dataset_cp_orig, died==1))
   xtabs(~casc_status, data=filter(dataset_cp_imp, died==1))
   
@@ -281,15 +321,67 @@ if (run_checks) {
   xtabs(~case+casc_status, data=filter(dataset_cp_orig, died==1))
   xtabs(~case+casc_status, data=filter(dataset_cp_imp, died==1))
   
-  # !!!!! Checks 10+11 collectively illustrate the problem
-  
-  # Check 12: examine datasets manually for abnormalities
+  # Check 11: examine datasets manually for abnormalities
   # write.table(dataset_orig, file="dataset_orig.csv", sep=",", row.names=FALSE)
   # write.table(dataset_imp, file="dataset_imp.csv", sep=",", row.names=FALSE)
   # write.table(dataset_cp_orig, file="dataset_cp_orig.csv", sep=",", row.names=FALSE)
   # write.table(dataset_cp_imp, file="dataset_cp_imp.csv", sep=",", row.names=FALSE)
   
-  # !!!!! Look for weird age effects, especially among infants who seroconverted
+}
+
+
+
+###########################.
+##### Mini-simulation #####
+###########################.
+
+if (run_mini_sim) {
+  
+  n <- 100000
+  
+  # x is our binary exposure variable
+  prob_x <- 0.2
+  x <- rbinom(n=n, size=1, prob=prob_x)
+  
+  # y is our binary outcome, correlated with x
+  # rho_xy, the correlation between x and y, is the outcome of interest
+  rho_xy <- 0.8
+  y <- ifelse(runif(n)<rho_xy, x, rbinom(n=n, size=1, prob=prob_x))
+  print(cor(x,y))
+  
+  est_corr <- c()
+  rho_zx_vec <- seq(0,1,0.1)
+  for (rho_zx in rho_zx_vec) {
+    
+    # z is a covariate correlated directly with x
+    # Within this loop, we test different values of rho_zx, the correlation
+    #     between x and z
+    z <- ifelse(runif(n)<rho_zx, x, rbinom(n=n, size=1, prob=prob_x))
+    
+    # Impose missingness by deleting (100*k)% of the x values
+    k <- 0.8
+    x_trunc <- c(x[round(1:(n*(1-k)))],rep(NA,(n*k)))
+    
+    # Perform multiple imputation of x based on z; then estimate rho_xy
+    est_cor_mi <- c()
+    for (m in 1:10) {
+      z_miss <- z[round((n*(1-k)+1):n)]
+      x_imp <- ifelse(runif(n*k)<rho_zx, z_miss,
+                      rbinom(n=(n*k), size=1, prob=prob_x))
+      x_new <- c(x[round(1:(n*(1-k)))],x_imp)
+      est_cor_mi <- c(est_cor_mi,cor(x_new,y))
+    }
+    est_corr <- c(est_corr, mean(est_cor_mi))
+
+  }
+  
+  library(ggplot2)
+  ggplot(
+    data.frame(x=rho_zx_vec,y=est_corr),
+    aes(x=x,y=y)) +
+    geom_point() +
+    geom_hline(yintercept=0.8, linetype="dotted") +
+    labs(x="Correlation between x and z", y="Estimated rho_xy")
   
 }
 

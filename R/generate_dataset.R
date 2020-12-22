@@ -56,8 +56,8 @@ generate_dataset <- function(
     d_testing_prob_u0 <- apply(d_testing_prob_u0, 2, function(x){which(x==1)})
     d_testing_prob_u1 <- apply(d_testing_prob_u1, 2, function(x){which(x==1)})
     d_testing_prob_index <- (1-d_u)*d_testing_prob_u0 + d_u*d_testing_prob_u1
-    testing_probs <- c(0.1,0.1,0.1,0.1,0.1)
-    # testing_probs <- c(0,0.1,0.2,0.5,1)
+    # testing_probs <- c(0.1,0.1,0.1,0.1,0.1)
+    testing_probs <- c(0,0.1,0.2,0.5,1)
   }
   
   # Generate baseline seroconversion years
@@ -111,25 +111,6 @@ generate_dataset <- function(
         }
       }
       
-      # Determine whether patient died
-      if (d2_died==0) {
-        hr <- ifelse(
-          d2_status=="HIV+ART-", hazard_ratios$hiv,
-          ifelse(d2_status=="HIV+ART+", hazard_ratios$art, 1)
-        )
-        p_death <- p_death_year[current_age] * hr *
-          ifelse(d_u[i],u_mult[["death"]],1)
-        if (p_death>1) {
-          p_death <- 1
-          warning("Probability of death exceeded one.")
-        }
-        if (runif(1)<p_death) {
-          # Patient died
-          d2_died <- 1
-          d2_death_year <- year
-        }
-      }
-      
       # !!!!! Just switched order of death and testing
       
       # Determine whether patient was tested
@@ -151,6 +132,27 @@ generate_dataset <- function(
         
       } else {
         d2_tests <- c(d2_tests, NA)
+      }
+      
+      # !!!!! Old location of testing block
+      
+      # Determine whether patient died
+      if (d2_died==0) {
+        hr <- ifelse(
+          d2_status=="HIV+ART-", hazard_ratios$hiv,
+          ifelse(d2_status=="HIV+ART+", hazard_ratios$art, 1)
+        )
+        p_death <- p_death_year[current_age] * hr *
+          ifelse(d_u[i],u_mult[["death"]],1)
+        if (p_death>1) {
+          p_death <- 1
+          warning("Probability of death exceeded one.")
+        }
+        if (runif(1)<p_death) {
+          # Patient died
+          d2_died <- 1
+          d2_death_year <- year
+        }
       }
       
     }

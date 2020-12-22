@@ -24,8 +24,7 @@ one_simulation <- function() {
     dataset_cp <- transform_dataset(dataset)
     results <- run_analysis(
       dataset_cp = dataset_cp,
-      method = "ideal",
-      include_no_testers = L$include_no_testers
+      method = "ideal"
     )
   }
   
@@ -39,8 +38,7 @@ one_simulation <- function() {
     dataset_cp <- transform_dataset(dataset)
     results <- run_analysis(
       dataset_cp = dataset_cp,
-      method = "censor",
-      include_no_testers = FALSE
+      method = "censor"
     )
   }
   
@@ -57,8 +55,7 @@ one_simulation <- function() {
     for (i in 1:C$m) {
       results_mi[[i]] <- run_analysis(
         dataset_cp = transform_dataset(datasets_mi[[i]]),
-        method = "mi",
-        include_no_testers = L$include_no_testers
+        method = "mi"
       )
     }
     
