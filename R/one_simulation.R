@@ -8,16 +8,46 @@
 
 one_simulation <- function() {
   
-  # Create dataset with known cascade status dates
-  dataset <- generate_dataset(
+  # Generate baseline data
+  dat_baseline <- generate_data_baseline(
     num_patients = C$num_patients,
-    start_year = C$start_year,
-    end_year = C$end_year,
-    hazard_ratios = list("hiv"=L$hr_hiv, "art"=L$hr_art),
-    p_sero_year = C$p_sero_year,
-    p_death_year = p_death_year(L$p_death_mult),
-    u_mult = list("sero"=L$u_mult_sero, "death"=L$u_mult_death)
+    start_year = C$start_year
   )
+  
+  # # !!!!! Testing
+  # dat_baseline <- data.frame(
+  #   id = 1:20,
+  #   b_age = sample(1:80, size=20, replace=TRUE),
+  #   sex = sample(c(0,1), size=20, replace=TRUE),
+  #   u = rnorm(n=20)
+  # )
+  
+  # Generate event data
+  params <- list(
+    alpha0=-5,  alpha1=0.1,  alpha2=0.05,  alpha3=0.2,
+    beta0=-5,   beta1=0.1,   beta2=0.05,   beta3=0.2,
+    eta0=-5,    eta1=0.1,    eta2=0.05,    eta3=0.2,
+    gamma0=-5,  gamma1=0.1,  gamma2=0.05,  gamma3=0.2,
+    psi1=L$hr_hiv,
+    psi2=L$hr_art
+  )
+  dat_events <- apply(
+    X = dat_baseline,
+    MARGIN = 1,
+    FUN = function(r) {
+      generate_data_events(
+        b_age = r[["b_age"]],
+        sex = r[["sex"]],
+        u = r[["u"]],
+        start_year = C$start_year,
+        end_year = C$end_year,
+        # baseline_status, # !!!!! Right now everyone starts as HIV-
+        params = params
+      )
+    }
+  )
+  
+  # !!!!! Continue
   
   if (L$method=="ideal") {
     # Transform data and run Cox PH analysis

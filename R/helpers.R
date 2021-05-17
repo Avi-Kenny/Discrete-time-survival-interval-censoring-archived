@@ -1,3 +1,10 @@
+#' Expit function
+#' 
+#' @param x Numeric input
+#' @return Numeric output
+expit <- function(x) {1/(1+exp(-x))}
+
+
 
 #' Format converter for p_sero_year
 #' @param p_sero_year number
