@@ -25,40 +25,40 @@ generate_data_events <- function(
   p <- params
   
   # Set baseline variables
-  # !!!!! For now, all HIV+ patients are ART- at baseline
+  # !!!!! For now, all patients are HIV- at baseline
   x <- v <- z <- y <- c()
   x_last <- 0
   z_last <- 0
   
   # Sample events
   # Note: this code mirrors the JAGS code
-  for (j in 1:(end_year-start_year)) {
+  for (j in 1:(12*(end_year-start_year))) {
     
-    if (sum(y)==0) {
+    if (length(y)==0 || max(y, na.rm=TRUE)==0) {
       
       # Seroconversion
       p_sero <- ifelse(x_last==1, 1, expit(
-        p$alpha0 + p$alpha1*sex + p$alpha2*(b_age+j-1) + p$alpha3*u
+        p$alpha0 + p$alpha1*sex + p$alpha2*(b_age+(j-1)/12) + p$alpha3*u
       ))
       x <- c(x, rbinom(n=1, size=1, prob=p_sero))
       
       # Testing
       p_test <- expit(
-        p$beta0 + p$beta1*sex + p$beta2*(b_age+j-1) + p$beta3*u
+        p$beta0 + p$beta1*sex + p$beta2*(b_age+(j-1)/12) + p$beta3*u
       )
       v <- c(v, rbinom(n=1, size=1, prob=p_test))
       
       # ART
       p_art <- ifelse(z_last==1, 1,
         ifelse(x[length(x)]==0 || v[length(v)]==0, 0, expit(
-          p$eta0 + p$eta1*sex + p$eta2*(b_age+j-1) + p$eta3*u
+          p$eta0 + p$eta1*sex + p$eta2*(b_age+(j-1)/12) + p$eta3*u
         ))
       )
       z <- c(z, rbinom(n=1, size=1, prob=p_art))
       
       # Outcome
       p_y <- min(0.99999, expit(
-        p$gamma0 + p$gamma1*sex + p$gamma2*(b_age+j-1) + p$gamma3*u
+        p$gamma0 + p$gamma1*sex + p$gamma2*(b_age+(j-1)/12) + p$gamma3*u
       ) * exp(
         log(p$psi1)*x[length(x)]*(1-z[length(z)]) +
         log(p$psi2)*x[length(x)]*z[length(z)]
@@ -79,6 +79,22 @@ generate_data_events <- function(
     
   }
   
-  return (list(v=v, x=x, y=y, z=z, J=sum(!is.na(y))))
+  dat <- list(v=v, x=x, y=y, z=z, J=sum(!is.na(y)))
+  
+  return (dat)
+  
+  # # Add "testing case" to dataset
+  # #     Case 1: no testing data
+  # #     Case 2: most recent test was negative
+  # #     Case 3: negative test followed by a positive test
+  # #     Case 4: first test was positive
+  # dataset %<>% mutate(
+  #   case = case_when(
+  #     is.na(last_neg_test) & is.na(first_pos_test) ~ 1,
+  #     !is.na(last_neg_test) & is.na(first_pos_test) ~ 2,
+  #     !is.na(last_neg_test) & !is.na(first_pos_test) ~ 3,
+  #     is.na(last_neg_test) & !is.na(first_pos_test) ~ 4,
+  #   )
+  # )
   
 }

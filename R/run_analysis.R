@@ -1,6 +1,6 @@
 #' Run Cox PH analysis
 #'
-#' @param dataset_cp A dataset returned by transform_dataset()
+#' @param dat_cp A dataset returned by transform_dataset()
 #' @param method One of c("ideal", "censor", "mi")
 #' @return A list containing the following:
 #'     est_hiv: point estimate of HIV+ART- exposure coefficient
@@ -8,7 +8,7 @@
 #'     est_art: point estimate of HIV+ART+ exposure coefficient
 #'     se_art: standard error of HIV+ART+ exposure coefficient
 
-run_analysis <- function(dataset_cp, method) {
+run_analysis <- function(dat_cp, method) {
   
   # !!!!! `method` argument currently ignored for "ideal" and "mi"
   
@@ -16,16 +16,16 @@ run_analysis <- function(dataset_cp, method) {
   if (method=="censor") {
     
     # Add an ID row
-    dataset_cp <- cbind("obs_id"=c(1:nrow(dataset_cp)),dataset_cp)
+    dat_cp <- cbind("obs_id"=c(1:nrow(dat_cp)),dat_cp)
     
     # Exclude patients with no testing data
-    dataset_cp %<>% filter(case!=1)
+    dat_cp %<>% filter(case!=1)
     
     # Exclude observation time prior to the first test
-    dataset_cp %<>% filter(start_year>=first_test)
+    dat_cp %<>% filter(start_year>=first_test)
     
     # Exclude observation time after the last negative test for case 2
-    dataset_cp %<>% filter(
+    dat_cp %<>% filter(
       !(replace_na(case==2 & start_year>last_neg_test,FALSE))
     )
     
@@ -35,9 +35,8 @@ run_analysis <- function(dataset_cp, method) {
   
   # Fit time-varying Cox model ("ideal")
   fit <- coxph(
-    Surv(start_year, end_year, died) ~ factor(casc_status) + age_bin +
-      cluster(patient_id),
-    data = dataset_cp
+    Surv(start_time, end_time, y) ~ factor(casc_status) + age + cluster(id),
+    data = dat_cp
   )
   summ <- summary(fit)$coefficients
   

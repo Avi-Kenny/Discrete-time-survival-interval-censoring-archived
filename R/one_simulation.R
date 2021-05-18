@@ -8,50 +8,67 @@
 
 one_simulation <- function() {
   
+  # !!!!! Testing
+  # C <- list(num_patients=10, start_year=2000, end_year=2001, m=5)
+  C <- list(num_patients=100, start_year=2000, end_year=2002, m=5)
+  L <- list(hr_hiv=1.3, hr_art=0.6)
+  
+  # Set parameters
+  params <- list(
+    alpha0=-4,  alpha1=0.1,  alpha2=0.05,  alpha3=0.2,
+    beta0=-4,   beta1=0.1,   beta2=0.05,   beta3=0.2,
+    eta0=-4,    eta1=0.1,    eta2=0.05,    eta3=0.2,
+    gamma0=-4,  gamma1=0.1,  gamma2=0.05,  gamma3=0.2,
+    psi1=L$hr_hiv,
+    psi2=L$hr_art
+  )
+  
   # Generate baseline data
   dat_baseline <- generate_data_baseline(
     num_patients = C$num_patients,
     start_year = C$start_year
   )
   
-  # # !!!!! Testing
-  # dat_baseline <- data.frame(
-  #   id = 1:20,
-  #   b_age = sample(1:80, size=20, replace=TRUE),
-  #   sex = sample(c(0,1), size=20, replace=TRUE),
-  #   u = rnorm(n=20)
-  # )
-  
   # Generate event data
-  params <- list(
-    alpha0=-5,  alpha1=0.1,  alpha2=0.05,  alpha3=0.2,
-    beta0=-5,   beta1=0.1,   beta2=0.05,   beta3=0.2,
-    eta0=-5,    eta1=0.1,    eta2=0.05,    eta3=0.2,
-    gamma0=-5,  gamma1=0.1,  gamma2=0.05,  gamma3=0.2,
-    psi1=L$hr_hiv,
-    psi2=L$hr_art
+  # !!!!! For now, all patients are HIV- at baseline
+  dat_events <- apply(X=dat_baseline, MARGIN=1, FUN=function(r) {
+    generate_data_events(
+      b_age = r[["b_age"]],
+      sex = r[["sex"]],
+      u = r[["u"]],
+      start_year = C$start_year,
+      end_year = C$end_year,
+      params = params
+    )
+  })
+  attr(dat_events, "end_year") <- C$end_year
+  
+  # Transform data to JAGS format
+  dat_jags <- transform_jags(
+    dat_baseline = dat_baseline,
+    dat_events = dat_events
   )
-  dat_events <- apply(
-    X = dat_baseline,
-    MARGIN = 1,
-    FUN = function(r) {
-      generate_data_events(
-        b_age = r[["b_age"]],
-        sex = r[["sex"]],
-        u = r[["u"]],
-        start_year = C$start_year,
-        end_year = C$end_year,
-        # baseline_status, # !!!!! Right now everyone starts as HIV-
-        params = params
-      )
-    }
+  
+  # Set MCMC params
+  mcmc <- list(n.adapt=1000, n.burn=1000, n.iter=1000, thin=1, n.chains=2)
+  
+  # Fit the model in JAGS
+  fit <- fit_jags(
+    dat = dat_jags,
+    mcmc = mcmc
   )
+  
+  # Take m samples from the posterior
+  theta_m <- posterior_param_sample(fit=fit, size=C$m)
   
   # !!!!! Continue
   
   if (L$method=="ideal") {
     # Transform data and run Cox PH analysis
-    dataset_cp <- transform_dataset(dataset)
+    dat_cp <- transform_dataset(
+      dat_baseline = dat_baseline,
+      dat_events = dat_events
+    )
     results <- run_analysis(
       dataset_cp = dataset_cp,
       method = "ideal"

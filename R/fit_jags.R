@@ -1,7 +1,7 @@
 #' Fit JAGS model
 #'
-#' @param dat !!!!!
-#' @param mcmc A list of the form list(n.adapt=1, n.iter=1, n.burn=1, thin=1,
+#' @param dat A list returned by transform_jags()
+#' @param mcmc A list of the form list(n.adapt=1, n.burn=1, n.iter=1, thin=1,
 #'     n.chains=1)
 #' @return !!!!!
 
@@ -15,26 +15,26 @@ fit_jags <- function(dat, mcmc) {
         
         u[i] ~ dnorm(0, 1/(sigma^2))
         
-        for (j in 1:J[i]) {
+        for (j in 2:(J[i]+1)) {
           
-          x[i,j+1] ~ dbern(ifelse(x[i,j]==1, 1, ilogit(
-            alpha0 + alpha1*sex[i] + alpha2*(b_age[i]+j-1) + alpha3*u[i]
+          x[i,j] ~ dbern(ifelse(x[i,j-1]==1, 0.99999, ilogit(
+            alpha0 + alpha1*sex[i] + alpha2*(b_age[i]+(j-1)/12) + alpha3*u[i]
           )))
           
           v[i,j] ~ dbern(ilogit(
-            beta0 + beta1*sex[i] + beta2*(b_age[i]+j-1) + beta3*u[i]
+            beta0 + beta1*sex[i] + beta2*(b_age[i]+(j-1)/12) + beta3*u[i]
           ))
           
-          z[i,j+1] ~ dbern(ifelse(z[i,j]==1, 1,
-            ifelse(x[i,j]==0 || v[i,j]==0, 0, ilogit(
-              eta0 + eta1*sex[i] + eta2*(b_age[i]+j-1) + eta3*u[i]
+          z[i,j] ~ dbern(ifelse(z[i,j-1]==1, 0.99999,
+            ifelse(x[i,j]==0 || v[i,j]==0, 0.00001, ilogit(
+              eta0 + eta1*sex[i] + eta2*(b_age[i]+(j-1)/12) + eta3*u[i]
             ))
           ))
           
           y[i,j] ~ dbern(min(0.99999, ilogit(
-              gamma0 + gamma1*sex[i] + gamma2*(b_age[i]+j-1) + gamma3*u[i]
+              gamma0 + gamma1*sex[i] + gamma2*(b_age[i]+(j-1)/12) + gamma3*u[i]
             ) * exp(
-              log(psi1)*x[i,j+1]*(1-z[i,j+1]) + log(psi2)*x[i,j+1]*z[i,j+1]
+              log(psi1)*x[i,j]*(1-z[i,j]) + log(psi2)*x[i,j]*z[i,j]
           )))
           
         }
@@ -65,64 +65,27 @@ fit_jags <- function(dat, mcmc) {
     }
   ")
   
-  # !!!!! Set up data
-  {
-    I <- 20
-    dat <- list(
-      I = I,
-      J = c(),
-      sex = sample(c(0,1), size=I, replace=TRUE),
-      b_age = sample(c(30:50), size=I, replace=TRUE),
-      v = matrix(NA, nrow=I, ncol=15),
-      x = cbind(rep(0,I), matrix(NA, nrow=I, ncol=15)),
-      y = matrix(NA, nrow=I, ncol=15),
-      z = cbind(rep(0,I), matrix(0, nrow=I, ncol=15))
-    )
-    alpha0 <- -5;  alpha1 <- 0.3;  alpha2 <- 0.1;  alpha3 <- 0.3
-    gamma0 <- -6;  gamma1 <- 0.1;  gamma2 <- 0.05;  gamma3 <- 0.1
-    psi1 <- 0.4
-    psi2 <- 0.2
-    for (i in 1:I) {
-      x_last <- 0
-      for (j in 1:15) {
-        
-        p_sero <- expit(
-          alpha0 + alpha1*dat$sex[i] + alpha2*(dat$b_age[i]+j-1) + alpha3*dat$u[i]
-        )
-        dat$x[i,j] <- rbinom(1, 1, ifelse(x_last==1, 1, p_sero))
-        x_last <- dat$x[i,j]
-        
-        p_outcome <- min(1, expit(
-          gamma0 + gamma1*dat$sex[i] + gamma2*(dat$b_age[i]+j-1) + gamma3*dat$u[i]
-        ) * exp(
-          log(psi1)*dat$x[i,j]*(1-dat$z[i,j]) + log(psi2)*dat$x[i,j]*dat$z[i,j]
-        ))
-        dat$y[i,j] <- rbinom(1, 1, p_outcome)
-        
-        if (dat$y[i,j]==1 || j==15) {
-          dat$J <- c(dat$J, j)
-          break
-        }
-        
-      }
-    }
-  }
-  
   # Run model
   jm <- jags.model(
-    file = textConnection(jags_code),
+    file = textConnection(jags_code_u),
     data = dat,
     n.chains = mcmc$n.chains,
     n.adapt = mcmc$n.adapt
   )
-  # mcmc <- list(n.chains=2, n.adapt=1000, n.burn=1000, n.iter=1000, thin=1)
   update(jm, n.iter = mcmc$n.burn)
   output <- coda.samples(
     model = jm,
-    variable.names = c("alpha0", "alpha1", "alpha2", "alpha3"),
+    variable.names = c("alpha0", "alpha1", "alpha2", "alpha3",
+                       "gamma0", "gamma1", "gamma2", "gamma3",
+                       "psi1", "psi2"),
     n.iter = mcmc$n.iter,
     thin = mcmc$thin
   )
+  
+  return (output)
+  
+  # !!!!! Sort the code below
+  
   # summary(output)
   
   # # MCMC diagnostics
@@ -164,8 +127,4 @@ fit_jags <- function(dat, mcmc) {
   #   }
   # }
   
-  return (999)
-
 }
-
-
