@@ -25,7 +25,7 @@ generate_data_events <- function(
   p <- params
   
   # Set baseline variables
-  # !!!!! For now, all patients are HIV- at baseline
+  # !!!!! For now, all patients are HIV- at baseline; baseline_status unused
   x <- v <- z <- y <- c()
   x_last <- 0
   z_last <- 0
@@ -79,22 +79,40 @@ generate_data_events <- function(
     
   }
   
-  dat <- list(v=v, x=x, y=y, z=z, J=sum(!is.na(y)))
-  
-  return (dat)
-  
   # # Add "testing case" to dataset
   # #     Case 1: no testing data
   # #     Case 2: most recent test was negative
   # #     Case 3: negative test followed by a positive test
   # #     Case 4: first test was positive
-  # dataset %<>% mutate(
-  #   case = case_when(
-  #     is.na(last_neg_test) & is.na(first_pos_test) ~ 1,
-  #     !is.na(last_neg_test) & is.na(first_pos_test) ~ 2,
-  #     !is.na(last_neg_test) & !is.na(first_pos_test) ~ 3,
-  #     is.na(last_neg_test) & !is.na(first_pos_test) ~ 4,
-  #   )
+  # print(v); print(x); print(y); print(z); # !!!!!
+  # case <- case_when(
+  #   is.na(last_neg_test) & is.na(first_pos_test) ~ 1,
+  #   !is.na(last_neg_test) & is.na(first_pos_test) ~ 2,
+  #   !is.na(last_neg_test) & !is.na(first_pos_test) ~ 3,
+  #   is.na(last_neg_test) & !is.na(first_pos_test) ~ 4,
   # )
+
+  J <- sum(!is.na(y))
+
+  # some_tests <- as.integer(sum(v, na.rm=T)>0)
+  # 
+  # if (some_tests) {
+  #   case <- 999
+  # } else {
+  #   case <- 1
+  # }
+  
+  return(list(
+    v = v,
+    x = x,
+    y = y,
+    z = z,
+    J = J
+    # test_first = 999,
+    # test_last = 999,
+    # case = 999,
+    # delta = 999,
+    # deltax = 999
+  ))
   
 }

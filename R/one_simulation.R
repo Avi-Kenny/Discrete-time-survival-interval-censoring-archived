@@ -59,7 +59,12 @@ one_simulation <- function() {
   )
   
   # Take m samples from the posterior
-  theta_m <- posterior_param_sample(fit=fit, size=C$m)
+  # theta_m <- posterior_param_sample(fit=fit, size=C$m)
+  theta_m <- list(                             # !!!!!
+    # alpha0 = alpha0,                         # !!!!!
+    psi1 = rnorm(C$m, mean=L$hr_hiv, sd=0.1),  # !!!!!
+    psi2 = rnorm(C$m, mean=L$hr_art, sd=0.1)   # !!!!!
+  )                                            # !!!!!
   
   # !!!!! Continue
   

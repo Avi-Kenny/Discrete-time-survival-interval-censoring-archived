@@ -15,6 +15,7 @@ transform_jags <- function(dat_baseline, dat_events) {
   dat_jags <- list(
     I = I,
     J = c(),
+    max_J = NULL,
     sex = c(),
     b_age = c(),
     v = mtx,
@@ -33,6 +34,13 @@ transform_jags <- function(dat_baseline, dat_events) {
   }
   dat_jags$b_age <- dat_baseline$b_age
   dat_jags$sex <- dat_baseline$sex
+  dat$max_J <- max(dat$J)
+  
+  # Recode NA values
+  dat$v %<>% replace_na(999)
+  dat$x %<>% replace_na(999)
+  dat$y %<>% replace_na(999)
+  dat$z %<>% replace_na(999)
   
   return(dat_jags)
   

@@ -3,7 +3,7 @@
 #' @param dat A list returned by transform_jags()
 #' @param mcmc A list of the form list(n.adapt=1, n.burn=1, n.iter=1, thin=1,
 #'     n.chains=1)
-#' @return !!!!!
+#' @return Entire JAGS return output object
 
 fit_jags <- function(dat, mcmc) {
   
@@ -72,7 +72,7 @@ fit_jags <- function(dat, mcmc) {
     n.chains = mcmc$n.chains,
     n.adapt = mcmc$n.adapt
   )
-  update(jm, n.iter = mcmc$n.burn)
+  (getS3method("update","jags"))(jm, n.iter = mcmc$n.burn)
   output <- coda.samples(
     model = jm,
     variable.names = c("alpha0", "alpha1", "alpha2", "alpha3",
@@ -87,6 +87,7 @@ fit_jags <- function(dat, mcmc) {
   # !!!!! Sort the code below
   
   # summary(output)
+  # (getS3method("summary","mcmc.list"))(output)
   
   # # MCMC diagnostics
   # if (FALSE) {

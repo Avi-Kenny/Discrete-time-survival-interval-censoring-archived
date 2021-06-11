@@ -12,11 +12,13 @@ cfg <- list(
   level_set_which = "level_set_1",
   # run_or_update = "run",
   num_sim = 1,
-  pkgs = c("dplyr", "survival", "data.table", "tidyr", "rjags"), # mice
+  pkgs = c("dplyr", "survival", "data.table", "tidyr", "rjags", "rstan",
+           "tidyr"),
   pkgs_nocluster = c(),
   parallel = "none",
   stop_at_error = FALSE,
-  mcmc = list(n.adapt=1000, n.iter=1000, n.burn=1000, n.chains=2, thin=1)
+  mcmc = list(n.adapt=1000, n.iter=1000, n.burn=1000, n.chains=2, thin=1),
+  local = FALSE
 )
 
 # Set cluster config
@@ -36,15 +38,14 @@ if (Sys.getenv("USERDOMAIN")=="AVI-KENNY-T460") {
   # Local
   setwd(paste0("C:/Users/avike/OneDrive/Desktop/Avi/Biostats + Research/Resear",
                "ch/Mark Siedner/Project - HIVMI/HIV.multiple.imputation/R"))
-  load_pkgs_local <- TRUE
+  cfg$local <- TRUE
 } else {
   # Cluster
   setwd("z.hivmi/R")
-  load_pkgs_local <- FALSE
 }
 
 # Load packages (if running locally)
-if (load_pkgs_local) {
+if (cfg$local) {
   for (pkg in c(cfg$pkgs,cfg$pkgs_nocluster)) {
     do.call("library", list(pkg))
   }
@@ -52,9 +53,12 @@ if (load_pkgs_local) {
 
 # Load simba + functions
 library(simba) # devtools::install_github(repo="Avi-Kenny/simba")
-source("generate_dataset.R")
+source("generate_data_baseline.R")
+source("generate_data_events.R")
 source("run_analysis.R")
 source("perform_imputation.R")
+source("fit_jags.R")
+source("transform_jags.R")
 source("transform_dataset.R")
 source("one_simulation.R")
 source("helpers.R")
