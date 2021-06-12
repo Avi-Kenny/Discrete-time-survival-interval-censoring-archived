@@ -11,7 +11,7 @@ one_simulation <- function() {
   # !!!!! Testing
   # C <- list(num_patients=10, start_year=2000, end_year=2001, m=5)
   C <- list(num_patients=100, start_year=2000, end_year=2002, m=5)
-  L <- list(hr_hiv=1.3, hr_art=0.6)
+  L <- list(method="mi", hr_hiv=1.3, hr_art=0.6)
   
   # Set parameters
   params <- list(
@@ -24,6 +24,7 @@ one_simulation <- function() {
   )
   
   # Generate baseline data
+  # !!!!! This is generated as a "true cohort" rather than an "open cohort"
   dat_baseline <- generate_data_baseline(
     num_patients = C$num_patients,
     start_year = C$start_year
@@ -31,20 +32,21 @@ one_simulation <- function() {
   
   # Generate event data
   # !!!!! For now, all patients are HIV- at baseline
-  dat_events <- apply(X=dat_baseline, MARGIN=1, FUN=function(r) {
+  dat_events <- apply(dat_baseline, MARGIN=1, function(r) {
     generate_data_events(
       b_age = r[["b_age"]],
       sex = r[["sex"]],
       u = r[["u"]],
       start_year = C$start_year,
       end_year = C$end_year,
+      baseline_status = NA,
       params = params
     )
   })
   attr(dat_events, "end_year") <- C$end_year
   
   # Transform data to JAGS format
-  dat_jags <- transform_jags(
+  dat_mcmc <- transform_mcmc(
     dat_baseline = dat_baseline,
     dat_events = dat_events
   )
@@ -52,21 +54,28 @@ one_simulation <- function() {
   # Set MCMC params
   mcmc <- list(n.adapt=1000, n.burn=1000, n.iter=1000, thin=1, n.chains=2)
   
-  # Fit the model in JAGS
-  fit <- fit_jags(
-    dat = dat_jags,
-    mcmc = mcmc
-  )
+  # # Fit the model in JAGS
+  # # !!!!! Migrating to Stan
+  # fit <- fit_jags(
+  #   dat = dat_mcmc,
+  #   mcmc = mcmc
+  # )
   
   # Take m samples from the posterior
   # theta_m <- posterior_param_sample(fit=fit, size=C$m)
-  theta_m <- list(                             # !!!!!
-    # alpha0 = alpha0,                         # !!!!!
-    psi1 = rnorm(C$m, mean=L$hr_hiv, sd=0.1),  # !!!!!
-    psi2 = rnorm(C$m, mean=L$hr_art, sd=0.1)   # !!!!!
-  )                                            # !!!!!
-  
-  # !!!!! Continue
+  # !!!!! Temp: START
+  {
+    psi1_psample <- rnorm(C$m, mean=L$hr_hiv, sd=0.1)
+    psi2_psample <- rnorm(C$m, mean=L$hr_art, sd=0.1)
+    theta_m <- list()
+    for (i in 1:C$m) {
+      theta_m[[i]] <- list(
+        psi1 = psi1_psample[i],
+        psi2 = psi2_psample[i]
+      )
+    }
+  }
+  # !!!!! Temp: END
   
   if (L$method=="ideal") {
     # Transform data and run Cox PH analysis
@@ -75,23 +84,13 @@ one_simulation <- function() {
       dat_events = dat_events
     )
     results <- run_analysis(
-      dataset_cp = dataset_cp,
+      dat_cp = dat_cp,
       method = "ideal"
     )
   }
   
   if (L$method=="censor") {
-    # Remove unknown seroconversion info
-    # dataset %<>% mutate(sero_year=NA)
-    
-    # !!!!! Need to remove sero info and impute; ask Mark what he does currently
-    
-    # Transform data and run Cox PH analysis
-    dataset_cp <- transform_dataset(dataset)
-    results <- run_analysis(
-      dataset_cp = dataset_cp,
-      method = "censor"
-    )
+    # !!!!! Ask Mark what he does currently
   }
   
   if (L$method=="mi") {
@@ -99,23 +98,34 @@ one_simulation <- function() {
     # Perform MI on second dataset
     datasets_mi <- list()
     for (i in 1:C$m) {
-      datasets_mi[[i]] <- perform_imputation(dataset, C$p_sero_year)
+      datasets_mi[[i]] <- perform_imputation(
+        # !!!!! Make sure we are memoising within perform_imputation
+        dataset,
+        C$p_sero_year,
+        theta_m = theta_m[[i]]
+      )
     }
     
     # Transform data and run Cox PH analysis on imputed datasets
     results_mi <- list()
     for (i in 1:C$m) {
+      dat_cp <- transform_dataset(
+        datasets_mi[[i]] # !!!!! not in correct format
+      )
       results_mi[[i]] <- run_analysis(
-        dataset_cp = transform_dataset(datasets_mi[[i]]),
+        dat_cp = dat_cp,
         method = "mi"
       )
     }
     
-    # Combine MI estimates
-    est_hiv <- sapply(results_mi, function(res) {res$est_hiv})
-    var_hiv <- sapply(results_mi, function(res) {res$se_hiv^2})
-    est_art <- sapply(results_mi, function(res) {res$est_art})
-    var_art <- sapply(results_mi, function(res) {res$se_art^2})
+    # Combine MI estimates using "Rubin's rules"
+    v <- function(results_mi, attr) {
+      sapply(results_mi, function(r) { r[[attr]] })
+    }
+    est_hiv <- v(results_mi, "est_hiv")
+    est_art <- v(results_mi, "est_art")
+    var_hiv <- (v(results_mi, "se_hiv"))^2
+    var_art <- (v(results_mi, "se_art"))^2
     results <- list(
       est_hiv = mean(est_hiv),
       se_hiv = sqrt( mean(var_hiv) + (1+(1/C$m))*var(est_hiv) ),

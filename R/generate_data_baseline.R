@@ -25,12 +25,12 @@ generate_data_baseline <- function(
   {
     id <- c(1:num_patients)
     b_age <- sample(1:80, size=num_patients, replace=TRUE)
-    birth_year <- start_year - b_age
+    # birth_year <- start_year - b_age
     sex <- sample(c(0,1), size=num_patients, replace=TRUE)
     u <- rnorm(n=num_patients)
   }
   
-  dat <- data.frame(id=id, b_age=b_age, birth_year=birth_year, sex=sex, u=u)
+  dat <- data.frame(id=id, b_age=b_age, sex=sex, u=u) # birth_year=birth_year
   attr(dat, "start_year") <- start_year
   attr(dat, "num_patients") <- num_patients
   

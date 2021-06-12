@@ -1,9 +1,11 @@
 #' Fit STAN model
 #'
-#' @param dat A list returned by transform_jags()
+#' @param dat A list returned by transform_mcmc()
 #' @param mcmc A list of the form list(n.adapt=1, n.burn=1, n.iter=1, thin=1,
 #'     n.chains=1)
 #' @return Entire STAN return output object
+#' @notes Much of this code mirrors code in generate_data_events.R; ensure the
+#'     two are in sync with one another
 
 fit_stan <- function(dat, mcmc) {
   
@@ -16,12 +18,12 @@ fit_stan <- function(dat, mcmc) {
     
     data {
       int I;
-      int max_J;
-      int J[I];
-      int v[I,max_J+1];
-      int x[I,max_J+1];
-      int y[I,max_J+1];
-      int z[I,max_J+1];
+      int max_T_i;
+      int T_i[I];
+      int v[I,max_T_i+1];
+      int x[I,max_T_i+1];
+      int y[I,max_T_i+1];
+      int z[I,max_T_i+1];
       int sex[I];
       real b_age[I];
     }
@@ -55,7 +57,7 @@ fit_stan <- function(dat, mcmc) {
         
         u ~ normal(0, sigma);
         
-        for (j in 2:(J[i]+1)) {
+        for (j in 2:(T_i[i]+1)) {
           
           x[i,j] ~ bernoulli(x[i,j-1]==1 ? 0.99999 : inv_logit(
             alpha0 + alpha1*sex[i] + alpha2*(b_age[i]+inv(12)*(j-1)) + alpha3*u[i]
@@ -79,10 +81,10 @@ fit_stan <- function(dat, mcmc) {
           
         }
         
-        s = sum(v[i]==0) ? 1 : 0
-        test_first = s * min( (1:J[i]) + J[i]*(1-v[i]) )
-        test_last = s * max( (1:J[i])*v[i] )
-        case <- s ? 1 : x[i,test_last+1]==0 ? 2 : x[i,test_first+1]==1 ? 4 : 3
+        s = sum(v[i]>0) ? 1 : 0
+        test_first = s * min( (1:T_i[i]) + T_i[i]*(1-v[i]) )
+        test_last = s * max( (1:T_i[i])*v[i] )
+        case = s ? 1 : x[i,test_last+1]==0 ? 2 : x[i,test_first+1]==1 ? 4 : 3
         
         !!!!! compute delta and deltax
 

@@ -2,21 +2,20 @@
 #'
 #' @param b_age Age of patient at start_year
 #' @param sex Sex of patient (0=female,1=male)
+#' @param u Latent health behavior variable
 #' @param start_year Start of cohort (Jan 1st, start_year)
 #' @param end_year End of cohort (Jan 1st, end_year)
 #' @param baseline_status Baseline cascade status; one of c("HIV-","HIV+ART-",
-#'     "HIV+ART+")
-#' @param params A list of the form list(alpha0=1,alpha1=1,alpha2=1,alpha3=1,
-#'     beta0=1,beta1=1,beta2=1,beta3=1,eta0=1,eta1=1,eta2=1,eta3=1,gamma0=1,
-#'     gamma1=1,gamma2=1,gamma3=1,psi1=1,psi2=1)
+#'     "HIV+ART+"); currently unused !!!!!
+#' @param params A list of Markov model parameters (alpha, beta, ...)
 #' @return A list containing the following:
 #'     - v: vector of testing indicators
 #'     - x: vector of serostatus indicators
 #'     - y: vector of outcome indicators
 #'     - z: vector of ART status indicators
 #'     - J: vector of outcome indicators
-#' @notes
-#'     - Parameters correspond to the Markov model
+#' @notes Much of this code mirrors code in fit_stan.R; ensure the two are in
+#'     sync with one another
 
 generate_data_events <- function(
   b_age, sex, u, start_year, end_year, baseline_status, params
@@ -25,13 +24,11 @@ generate_data_events <- function(
   p <- params
   
   # Set baseline variables
-  # !!!!! For now, all patients are HIV- at baseline; baseline_status unused
   x <- v <- z <- y <- c()
-  x_last <- 0
-  z_last <- 0
+  x_last <- z_last <- 0
   
   # Sample events
-  # Note: this code mirrors the JAGS code
+  # Note: this code mirrors the MCMC code
   for (j in 1:(12*(end_year-start_year))) {
     
     if (length(y)==0 || max(y, na.rm=TRUE)==0) {
@@ -43,6 +40,7 @@ generate_data_events <- function(
       x <- c(x, rbinom(n=1, size=1, prob=p_sero))
       
       # Testing
+      # !!!!! Add a condition s.t. patient doesn't get tested after POS test
       p_test <- expit(
         p$beta0 + p$beta1*sex + p$beta2*(b_age+(j-1)/12) + p$beta3*u
       )
@@ -70,49 +68,69 @@ generate_data_events <- function(
       
     } else {
       
-      v <- c(v, NA)
-      x <- c(x, NA)
-      y <- c(y, NA)
-      z <- c(z, NA)
+      # NA values coded as 9 (for Stan)
+      v <- c(v, 9)
+      x <- c(x, 9)
+      y <- c(y, 9)
+      z <- c(z, 9)
       
     }
     
   }
   
-  # # Add "testing case" to dataset
-  # #     Case 1: no testing data
-  # #     Case 2: most recent test was negative
-  # #     Case 3: negative test followed by a positive test
-  # #     Case 4: first test was positive
-  # print(v); print(x); print(y); print(z); # !!!!!
-  # case <- case_when(
-  #   is.na(last_neg_test) & is.na(first_pos_test) ~ 1,
-  #   !is.na(last_neg_test) & is.na(first_pos_test) ~ 2,
-  #   !is.na(last_neg_test) & !is.na(first_pos_test) ~ 3,
-  #   is.na(last_neg_test) & !is.na(first_pos_test) ~ 4,
-  # )
-
-  J <- sum(!is.na(y))
-
-  # some_tests <- as.integer(sum(v, na.rm=T)>0)
-  # 
-  # if (some_tests) {
-  #   case <- 999
-  # } else {
-  #   case <- 1
-  # }
-  
-  return(list(
-    v = v,
-    x = x,
-    y = y,
-    z = z,
-    J = J
-    # test_first = 999,
-    # test_last = 999,
-    # case = 999,
-    # delta = 999,
-    # deltax = 999
+  # Add "testing case" to dataset
+  #     Case 1: no testing data
+  #     Case 2: most recent test was negative
+  #     Case 3: negative test followed by a positive test
+  #     Case 4: first test was positive
+  T_i <- sum(v!=9)
+  s <- as.integer(sum(v[1:T_i])>0)
+  test_first <- s * min( (1:T_i) + T_i*(1-v[1:T_i]) )
+  test_last <- s * max( (1:T_i)*v[1:T_i] )
+  case <- ifelse(s==0, 1, ifelse(
+    x[test_last]==0, 2, ifelse(
+      x[test_first]==1, 4, 3
+    )
   ))
+  
+  # Add last_neg_test and first_pos_test
+  last_neg_test <- 0
+  first_pos_test <- 0
+  if (case==2) {
+    last_neg_test <- test_last
+  }
+  if (case==3) {
+    last_neg_test <- max( (1:T_i)*(v[1:T_i])*(1-x[1:T_i]) )
+    first_pos_test <- min( (1:T_i) + T_i*(1-(x[1:T_i])*(v[1:T_i])) )
+  }
+  if (case==4) {
+    first_pos_test <- test_first
+  }
+  
+  # Calculate delta and delta*x
+  miss <- rep(9,sum(x==9))
+  if (case==1) {
+    delta <- c(rep(0,T_i), miss)
+  }
+  if (case==2) {
+    delta <- c(rep(1,last_neg_test), rep(0,T_i-last_neg_test), miss)
+  }
+  if (case==3) {
+    delta <- c(rep(1,last_neg_test),
+               rep(0,first_pos_test-last_neg_test-1),
+               rep(1,T_i-first_pos_test+1),
+               miss)
+  }
+  if (case==4) {
+    delta <- c(rep(0,first_pos_test-1), rep(1,T_i-first_pos_test+1), miss)
+  }
+  deltax <- delta*x
+  deltax <- ifelse(deltax==81,9,deltax)
+  
+  # !!!!! Condense code when porting to Stan
+  
+  return(list(v=v, x=x, y=y, z=z, T_i=T_i, last_neg_test=last_neg_test,
+              first_pos_test=first_pos_test, test_first=test_first,
+              test_last=test_last, case=case, delta=delta, deltax=deltax))
   
 }

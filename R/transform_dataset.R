@@ -13,8 +13,8 @@ transform_dataset <- function(dat_baseline, dat_events) {
   
   # Data transformation
   dat_baseline$start_time <- 0
-  dat_baseline$end_time <- sapply(dat_events, function(d) { d$J })
-  dat_baseline$y_copy <- sapply(dat_events, function(d) { d$y[d$J] })
+  dat_baseline$end_time <- sapply(dat_events, function(d) { d$T_i })
+  dat_baseline$y_copy <- sapply(dat_events, function(d) { d$y[d$T_i] })
   
   # Put dataset into "counting process" format
   dat_cp <- survSplit(

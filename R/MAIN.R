@@ -57,8 +57,9 @@ source("generate_data_baseline.R")
 source("generate_data_events.R")
 source("run_analysis.R")
 source("perform_imputation.R")
-source("fit_jags.R")
-source("transform_jags.R")
+# source("fit_jags.R")
+source("fit_stan.R")
+source("transform_mcmc.R")
 source("transform_dataset.R")
 source("one_simulation.R")
 source("helpers.R")
@@ -75,10 +76,10 @@ if (Sys.getenv("run") %in% c("first", "")) {
   level_set_1 <- list(
     method = c("ideal", "mi"), # c("ideal", "mi", "censor")
     hr_hiv = c(0.6,1.0,1.4,1.8),
-    hr_art = 0.7,
-    p_death_mult = 1,
-    u_mult_sero = 1,
-    u_mult_death = 1
+    hr_art = 0.7
+    # p_death_mult = 1, # !!!!! Unused
+    # u_mult_sero = 1, # !!!!! Unused
+    # u_mult_death = 1 # !!!!! Unused
   )
   
   level_set <- eval(as.name(cfg$level_set_which))
@@ -126,9 +127,11 @@ run_on_cluster(
       )
     ))
     
+    # Add simulation constants
+    # `m` is the number of simulation replicates
     sim %<>% add_constants(
-      p_sero_year = p_sero_year,
-      m = 5, # Number of MI replicates
+      p_sero_year = p_sero_year, # !!!!! Is this still being used?
+      m = 5,
       num_patients = 5000,
       start_year = 2000,
       end_year = 2020
@@ -169,6 +172,7 @@ run_on_cluster(
 ###########################.
 ##### Process results #####
 ###########################.
+
 if (FALSE) {
   
   library(ggplot2)
@@ -240,7 +244,7 @@ if (FALSE) {
   p_sero_year <- convert_p_sero(list(male = list("1"=0.03, "2-10"=0, "11-15"=0, "16-20"=0.01, "21-25"=0.02,"26-30"=0.03, "31-35"=0.02, "36-40"=0.01, "41-45"=0.005, "46-50"=0.005),female = list("1"=0.03, "2-10"=0, "11-15"=0.005, "16-20"=0.02, "21-25"=0.03,"26-30"=0.02, "31-35"=0.015, "36-40"=0.01, "41-45"=0.005, "46-50"=0)))
   
   # Create "original" dataset
-  dataset_orig <- generate_dataset(
+  dat_orig <- generate_dataset(
     num_patients = 10000,
     start_year = 2000,
     end_year = 2020,
@@ -251,37 +255,37 @@ if (FALSE) {
   )
   
   # Create "imputed" dataset
-  dataset_imp <- perform_imputation(dataset_orig, p_sero_year)
+  dat_imp <- perform_imputation(dat_orig, p_sero_year)
   
   # Create transformed datasets
-  dataset_cp_orig <- transform_dataset(dataset_orig)
-  dataset_cp_imp <- transform_dataset(dataset_imp)
+  dat_cp_orig <- transform_dataset(dat_orig)
+  dat_cp_imp <- transform_dataset(dat_imp)
   
   # !!!!! MICE TESTING: START
   # !!!!! TO DO
   # !!!!! MICE TESTING: END
   
   # Check 1: Compare overall seroconversion rates
-  print(1-sum(is.na(dataset_orig$sero_year))/nrow(dataset_orig))
-  print(1-sum(is.na(dataset_imp$sero_year))/nrow(dataset_imp))
-  dataset_orig %>% filter(sero_year<2000) %>% nrow()
-  dataset_imp %>% filter(sero_year<2000) %>% nrow()
-  dataset_orig %>% filter(sero_year>=2000) %>% nrow()
-  dataset_imp %>% filter(sero_year>=2000) %>% nrow()
+  print(1-sum(is.na(dat_orig$sero_year))/nrow(dat_orig))
+  print(1-sum(is.na(dat_imp$sero_year))/nrow(dat_imp))
+  dat_orig %>% filter(sero_year<2000) %>% nrow()
+  dat_imp %>% filter(sero_year<2000) %>% nrow()
+  dat_orig %>% filter(sero_year>=2000) %>% nrow()
+  dat_imp %>% filter(sero_year>=2000) %>% nrow()
   
   # Check 2: Check to see if distribution of seroconversion years is similar
   # !!!!! orig is getting much higher pre-2000 seroconversion rate
   ggplot(data.frame(
-    sero_year = c(dataset_orig$sero_year,dataset_imp$sero_year),
-    which = rep(c("original","imputed"),each=nrow(dataset_orig))
+    sero_year = c(dat_orig$sero_year,dat_imp$sero_year),
+    which = rep(c("original","imputed"),each=nrow(dat_orig))
   ), aes(x=sero_year, group=which, fill=factor(which))) +
     geom_histogram(color="white", bins=100) +
     geom_vline(xintercept = 2000, linetype="dotted") +
     facet_wrap(~which, ncol=2)
   
   # Check 3: Look at seroconversion years by "testing case"
-  d3_orig <- dataset_orig %>% group_by(case, sero_year) %>% summarize(count=n())
-  d3_imp <- dataset_imp %>% group_by(case, sero_year) %>% summarize(count=n())
+  d3_orig <- dat_orig %>% group_by(case, sero_year) %>% summarize(count=n())
+  d3_imp <- dat_imp %>% group_by(case, sero_year) %>% summarize(count=n())
   d3_orig$which <- "orig"
   d3_imp$which <- "imp"
   ggplot(
@@ -293,7 +297,7 @@ if (FALSE) {
     facet_wrap(~case+which, ncol=2)
   
   # Check 4: Plot cascade status over time
-  d4_orig <- dataset_cp_orig %>% mutate(
+  d4_orig <- dat_cp_orig %>% mutate(
     case = case_when(
       case==1 ~ "1. No testing data",
       case==2 ~ "2. Last test was neg",
@@ -303,7 +307,7 @@ if (FALSE) {
   ) %>% group_by(start_year, casc_status, case) %>% summarize(num=n())
   ggplot(d4_orig, aes(x=start_year, y=num, color=casc_status)) +
     geom_line() + facet_wrap(~case, ncol=2)
-  d4_imp <- dataset_cp_imp %>% mutate(
+  d4_imp <- dat_cp_imp %>% mutate(
     case = case_when(
       case==1 ~ "1. No testing data",
       case==2 ~ "2. Last test was neg",
@@ -315,9 +319,9 @@ if (FALSE) {
     geom_line() + facet_wrap(~case, ncol=2)
   
   # Check 5: examine cascade status by case
-  d5 <- dataset_cp_orig %>% group_by(case, casc_status) %>%
+  d5 <- dat_cp_orig %>% group_by(case, casc_status) %>%
     summarize(count=n())
-  d5_imp <- dataset_cp_imp %>% group_by(case, casc_status) %>% summarize(count=n())
+  d5_imp <- dat_cp_imp %>% group_by(case, casc_status) %>% summarize(count=n())
   d5$imp <- d5_imp$count
   d5 %<>% rename(orig="count")
   d5b <- d5 %>% group_by(casc_status) %>% summarize(orig=sum(orig),imp=sum(imp))
@@ -326,33 +330,33 @@ if (FALSE) {
   print(d5 %>% filter(casc_status=="HIV+ART-") %>% mutate(diff=imp-orig))
   
   # Check 6: run analysis on both datasets; should yield comparable SEs
-  run_analysis(dataset_cp_orig, method="ideal")
-  run_analysis(dataset_cp_imp, method="ideal")
+  run_analysis(dat_cp_orig, method="ideal")
+  run_analysis(dat_cp_imp, method="ideal")
   
   # !!!!!!
-  run_analysis(dataset_cp_orig, method="censor")
-  run_analysis(dataset_cp_imp, method="censor")
+  run_analysis(dat_cp_orig, method="censor")
+  run_analysis(dat_cp_imp, method="censor")
   
   # Check 7: Examine case counts
-  xtabs(~case, data=dataset_orig)
+  xtabs(~case, data=dat_orig)
 
   # Check 8: Examine death counts
-  xtabs(~died, data=dataset_orig)
+  xtabs(~died, data=dat_orig)
   
   # Check 9: Compare death counts by casc_status
   # !!!!! This illustrates the source of the bias
-  xtabs(~casc_status, data=filter(dataset_cp_orig, died==1))
-  xtabs(~casc_status, data=filter(dataset_cp_imp, died==1))
+  xtabs(~casc_status, data=filter(dat_cp_orig, died==1))
+  xtabs(~casc_status, data=filter(dat_cp_imp, died==1))
   
   # Check 10: Compare death counts by case+casc_status
-  xtabs(~case+casc_status, data=filter(dataset_cp_orig, died==1))
-  xtabs(~case+casc_status, data=filter(dataset_cp_imp, died==1))
+  xtabs(~case+casc_status, data=filter(dat_cp_orig, died==1))
+  xtabs(~case+casc_status, data=filter(dat_cp_imp, died==1))
   
   # Check 11: examine datasets manually for abnormalities
-  # write.table(dataset_orig, file="dataset_orig.csv", sep=",", row.names=FALSE)
-  # write.table(dataset_imp, file="dataset_imp.csv", sep=",", row.names=FALSE)
-  # write.table(dataset_cp_orig, file="dataset_cp_orig.csv", sep=",", row.names=FALSE)
-  # write.table(dataset_cp_imp, file="dataset_cp_imp.csv", sep=",", row.names=FALSE)
+  # write.table(dat_orig, file="dat_orig.csv", sep=",", row.names=FALSE)
+  # write.table(dat_imp, file="dat_imp.csv", sep=",", row.names=FALSE)
+  # write.table(dat_cp_orig, file="dat_cp_orig.csv", sep=",", row.names=FALSE)
+  # write.table(dat_cp_imp, file="dat_cp_imp.csv", sep=",", row.names=FALSE)
   
 }
 
@@ -453,9 +457,9 @@ if (FALSE) {
   {
     
     # Check 4: Look at cascade status by year and "testing case"
-    d4_orig <- dataset_cp_orig %>% group_by(case, start_year) %>%
+    d4_orig <- dat_cp_orig %>% group_by(case, start_year) %>%
       summarize(num_hivpos_artneg=sum(casc_status=="HIV+ART-"))  
-    d4_imp <- dataset_cp_imp %>% group_by(case, start_year) %>%
+    d4_imp <- dat_cp_imp %>% group_by(case, start_year) %>%
       summarize(num_hivpos_artneg=sum(casc_status=="HIV+ART-"))  
     d4_orig$which <- "orig"
     d4_imp$which <- "imp"
