@@ -9,7 +9,7 @@ transform_mcmc <- function(dat_baseline, dat_events) {
   I <- attr(dat_baseline, "num_patients")
   
   # Create empty data structures
-  mtx <- cbind(rep(0,I), matrix(NA, nrow=I, ncol=12*(C$end_year-C$start_year)))
+  mtx <- matrix(NA, nrow=I, ncol=12*(C$end_year-C$start_year))
   dat_mcmc <- list(
     I = I,
     T_i = c(),

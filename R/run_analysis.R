@@ -1,19 +1,17 @@
 #' Run Cox PH analysis
 #'
 #' @param dat_cp A dataset returned by transform_dataset()
-#' @param method One of c("ideal", "censor", "mi")
+#' @param options Placeholder; currently unused
 #' @return A list containing the following:
 #'     est_hiv: point estimate of HIV+ART- exposure coefficient
 #'     se_hiv: standard error of HIV+ART- exposure coefficient
 #'     est_art: point estimate of HIV+ART+ exposure coefficient
 #'     se_art: standard error of HIV+ART+ exposure coefficient
 
-run_analysis <- function(dat_cp, method) {
-  
-  # !!!!! `method` argument currently ignored for "ideal" and "mi"
+run_analysis <- function(dat_cp, options=list()) {
   
   # Create "censor" dataset
-  if (method=="censor") {
+  if (!is.null(options$method) && options$method=="censor") {
     
     # Add an ID row
     dat_cp <- cbind("obs_id"=c(1:nrow(dat_cp)),dat_cp)

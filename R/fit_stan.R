@@ -20,10 +20,10 @@ fit_stan <- function(dat, mcmc) {
       int I;
       int max_T_i;
       int T_i[I];
-      int v[I,max_T_i+1];
-      int x[I,max_T_i+1];
-      int y[I,max_T_i+1];
-      int z[I,max_T_i+1];
+      int v[I,max_T_i];
+      int x[I,max_T_i];
+      int y[I,max_T_i];
+      int z[I,max_T_i];
       int sex[I];
       real b_age[I];
     }

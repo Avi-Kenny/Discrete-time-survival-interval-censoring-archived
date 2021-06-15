@@ -25,7 +25,7 @@ transform_dataset <- function(dat_baseline, dat_events) {
   
   # Convert dat_events to a dataframe and attach to dat_cp
   df_ev <- as.data.frame(rbindlist(dat_events))
-  df_ev %<>% filter(!is.na(y))
+  df_ev %<>% filter(y!=9)
   dat_cp %<>% cbind(df_ev)
   
   # Create exposure variable

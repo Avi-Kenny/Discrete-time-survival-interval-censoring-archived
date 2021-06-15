@@ -54,9 +54,8 @@ one_simulation <- function() {
   # Set MCMC params
   mcmc <- list(n.adapt=1000, n.burn=1000, n.iter=1000, thin=1, n.chains=2)
   
-  # # Fit the model in JAGS
-  # # !!!!! Migrating to Stan
-  # fit <- fit_jags(
+  # # Fit the model in Stan
+  # fit <- fit_stan(
   #   dat = dat_mcmc,
   #   mcmc = mcmc
   # )
@@ -69,10 +68,9 @@ one_simulation <- function() {
     psi2_psample <- rnorm(C$m, mean=L$hr_art, sd=0.1)
     theta_m <- list()
     for (i in 1:C$m) {
-      theta_m[[i]] <- list(
-        psi1 = psi1_psample[i],
-        psi2 = psi2_psample[i]
-      )
+      theta_m[[i]] <- params
+      theta_m[[i]]$psi1 <- psi1_psample[i]
+      theta_m[[i]]$psi2 <- psi2_psample[i]
     }
   }
   # !!!!! Temp: END
@@ -83,39 +81,29 @@ one_simulation <- function() {
       dat_baseline = dat_baseline,
       dat_events = dat_events
     )
-    results <- run_analysis(
-      dat_cp = dat_cp,
-      method = "ideal"
-    )
-  }
-  
-  if (L$method=="censor") {
-    # !!!!! Ask Mark what he does currently
+    results <- run_analysis(dat_cp=dat_cp)
   }
   
   if (L$method=="mi") {
     
     # Perform MI on second dataset
-    datasets_mi <- list()
+    dat_events_mi <- list()
     for (i in 1:C$m) {
-      datasets_mi[[i]] <- perform_imputation(
-        # !!!!! Make sure we are memoising within perform_imputation
-        dataset,
-        C$p_sero_year,
+      dat_events_mi[[i]] <- perform_imputation(
+        dat_baseline = dat_baseline,
+        dat_events = dat_events,
         theta_m = theta_m[[i]]
       )
     }
     
-    # Transform data and run Cox PH analysis on imputed datasets
     results_mi <- list()
     for (i in 1:C$m) {
+      # Transform data and run Cox PH analysis
       dat_cp <- transform_dataset(
-        datasets_mi[[i]] # !!!!! not in correct format
+        dat_baseline = dat_baseline,
+        dat_events = dat_events_mi[[i]]
       )
-      results_mi[[i]] <- run_analysis(
-        dat_cp = dat_cp,
-        method = "mi"
-      )
+      results_mi[[i]] <- run_analysis(dat_cp=dat_cp)
     }
     
     # Combine MI estimates using "Rubin's rules"
@@ -133,6 +121,10 @@ one_simulation <- function() {
       se_art = sqrt( mean(var_art) + (1+(1/C$m))*var(est_art) )
     )
     
+  }
+  
+  if (L$method=="censor") {
+    # !!!!! Ask Mark what he does currently
   }
   
   return (results)

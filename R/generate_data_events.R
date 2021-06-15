@@ -29,34 +29,34 @@ generate_data_events <- function(
   
   # Sample events
   # Note: this code mirrors the MCMC code
-  for (j in 1:(12*(end_year-start_year))) {
+  for (t in 1:(12*(end_year-start_year))) {
     
     if (length(y)==0 || max(y, na.rm=TRUE)==0) {
       
       # Seroconversion
       p_sero <- ifelse(x_last==1, 1, expit(
-        p$alpha0 + p$alpha1*sex + p$alpha2*(b_age+(j-1)/12) + p$alpha3*u
+        p$alpha0 + p$alpha1*sex + p$alpha2*(b_age+(t-1)/12) + p$alpha3*u
       ))
       x <- c(x, rbinom(n=1, size=1, prob=p_sero))
       
       # Testing
       # !!!!! Add a condition s.t. patient doesn't get tested after POS test
       p_test <- expit(
-        p$beta0 + p$beta1*sex + p$beta2*(b_age+(j-1)/12) + p$beta3*u
+        p$beta0 + p$beta1*sex + p$beta2*(b_age+(t-1)/12) + p$beta3*u
       )
       v <- c(v, rbinom(n=1, size=1, prob=p_test))
       
       # ART
       p_art <- ifelse(z_last==1, 1,
         ifelse(x[length(x)]==0 || v[length(v)]==0, 0, expit(
-          p$eta0 + p$eta1*sex + p$eta2*(b_age+(j-1)/12) + p$eta3*u
+          p$eta0 + p$eta1*sex + p$eta2*(b_age+(t-1)/12) + p$eta3*u
         ))
       )
       z <- c(z, rbinom(n=1, size=1, prob=p_art))
       
       # Outcome
       p_y <- min(0.99999, expit(
-        p$gamma0 + p$gamma1*sex + p$gamma2*(b_age+(j-1)/12) + p$gamma3*u
+        p$gamma0 + p$gamma1*sex + p$gamma2*(b_age+(t-1)/12) + p$gamma3*u
       ) * exp(
         log(p$psi1)*x[length(x)]*(1-z[length(z)]) +
         log(p$psi2)*x[length(x)]*z[length(z)]

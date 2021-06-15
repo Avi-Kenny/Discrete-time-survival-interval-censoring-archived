@@ -1,22 +1,105 @@
 #' Perform imputation on a dataset with missingness
 #'
-#' @param dataset A dataset returned by generate_dataset()
-#' @param p_sero_year A list of seroconversion probabilities returned by
-#'     convert_p_sero()
-#' @return The same dataset but with missing seroconversion dates imputed
+#' @param dat_baseline A dataset returned by generate_data_baseline()
+#' @param dat_events A dataset returned by generate_data_events()
+#' @param theta_m An posterior draw of the parameters
+#' @return dat_events, but with missing values in X imputed
 
-perform_imputation <- function(dataset, p_sero_year) {
+perform_imputation <- function(dat_baseline, dat_events, theta_m) {
   
-  # !!!!! The fundamental flaw is that the imputation model MUST include the outcome
-  # !!!!! These are placeholders
-  hr_hiv_est <- ifelse(exists("L"), L$hr_hiv, 1.7) # !!!!!
+  p <- theta_m
+  db <- dat_baseline
   
-  # Remove unknown seroconversion info
-  # dataset$sero_year2 <- dataset$sero_year # !!!!!
-  dataset$sero_year <- NA
+  # !!!!! Make sure we are memoising within perform_imputation
   
-  m_probs <- construct_m_probs(p_sero_year)
-  m_probs2 <- construct_m_probs(lapply(p_sero_year, function(x){x*hr_hiv_est})) # !!!!!
+  # # !!!!! TESTING
+  # dat_events_backup <- dat_events
+  # dat_events <- dat_events[1:3]
+  
+  # Perform imputation for each patient
+  x_imputed <- lapply(dat_events, function(d) {
+    
+    # S_iX is the set of X values with positive posterior probability
+    # The actual value assigned represents the number of zeros in X
+    S_iX <- case_when(
+      d$case == 1 ~ c(0:d$T_i),
+      d$case == 2 ~ c(d$last_neg_test:d$T_i),
+      d$case == 3 ~ c(d$last_neg_test:(d$first_pos_test-1)),
+      d$case == 4 ~ c(0:(d$first_pos_test-1))
+    )
+    
+    # Calculate component seroconversion discrete hazards
+    p_it <- memoise(function(t) {
+      expit(
+        p$alpha0 + p$alpha1*db$sex + p$alpha2*(db$b_age+(t-1)/12) +
+          p$alpha3*db$u
+      )
+    })
+    
+    # In this block, we assign a probability to each possible value of S_iX
+    # Note: d is accessed globally
+    # Note: make sure these probabilities line up with those in
+    #     generate_data_events.R and fit_stan.R
+    probs <- sapply(S_iX, function(x) {
+      
+      if (case<=2) {
+        
+        # !!!!! CONTINUE
+        
+        if (x==d$last_neg_test) {
+          P_X <- p_it(x+1)
+        } else if (x %in% c((d$last_neg_test+1):(d$T_i-1))) {
+          P_X_part <- prod(sapply(c((d$last_neg_test+1):x), function(s) {
+            (1 - p_it(s))
+          }))
+          P_X <- P_X_part * p_it(x+1)
+        } else if (x==d$T_i) {
+          P_X_part <- prod(sapply(c((d$last_neg_test+1):d$T_i), function(s) {
+            (1 - p_it(s))
+          }))
+        } else {
+          stop("x is out of range; debug")
+        }
+        
+      } else if (case>=3) {
+        
+        P_X <- 999
+        
+      }
+      
+      P_Y <- 999
+      
+      return(P_X*P_Y)
+      
+    })
+    probs <- probs / sum(probs)
+    
+    if (sum(probs)!=1) { stop("S_iX probabilities don't sum to one; debug") } # !!!!!
+    mult <- rmultinom(n=1, size=1, prob=probs)
+    x_i_sample <- S_iX[mult]
+    
+    # Break off NAs (9s)
+    
+    
+  })
+  
+  # Merge imputations back into dat_events
+  dat_imputed <- dat_events
+  for (i in 1:length(dat_events)) {
+    dat_events[[i]]$x <- x_imputed[[i]]
+  }
+  
+  return(dat_imputed)
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  # !!!!! Recycle all code below
   
   dataset$sero_year <- apply(
   # dataset$sero_year3 <- apply( # !!!!!
@@ -92,13 +175,5 @@ perform_imputation <- function(dataset, p_sero_year) {
       
     }
   )
-  
-  # # !!!!! If condition holds, give imputed version
-  # dataset %<>% mutate(
-  #   sero_year = ifelse(case==2, sero_year3, sero_year2)
-  # )
-  # # !!!!!
-  
-  return(dataset)
   
 }
