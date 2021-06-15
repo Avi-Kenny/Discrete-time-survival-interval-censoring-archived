@@ -1,5 +1,6 @@
 #' Generate cohort events (seroconversion, ART initiation, testing, death)
 #'
+#' @param id Patient ID
 #' @param b_age Age of patient at start_year
 #' @param sex Sex of patient (0=female,1=male)
 #' @param u Latent health behavior variable
@@ -18,7 +19,7 @@
 #'     sync with one another
 
 generate_data_events <- function(
-  b_age, sex, u, start_year, end_year, baseline_status, params
+  id, b_age, sex, u, start_year, end_year, baseline_status, params
 ) {
   
   p <- params
@@ -129,7 +130,7 @@ generate_data_events <- function(
   
   # !!!!! Condense code when porting to Stan
   
-  return(list(v=v, x=x, y=y, z=z, T_i=T_i, last_neg_test=last_neg_test,
+  return(list(id=id, v=v, x=x, y=y, z=z, T_i=T_i, last_neg_test=last_neg_test,
               first_pos_test=first_pos_test, test_first=test_first,
               test_last=test_last, case=case, delta=delta, deltax=deltax))
   

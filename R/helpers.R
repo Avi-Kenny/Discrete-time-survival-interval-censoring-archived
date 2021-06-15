@@ -6,9 +6,9 @@ expit <- function(x) {1/(1+exp(-x))}
 
 
 
-#' Expit function
+#' Take a posterior sample of parameter vector theta
 #' 
-#' @param fit JAGS model fit returned by fit_jags()
+#' @param fit Stan model fit returned by fit_stan()
 #' @param size Number of samples to take (m); one per imputation
 #' @return A list of parameter samples
 posterior_param_sample <- function(fit, size) {

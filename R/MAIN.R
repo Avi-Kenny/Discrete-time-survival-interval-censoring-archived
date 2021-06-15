@@ -11,11 +11,11 @@
 cfg <- list(
   level_set_which = "level_set_1",
   # run_or_update = "run",
-  num_sim = 1,
+  num_sim = 5,
   pkgs = c("dplyr", "survival", "data.table", "tidyr", "rjags", "rstan",
-           "tidyr"),
+           "tidyr", "memoise"),
   pkgs_nocluster = c(),
-  parallel = "none",
+  parallel = "none", # none outer
   stop_at_error = FALSE,
   mcmc = list(n.adapt=1000, n.iter=1000, n.burn=1000, n.chains=2, thin=1),
   local = FALSE
@@ -74,7 +74,8 @@ if (Sys.getenv("run") %in% c("first", "")) {
   # Simulation 1: !!!!!
   level_set_1 <- list(
     method = c("ideal", "mi"), # c("ideal", "mi", "censor")
-    hr_hiv = c(0.6,1.0,1.4,1.8),
+    # hr_hiv = c(0.6,1.0,1.4,1.8),
+    hr_hiv = 1.4,
     hr_art = 0.7
     # p_death_mult = 1, # !!!!! Unused
     # u_mult_sero = 1, # !!!!! Unused
@@ -104,32 +105,15 @@ run_on_cluster(
     sim <- new_sim()
     sim %<>% set_config(
       num_sim = cfg$num_sim, # !!!!!
+      seed = 10,
       parallel = cfg$parallel,
       stop_at_error = cfg$stop_at_error,
       packages = cfg$pkgs
     )
     
-    # Specify seroconversion conditional probabilities (discrete hazards)
-    # For an individual of (exactly) age X-1, the number in the corresponding
-    #     age bin represents the probability that the individual will
-    #     seroconvert sometime in their Xth full year of life, given that they
-    #     did not seroconvert by their (X-1)th full year of life.
-    # !!!!! Change the actual numbers later based on AHRI cohort data
-    p_sero_year <- convert_p_sero(list(
-      male = list(
-        "1"=0.03, "2-10"=0, "11-15"=0, "16-20"=0.01, "21-25"=0.02,
-        "26-30"=0.03, "31-35"=0.02, "36-40"=0.01, "41-45"=0.005, "46-50"=0.005
-      ),
-      female = list(
-        "1"=0.03, "2-10"=0, "11-15"=0.005, "16-20"=0.02, "21-25"=0.03,
-        "26-30"=0.02, "31-35"=0.015, "36-40"=0.01, "41-45"=0.005, "46-50"=0
-      )
-    ))
-    
     # Add simulation constants
     # `m` is the number of simulation replicates
     sim %<>% add_constants(
-      p_sero_year = p_sero_year, # !!!!! Is this still being used?
       m = 5,
       num_patients = 5000,
       start_year = 2000,
@@ -137,15 +121,18 @@ run_on_cluster(
     )
     
     # Add functions to simulation object
-    sim %<>% add_creator(generate_dataset)
-    sim %<>% set_script(one_simulation)
-    sim %<>% add_method(expit)
-    sim %<>% add_method(convert_p_sero)
-    sim %<>% add_method(construct_m_probs)
-    sim %<>% add_method(run_analysis)
-    sim %<>% add_method(perform_imputation)
+    sim %<>% add_method(generate_data_baseline)
+    sim %<>% add_method(generate_data_events)
     sim %<>% add_method(transform_dataset)
-    sim %<>% add_method(p_death_year)
+    sim %<>% add_method(transform_mcmc)
+    sim %<>% add_method(fit_stan)
+    sim %<>% add_method(perform_imputation)
+    sim %<>% add_method(posterior_param_sample)
+    sim %<>% add_method(run_analysis)
+    sim %<>% add_method(expit)
+
+    # Set simulation script
+    sim %<>% set_script(one_simulation)
     
     # Set levels
     sim <- do.call(set_levels, c(list(sim), level_set))
@@ -158,7 +145,7 @@ run_on_cluster(
   
   last = {
     
-    sim %>% summary() %>% print()
+    sim %>% summarize() %>% print()
     
   },
   
@@ -174,18 +161,25 @@ run_on_cluster(
 
 if (FALSE) {
   
-  library(ggplot2)
+  # Plot of estimates (HIV)
+  ggplot(sim$results, aes(x=method, y=exp(est_hiv), color=method)) +
+    geom_point(alpha=0.2, size=2) +
+    geom_hline(aes(yintercept=hr_hiv), linetype="dotted") +
+    # facet_wrap(~hr_hiv_lab, ncol=4) +
+    theme(legend.position="none")
+    # labs(title="Point estimates (50 simulation replicates per level)",
+    #      x="Method", y="Estimated hazard ratio (HIV+ART-)")
+  
+  
   
   # !!!!! Calculate bias, variance inflation, power
   
-
   sim$results %<>% mutate(
     est_hr_hiv = exp(est_hiv),
     est_hr_art = exp(est_art),
     hr_hiv_lab = paste("HIV+ HR:",hr_hiv),
     hr_art_lab = paste("ART+ HR:",hr_art),
-    method = ifelse(method=="ideal", "Ideal",
-                    ifelse(method=="mi","MI","error")),
+    method = ifelse(method=="ideal","Ideal",ifelse(method=="mi","MI","error")),
     log_hr_hiv = log(hr_hiv),
     log_hr_art = log(hr_art)
   )

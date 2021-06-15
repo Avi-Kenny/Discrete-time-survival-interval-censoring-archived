@@ -16,6 +16,31 @@ if (FALSE) {
 
 
 
+################################.
+##### Old code from MAIN.R #####
+################################.
+
+if (FALSE) {
+  # Specify seroconversion conditional probabilities (discrete hazards)
+  # For an individual of (exactly) age X-1, the number in the corresponding
+  #     age bin represents the probability that the individual will
+  #     seroconvert sometime in their Xth full year of life, given that they
+  #     did not seroconvert by their (X-1)th full year of life.
+  # !!!!! Change the actual numbers later based on AHRI cohort data
+  p_sero_year <- convert_p_sero(list(
+    male = list(
+      "1"=0.03, "2-10"=0, "11-15"=0, "16-20"=0.01, "21-25"=0.02,
+      "26-30"=0.03, "31-35"=0.02, "36-40"=0.01, "41-45"=0.005, "46-50"=0.005
+    ),
+    female = list(
+      "1"=0.03, "2-10"=0, "11-15"=0.005, "16-20"=0.02, "21-25"=0.03,
+      "26-30"=0.02, "31-35"=0.015, "36-40"=0.01, "41-45"=0.005, "46-50"=0
+    )
+  ))
+}
+
+
+
 ##############################################.
 ##### Old code from perform_imputation() #####
 ##############################################.

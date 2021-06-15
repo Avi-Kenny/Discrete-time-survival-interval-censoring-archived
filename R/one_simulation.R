@@ -34,6 +34,7 @@ one_simulation <- function() {
   # !!!!! For now, all patients are HIV- at baseline
   dat_events <- apply(dat_baseline, MARGIN=1, function(r) {
     generate_data_events(
+      id = r[["id"]],
       b_age = r[["b_age"]],
       sex = r[["sex"]],
       u = r[["u"]],
@@ -82,6 +83,7 @@ one_simulation <- function() {
       dat_events = dat_events
     )
     results <- run_analysis(dat_cp=dat_cp)
+    # print(exp(results$est_hiv)); print(exp(results$est_art)); # !!!!!
   }
   
   if (L$method=="mi") {
@@ -104,6 +106,9 @@ one_simulation <- function() {
         dat_events = dat_events_mi[[i]]
       )
       results_mi[[i]] <- run_analysis(dat_cp=dat_cp)
+      # print(paste("Replicate:",i)) # !!!!!
+      # print(paste("HIV:", exp(results_mi[[i]]$est_hiv))) # !!!!!
+      # print(paste("ART:", exp(results_mi[[i]]$est_art))) # !!!!!
     }
     
     # Combine MI estimates using "Rubin's rules"
@@ -126,6 +131,12 @@ one_simulation <- function() {
   if (L$method=="censor") {
     # !!!!! Ask Mark what he does currently
   }
+  
+  # Add CI bounds
+  results$hiv_ci_l <- results$est_hiv - 1.96*results$se_hiv
+  results$hiv_ci_u <- results$est_hiv + 1.96*results$se_hiv
+  results$art_ci_l <- results$est_art - 1.96*results$se_art
+  results$art_ci_u <- results$est_art + 1.96*results$se_art
   
   return (results)
   

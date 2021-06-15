@@ -24,8 +24,10 @@ transform_dataset <- function(dat_baseline, dat_events) {
   )
   
   # Convert dat_events to a dataframe and attach to dat_cp
+  # cbind is functioning as an inner join since both dataframes are sorted
   df_ev <- as.data.frame(rbindlist(dat_events))
   df_ev %<>% filter(y!=9)
+  df_ev %<>% subset(select=-id)
   dat_cp %<>% cbind(df_ev)
   
   # Create exposure variable
