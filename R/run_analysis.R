@@ -32,17 +32,33 @@ run_analysis <- function(dat_cp, options=list()) {
   }
   
   # Fit time-varying Cox model ("ideal")
+  # !!!!! Also try with robust SEs
   fit <- coxph(
-    Surv(start_time, end_time, y) ~ factor(casc_status) + age + cluster(id),
+    Surv(start_time, end_time, y) ~ factor(casc_status) + age + sex +
+      cluster(id),
     data = dat_cp
   )
   summ <- summary(fit)$coefficients
+  
+  # # !!!!! Fit a logistic discrete survival model
+  # fit2 <- glm(
+  #   y ~ factor(casc_status) + age + sex,
+  #   data = dat_cp,
+  #   # start = c(-0.1,-0.1,-0.1,-0.1,-0.1),
+  #   family = "binomial"
+  #   # family = binomial(link="log")
+  # )
+  # summ <- summary(fit2)$coefficients
   
   results <- list(
     est_hiv = summ["factor(casc_status)HIV+ART-","coef"],
     se_hiv = summ["factor(casc_status)HIV+ART-","se(coef)"],
     est_art = summ["factor(casc_status)HIV+ART+","coef"],
     se_art = summ["factor(casc_status)HIV+ART+","se(coef)"]
+    # est_hiv = summ["factor(casc_status)HIV+ART-","Estimate"],
+    # se_hiv = summ["factor(casc_status)HIV+ART-","Std. Error"],
+    # est_art = summ["factor(casc_status)HIV+ART+","Estimate"],
+    # se_art = summ["factor(casc_status)HIV+ART+","Std. Error"]
   )
   
   return(results)

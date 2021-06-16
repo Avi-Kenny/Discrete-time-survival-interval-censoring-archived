@@ -11,11 +11,13 @@
 cfg <- list(
   level_set_which = "level_set_1",
   # run_or_update = "run",
-  num_sim = 5,
-  pkgs = c("dplyr", "survival", "data.table", "tidyr", "rjags", "rstan",
+  num_sim = 500,
+  pkgs = c("dplyr", "survival", "data.table", "tidyr",
            "tidyr", "memoise"),
-  pkgs_nocluster = c(),
-  parallel = "none", # none outer
+  # pkgs = c("dplyr", "survival", "data.table", "tidyr", "rjags", "rstan",
+  #          "tidyr", "memoise"),
+  pkgs_nocluster = c("ggplot2"),
+  parallel = "outer", # none outer
   stop_at_error = FALSE,
   mcmc = list(n.adapt=1000, n.iter=1000, n.burn=1000, n.chains=2, thin=1),
   local = FALSE
@@ -52,16 +54,18 @@ if (cfg$local) {
 }
 
 # Load simba + functions
-library(simba) # devtools::install_github(repo="Avi-Kenny/simba")
-source("generate_data_baseline.R")
-source("generate_data_events.R")
-source("run_analysis.R")
-source("perform_imputation.R")
-source("fit_stan.R")
-source("transform_mcmc.R")
-source("transform_dataset.R")
-source("one_simulation.R")
-source("helpers.R")
+{
+  library(simba) # devtools::install_github(repo="Avi-Kenny/simba")
+  source("generate_data_baseline.R")
+  source("generate_data_events.R")
+  source("run_analysis.R")
+  source("perform_imputation.R")
+  source("fit_stan.R")
+  source("transform_mcmc.R")
+  source("transform_dataset.R")
+  source("one_simulation.R")
+  source("helpers.R")
+}
 
 
 
@@ -73,13 +77,11 @@ if (Sys.getenv("run") %in% c("first", "")) {
   
   # Simulation 1: !!!!!
   level_set_1 <- list(
-    method = c("ideal", "mi"), # c("ideal", "mi", "censor")
-    # hr_hiv = c(0.6,1.0,1.4,1.8),
-    hr_hiv = 1.4,
-    hr_art = 0.7
-    # p_death_mult = 1, # !!!!! Unused
-    # u_mult_sero = 1, # !!!!! Unused
-    # u_mult_death = 1 # !!!!! Unused
+    method = c("ideal", "mi"),
+    hr_hiv = c(1.0,1.4),
+    hr_art = c(0.6,1.0)
+    # hr_hiv = c(0.6,1.0,1.4),
+    # hr_art = c(0.6,1.0,1.4)
   )
   
   level_set <- eval(as.name(cfg$level_set_which))
@@ -104,20 +106,20 @@ run_on_cluster(
     # Set up and configure simulation object
     sim <- new_sim()
     sim %<>% set_config(
-      num_sim = cfg$num_sim, # !!!!!
-      seed = 10,
+      num_sim = cfg$num_sim,
+      seed = 1,
       parallel = cfg$parallel,
       stop_at_error = cfg$stop_at_error,
       packages = cfg$pkgs
     )
     
     # Add simulation constants
-    # `m` is the number of simulation replicates
+    # `m` is the number of MI replicates
     sim %<>% add_constants(
       m = 5,
-      num_patients = 5000,
+      num_patients = 500,
       start_year = 2000,
-      end_year = 2020
+      end_year = 2002
     )
     
     # Add functions to simulation object
@@ -130,7 +132,7 @@ run_on_cluster(
     sim %<>% add_method(posterior_param_sample)
     sim %<>% add_method(run_analysis)
     sim %<>% add_method(expit)
-
+    
     # Set simulation script
     sim %<>% set_script(one_simulation)
     
@@ -161,28 +163,42 @@ run_on_cluster(
 
 if (FALSE) {
   
+  # Read in simulation object
+  sim <- readRDS("../simba.out/sim_20210615.simba")
+  
+  # Transform results
+  sim$results %<>% mutate(
+    # est_hr_hiv = exp(est_hiv),
+    # est_hr_art = exp(est_art),
+    hr_hiv_lab = paste("HIV+ HR:",hr_hiv),
+    hr_art_lab = paste("ART+ HR:",hr_art),
+    method = ifelse(method=="ideal","Ideal",ifelse(method=="mi","MI","")),
+    log_hr_hiv = log(hr_hiv),
+    log_hr_art = log(hr_art)
+  )
+  
   # Plot of estimates (HIV)
-  ggplot(sim$results, aes(x=method, y=exp(est_hiv), color=method)) +
+  # Export: 6" X 3"
+  ggplot(sim$results, aes(x=method, y=est_hiv, color=method)) +
     geom_point(alpha=0.2, size=2) +
-    geom_hline(aes(yintercept=hr_hiv), linetype="dotted") +
-    # facet_wrap(~hr_hiv_lab, ncol=4) +
+    geom_hline(aes(yintercept=log(hr_hiv)), linetype="dotted") +
+    facet_wrap(~hr_hiv_lab, ncol=2) +
     theme(legend.position="none")
-    # labs(title="Point estimates (50 simulation replicates per level)",
-    #      x="Method", y="Estimated hazard ratio (HIV+ART-)")
+  
+  # Plot of estimates (ART)
+  # Export: 6" X 3"
+  ggplot(sim$results, aes(x=method, y=est_art, color=method)) +
+    geom_point(alpha=0.2, size=2) +
+    geom_hline(aes(yintercept=log(hr_art)), linetype="dotted") +
+    facet_wrap(~hr_art_lab, ncol=4) +
+    theme(legend.position="none")
+  
+  
   
   
   
   # !!!!! Calculate bias, variance inflation, power
   
-  sim$results %<>% mutate(
-    est_hr_hiv = exp(est_hiv),
-    est_hr_art = exp(est_art),
-    hr_hiv_lab = paste("HIV+ HR:",hr_hiv),
-    hr_art_lab = paste("ART+ HR:",hr_art),
-    method = ifelse(method=="ideal","Ideal",ifelse(method=="mi","MI","error")),
-    log_hr_hiv = log(hr_hiv),
-    log_hr_art = log(hr_art)
-  )
   
   # HIV graph
   # Export PDF 3x8

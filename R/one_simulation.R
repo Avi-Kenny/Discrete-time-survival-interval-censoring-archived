@@ -10,24 +10,24 @@ one_simulation <- function() {
   
   # !!!!! Testing
   # C <- list(num_patients=10, start_year=2000, end_year=2001, m=5)
-  C <- list(num_patients=100, start_year=2000, end_year=2002, m=5)
-  L <- list(method="mi", hr_hiv=1.3, hr_art=0.6)
-  
-  # Set parameters
-  params <- list(
-    alpha0=-4,  alpha1=0.1,  alpha2=0.05,  alpha3=0.2,
-    beta0=-4,   beta1=0.1,   beta2=0.05,   beta3=0.2,
-    eta0=-4,    eta1=0.1,    eta2=0.05,    eta3=0.2,
-    gamma0=-4,  gamma1=0.1,  gamma2=0.05,  gamma3=0.2,
-    psi1=L$hr_hiv,
-    psi2=L$hr_art
-  )
+  # C <- list(num_patients=5000, start_year=2000, end_year=2002, m=5)
+  # L <- list(method="mi", hr_hiv=1.4, hr_art=0.7)
   
   # Generate baseline data
   # !!!!! This is generated as a "true cohort" rather than an "open cohort"
   dat_baseline <- generate_data_baseline(
     num_patients = C$num_patients,
     start_year = C$start_year
+  )
+  
+  # Set parameters
+  params <- list(
+    alpha0=-4,  alpha1=0.1,  alpha2=0.05,  alpha3=0, # alpha3=0.2
+    beta0=-4,   beta1=0.1,   beta2=0.05,   beta3=0, # beta3=0.2
+    eta0=-4,    eta1=0.1,    eta2=0.05,    eta3=0, # eta3=0.2
+    gamma0=-4,  gamma1=0.1,  gamma2=0.05,  gamma3=0, # gamma3=0.2
+    psi1=L$hr_hiv,
+    psi2=L$hr_art
   )
   
   # Generate event data
@@ -46,15 +46,15 @@ one_simulation <- function() {
   })
   attr(dat_events, "end_year") <- C$end_year
   
-  # Transform data to JAGS format
-  dat_mcmc <- transform_mcmc(
-    dat_baseline = dat_baseline,
-    dat_events = dat_events
-  )
-  
-  # Set MCMC params
-  mcmc <- list(n.adapt=1000, n.burn=1000, n.iter=1000, thin=1, n.chains=2)
-  
+  # # Transform data to JAGS format
+  # dat_mcmc <- transform_mcmc(
+  #   dat_baseline = dat_baseline,
+  #   dat_events = dat_events
+  # )
+  # 
+  # # Set MCMC params
+  # mcmc <- list(n.adapt=1000, n.burn=1000, n.iter=1000, thin=1, n.chains=2)
+  # 
   # # Fit the model in Stan
   # fit <- fit_stan(
   #   dat = dat_mcmc,

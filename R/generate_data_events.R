@@ -62,6 +62,7 @@ generate_data_events <- function(
         log(p$psi1)*x[length(x)]*(1-z[length(z)]) +
         log(p$psi2)*x[length(x)]*z[length(z)]
       ))
+      if (p_y==0.99999) { warning("p_y>=0.99999") }
       y <- c(y, rbinom(n=1, size=1, prob=p_y))
       
       x_last <- x[length(x)]
