@@ -73,7 +73,7 @@ if (cfg$local) {
 ##### MAIN: Set level sets for different simulations #####
 ##########################################################.
 
-if (Sys.getenv("run") %in% c("first", "")) {
+if (Sys.getenv("simba_run") %in% c("first", "")) {
   
   # Simulation 1: !!!!!
   level_set_1 <- list(
@@ -95,9 +95,9 @@ if (Sys.getenv("run") %in% c("first", "")) {
 #################################.
 
 # Commands for job sumbission on Slurm:
-# sbatch --export=run='first',cluster='bionic',type='R',project='z.hivmi' -e ./io/slurm-%A_%a.out -o ./io/slurm-%A_%a.out --constraint=gizmok run_r.sh
-# sbatch --depend=afterok:11 --array=1-16 --export=run='main',cluster='bionic',type='R',project='z.hivmi' -e ./io/slurm-%A_%a.out -o ./io/slurm-%A_%a.out --constraint=gizmok run_r.sh
-# sbatch --depend=afterok:12 --export=run='last',cluster='bionic',type='R',project='z.hivmi' -e ./io/slurm-%A_%a.out -o ./io/slurm-%A_%a.out --constraint=gizmok run_r.sh
+# sbatch --export=simba_run='first',cluster='bionic',type='R',project='z.hivmi' -e ./io/slurm-%A_%a.out -o ./io/slurm-%A_%a.out --constraint=gizmok run_r.sh
+# sbatch --depend=afterok:11 --array=1-16 --export=simba_run='main',cluster='bionic',type='R',project='z.hivmi' -e ./io/slurm-%A_%a.out -o ./io/slurm-%A_%a.out --constraint=gizmok run_r.sh
+# sbatch --depend=afterok:12 --export=simba_run='last',cluster='bionic',type='R',project='z.hivmi' -e ./io/slurm-%A_%a.out -o ./io/slurm-%A_%a.out --constraint=gizmok run_r.sh
 
 run_on_cluster(
   
