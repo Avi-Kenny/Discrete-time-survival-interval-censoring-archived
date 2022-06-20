@@ -12,15 +12,11 @@ cfg <- list(
   level_set_which = "level_set_1",
   # run_or_update = "run",
   num_sim = 500,
-  pkgs = c("dplyr", "survival", "data.table", "tidyr",
-           "tidyr", "memoise"),
-  # pkgs = c("dplyr", "survival", "data.table", "tidyr", "rjags", "rstan",
-  #          "tidyr", "memoise"),
+  pkgs = c("dplyr", "survival", "data.table", "tidyr", "memoise"), # "rjags", "rstan"
   pkgs_nocluster = c("ggplot2"),
   parallel = "outer", # none outer
-  stop_at_error = FALSE,
-  mcmc = list(n.adapt=1000, n.iter=1000, n.burn=1000, n.chains=2, thin=1),
-  local = FALSE
+  stop_at_error = FALSE
+  # mcmc = list(n.adapt=1000, n.iter=1000, n.burn=1000, n.chains=2, thin=1)
 )
 
 # Set cluster config
@@ -44,20 +40,21 @@ if (Sys.getenv("USERDOMAIN")=="AVI-KENNY-T460") {
 } else {
   # Cluster
   setwd("z.hivmi/R")
+  cfg$local <- FALSE
 }
 
 # Load packages (if running locally)
 if (cfg$local) {
   for (pkg in c(cfg$pkgs,cfg$pkgs_nocluster)) {
-    do.call("library", list(pkg))
+    suppressMessages({ do.call("library", list(pkg)) })
   }
 }
 
-# Load simba + functions
+# Load SimEngine + functions
 {
-  library(simba) # devtools::install_github(repo="Avi-Kenny/simba")
-  source("generate_data_baseline.R")
-  source("generate_data_events.R")
+  library(SimEngine)
+  source("generate_data.R")
+  # source("generate_data_events.R")
   source("run_analysis.R")
   source("perform_imputation.R")
   source("fit_stan.R")
@@ -73,18 +70,16 @@ if (cfg$local) {
 ##### MAIN: Set level sets for different simulations #####
 ##########################################################.
 
-if (Sys.getenv("simba_run") %in% c("first", "")) {
+if (Sys.getenv("sim_run") %in% c("first", "")) {
   
   # Simulation 1: !!!!!
   level_set_1 <- list(
     method = c("ideal", "mi"),
-    hr_hiv = c(1.0,1.4),
-    hr_art = c(0.6,1.0)
-    # hr_hiv = c(0.6,1.0,1.4),
-    # hr_art = c(0.6,1.0,1.4)
+    hr_hiv = c(1.0,1.4), # c(0.6,1.0,1.4)
+    hr_art = c(0.6,1.0) # c(0.6,1.0,1.4)
   )
   
-  level_set <- eval(as.name(cfg$level_set_which))
+  level_set <- get(cfg$level_set_which)
   
 }
 
@@ -95,9 +90,9 @@ if (Sys.getenv("simba_run") %in% c("first", "")) {
 #################################.
 
 # Commands for job sumbission on Slurm:
-# sbatch --export=simba_run='first',cluster='bionic',type='R',project='z.hivmi' -e ./io/slurm-%A_%a.out -o ./io/slurm-%A_%a.out --constraint=gizmok run_r.sh
-# sbatch --depend=afterok:11 --array=1-16 --export=simba_run='main',cluster='bionic',type='R',project='z.hivmi' -e ./io/slurm-%A_%a.out -o ./io/slurm-%A_%a.out --constraint=gizmok run_r.sh
-# sbatch --depend=afterok:12 --export=simba_run='last',cluster='bionic',type='R',project='z.hivmi' -e ./io/slurm-%A_%a.out -o ./io/slurm-%A_%a.out --constraint=gizmok run_r.sh
+# sbatch --export=sim_run='first',cluster='bionic',type='R',project='z.hivmi' -e ./io/slurm-%A_%a.out -o ./io/slurm-%A_%a.out --constraint=gizmok run_r.sh
+# sbatch --depend=afterok:11 --array=1-16 --export=sim_run='main',cluster='bionic',type='R',project='z.hivmi' -e ./io/slurm-%A_%a.out -o ./io/slurm-%A_%a.out --constraint=gizmok run_r.sh
+# sbatch --depend=afterok:12 --export=sim_run='last',cluster='bionic',type='R',project='z.hivmi' -e ./io/slurm-%A_%a.out -o ./io/slurm-%A_%a.out --constraint=gizmok run_r.sh
 
 run_on_cluster(
   
@@ -115,23 +110,12 @@ run_on_cluster(
     
     # Add simulation constants
     # `m` is the number of MI replicates
-    sim %<>% add_constants(
+    C <- list(
       m = 5,
       num_patients = 500,
       start_year = 2000,
       end_year = 2002
     )
-    
-    # Add functions to simulation object
-    sim %<>% add_method(generate_data_baseline)
-    sim %<>% add_method(generate_data_events)
-    sim %<>% add_method(transform_dataset)
-    sim %<>% add_method(transform_mcmc)
-    sim %<>% add_method(fit_stan)
-    sim %<>% add_method(perform_imputation)
-    sim %<>% add_method(posterior_param_sample)
-    sim %<>% add_method(run_analysis)
-    sim %<>% add_method(expit)
     
     # Set simulation script
     sim %<>% set_script(one_simulation)
@@ -141,15 +125,9 @@ run_on_cluster(
     
   },
   
-  main = {
-    sim %<>% run()
-  },
+  main = { sim %<>% run() },
   
-  last = {
-    
-    sim %>% summarize() %>% print()
-    
-  },
+  last = { sim %>% summarize() %>% print() },
   
   cluster_config = cluster_config
   
