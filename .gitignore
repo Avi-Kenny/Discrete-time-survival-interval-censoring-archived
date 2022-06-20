@@ -35,6 +35,3 @@ vignettes/*.pdf
 *.utf8.md
 *.knit.md
 HIV.multiple.imputation.Rproj
-
-# simba files
-*.simba
