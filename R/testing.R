@@ -10,7 +10,7 @@ system.time({
   
   # Generate data
   dat <- generate_data(
-    n = 4000,
+    n = 1000,
     max_time = 100,
     params = list(
       gamma = c(log(1.3),log(1.002)),
@@ -28,3 +28,6 @@ system.time({
   print(summary(model)$conf.int)
   
 })
+
+
+

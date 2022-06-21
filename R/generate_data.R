@@ -13,15 +13,23 @@ generate_data <- function(n, max_time, params) {
   
   # !!!!!
   if (F) {
-    params <- list(a=c(log(1.3),log(1.002)), b=c(log(1.2),log(1.001),log(1.5)))
-    dat2 <- generate_data(n=100, max_time=100, params=params)
-    sum(summarize(group_by(dat2,id), x=max(x))$x) # Number seroconverted
-    sum(dat2$d) # Number of events
+    params <- list(
+      gamma = c(log(1.3),log(1.002)),
+      xi = c(log(1.2),log(1.001)),
+      beta_x = log(1.5)
+    )
+    dat <- generate_data(n=100, max_time=100, params=params)
+    sum(dplyr::summarize(group_by(dat,id), x=max(x))$x) # Number seroconverted
+    sum(dat$y) # Number of events
+    sum(dat$x*dat$y) # Number of events among HIV+
+    
   }
   
   # Set baseline hazard functions
-  b_hazard_x <- function(t) { 0.003 + 0.003*(t/100) }
-  b_hazard_y <- function(t) { 0.002 + 0.002*(t/100) }
+  b_hazard_x <- function(t) { 0.005 } # !!!!! alpha_j
+  b_hazard_y <- function(t) { 0.003 } # !!!!! beta_j
+  # b_hazard_x <- function(t) { 0.003 + 0.003*(t/100) }
+  # b_hazard_y <- function(t) { 0.002 + 0.002*(t/100) }
   
   # Generate dataframe to hold results
   dat <- data.frame(
@@ -31,7 +39,7 @@ generate_data <- function(n, max_time, params) {
     "z_sex" = integer(),
     "z_age" = integer(),
     "x" = integer(),
-    "d" = integer()
+    "y" = integer()
   )
   
   # Generate baseline covariates
@@ -43,8 +51,8 @@ generate_data <- function(n, max_time, params) {
   p <- params
   for (i in c(1:n)) {
     
-    # Create variables for serostatus (x) and event indicator (d)
-    x <- d <- c()
+    # Create variables for serostatus (x) and outcome indicator (y)
+    x <- y <- x_prev <- c()
     event <- 0
     t <- 1
     z_sex_ <- z_sex[i]
@@ -54,20 +62,21 @@ generate_data <- function(n, max_time, params) {
       
       # Sample seroconversion (x)
       if (t==1) {
-        p_sero <- b_hazard_x(t) * exp(p$a[1]*z_sex_) * exp(p$a[2]*z_age_)
+        p_sero <- b_hazard_x(t) * exp(p$g[1]*z_sex_ + p$g[2]*z_age_)
         x[t] <- rbinom(n=1, size=1, prob=p_sero)
+        x_prev <- 0
       } else {
-        if (x[round(t-1)]==1) { x[t] <- 1 } else {
-          p_sero <- b_hazard_x(t) * exp(p$a[1]*z_sex_) * exp(p$a[2]*z_age_)
+        x_prev[t] <- x[round(t-1)]
+        if (x_prev[t]==1) { x[t] <- 1 } else {
+          p_sero <- b_hazard_x(t) * exp(p$g[1]*z_sex_ + p$g[2]*z_age_)
           x[t] <- rbinom(n=1, size=1, prob=p_sero)
         }
       }
       
       # Sample events
-      p_event <- b_hazard_y(t) * exp(p$b[1]*z_sex_) * exp(p$b[2]*z_age_) *
-        exp(p$b[3]*x[t])
+      p_event <- b_hazard_y(t) * exp(p$x[1]*z_sex_ + p$x[2]*z_age_ + p$b*x[t])
       event <- rbinom(n=1, size=1, prob=p_event)
-      d[t] <- event
+      y[t] <- event
       
       # Increment time
       t <- round(t+1)
@@ -76,9 +85,10 @@ generate_data <- function(n, max_time, params) {
     
     # Add results to dataframe
     len <- length(x)
+    x_prev <- 
     dat <- rbind(dat, list(
       id=rep(i,len), t_start=c(0:(len-1)), t_end=c(1:len),
-      z_sex=rep(z_sex_,len), z_age=rep(z_age_,len), x=x, d=d
+      z_sex=rep(z_sex_,len), z_age=rep(z_age_,len), x=x, y=y, x_prev=x_prev
     ))
     
   }

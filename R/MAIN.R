@@ -12,10 +12,10 @@ cfg <- list(
   level_set_which = "level_set_1",
   # run_or_update = "run",
   num_sim = 500,
-  pkgs = c("dplyr", "survival", "data.table", "tidyr", "memoise"), # "rjags", "rstan"
+  pkgs = c("dplyr", "survival", "data.table", "tidyr", "memoise", "Rsolnp"), # "rjags", "rstan"
   pkgs_nocluster = c("ggplot2"),
-  parallel = "outer", # none outer
-  stop_at_error = FALSE
+  parallel = "none", # none outer
+  stop_at_error = F
   # mcmc = list(n.adapt=1000, n.iter=1000, n.burn=1000, n.chains=2, thin=1)
 )
 
@@ -54,11 +54,8 @@ if (cfg$local) {
 {
   library(SimEngine)
   source("generate_data.R")
-  # source("generate_data_events.R")
   source("run_analysis.R")
   source("perform_imputation.R")
-  source("fit_stan.R")
-  source("transform_mcmc.R")
   source("transform_dataset.R")
   source("one_simulation.R")
   source("helpers.R")
@@ -74,10 +71,23 @@ if (Sys.getenv("sim_run") %in% c("first", "")) {
   
   # Simulation 1: !!!!!
   level_set_1 <- list(
-    method = c("ideal", "mi"),
-    hr_hiv = c(1.0,1.4), # c(0.6,1.0,1.4)
-    hr_art = c(0.6,1.0) # c(0.6,1.0,1.4)
+    n = 100,
+    # n = c(100,200),
+    max_time = 100,
+    params = list(
+      "p" = list(gamma = c(log(1.3),log(1.002)),
+                 xi = c(log(1.2),log(1.001)),
+                 beta_x = log(1.5))
+    )
+    # method = c("ideal", "mi"),
+    # hr_hiv = c(1.0,1.4), # c(0.6,1.0,1.4)
+    # hr_art = c(0.6,1.0) # c(0.6,1.0,1.4)
   )
+  
+  
+  list(
+  )  
+  
   
   level_set <- get(cfg$level_set_which)
   
@@ -102,20 +112,19 @@ run_on_cluster(
     sim <- new_sim()
     sim %<>% set_config(
       num_sim = cfg$num_sim,
-      seed = 1,
       parallel = cfg$parallel,
       stop_at_error = cfg$stop_at_error,
       packages = cfg$pkgs
     )
     
-    # Add simulation constants
-    # `m` is the number of MI replicates
-    C <- list(
-      m = 5,
-      num_patients = 500,
-      start_year = 2000,
-      end_year = 2002
-    )
+    # # Add simulation constants
+    # # `m` is the number of MI replicates
+    # C <- list(
+    #   m = 5,
+    #   num_patients = 500,
+    #   start_year = 2000,
+    #   end_year = 2002
+    # )
     
     # Set simulation script
     sim %<>% set_script(one_simulation)
