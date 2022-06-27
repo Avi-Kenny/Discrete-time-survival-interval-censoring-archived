@@ -26,11 +26,11 @@ one_simulation <- function() {
       piece_x <- 1
     } else {
       # !!!!! Add a "t" argument for linear baseline hazard
-      exp_lin_x <- exp(prm[1]+prm[2]*z_j[1]+prm[3]*z_j[2])
+      exp_lin_x <- exp(prm[1] + prm[2]*z_j[1] + prm[3]*z_j[2])
       piece_x <- ifelse(x_j==1, exp_lin_x, 1-exp_lin_x)
     }
     
-    exp_lin_y <- exp(prm[4]+prm[5]*z_j[1]+prm[6]*z_j[2]+prm[7]*x_j)
+    exp_lin_y <- exp(prm[4] + prm[5]*z_j[1] + prm[6]*z_j[2] + prm[7]*x_j)
     piece_y <- ifelse(y_j==1, exp_lin_y, 1-exp_lin_y)
     
     return(log(max(piece_x,1e-8))+log(max(piece_y,1e-8)))
@@ -56,18 +56,27 @@ one_simulation <- function() {
     
   }
   
-  # Run optimizer
-  opt <- solnp(
-    pars = log(c(0.002, 1, 1, 0.002, 1, 1, 1)),
-    fun = negloglik
-  )
-  if (opt$convergence!=0) { warning("solnp() did not converge") }
+  # # Run optimizer
+  # opt <- solnp(
+  #   pars = log(c(0.002, 1, 1, 0.002, 1, 1, 1)),
+  #   fun = negloglik
+  # )
+  # if (opt$convergence!=0) { warning("solnp() did not converge") }
   
-  # Extract estimates and compute SEs
-  lik_ests <- exp(opt$pars)
-  lik_se <- sqrt(diag(solve(opt$hessian)))
-  lik_ci_lo <- exp(opt$pars-1.96*lik_se)
-  lik_ci_hi <- exp(opt$pars+1.96*lik_se)
+  # # Extract estimates and compute SEs
+  # lik_ests <- exp(opt$pars)
+  # lik_se <- sqrt(diag(solve(opt$hessian)))
+  # lik_ci_lo <- exp(opt$pars-1.96*lik_se)
+  # lik_ci_hi <- exp(opt$pars+1.96*lik_se)
+  
+  # !!!!!
+  func <- function(par) { negloglik(par) }
+  opt <- optim(par=log(c(0.002, 1, 1, 0.002, 1, 1, 1)), fn=func)
+  h <- optimHess(par=opt$par, fn=func)
+  lik_ests <- exp(opt$par)
+  lik_se <- sqrt(diag(solve(h)))
+  lik_ci_lo <- exp(opt$par-1.96*lik_se)
+  lik_ci_hi <- exp(opt$par+1.96*lik_se)
   
   # Get estimates and SEs from Cox model
   model <- coxph(

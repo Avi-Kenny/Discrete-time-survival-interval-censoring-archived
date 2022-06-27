@@ -71,8 +71,7 @@ if (Sys.getenv("sim_run") %in% c("first", "")) {
   
   # Simulation 1: !!!!!
   level_set_1 <- list(
-    n = 100,
-    # n = c(100,200),
+    n = c(500,1000,2000),
     max_time = 100,
     params = list(
       "p" = list(gamma = c(log(1.3),log(1.002)),
@@ -150,70 +149,93 @@ run_on_cluster(
 
 if (FALSE) {
   
-  # Read in simulation object
-  sim <- readRDS("../simba.out/sim_20210615.simba")
-  
-  # Transform results
-  sim$results %<>% mutate(
-    # est_hr_hiv = exp(est_hiv),
-    # est_hr_art = exp(est_art),
-    hr_hiv_lab = paste("HIV+ HR:",hr_hiv),
-    hr_art_lab = paste("ART+ HR:",hr_art),
-    method = ifelse(method=="ideal","Ideal",ifelse(method=="mi","MI","")),
-    log_hr_hiv = log(hr_hiv),
-    log_hr_art = log(hr_art)
+  # r <- sim$results
+  r500 <- filter(sim$results, n==500)
+  r1000 <- filter(sim$results, n==1000)
+  r2000 <- filter(sim$results, n==2000)
+  ln <- c(nrow(r500), nrow(r1000), nrow(r2000))
+  plot_data <- data.frame(
+    x = c(r500$lik_beta_x_est, r1000$lik_beta_x_est, r2000$lik_beta_x_est),
+    y = c(r500$cox_beta_x_est, r1000$cox_beta_x_est, r2000$cox_beta_x_est),
+    n = c(rep(500, ln[1]), rep(1000, ln[2]), rep(2000, ln[3]))
   )
+  ggplot(plot_data, aes(x=x, y=y)) +
+    geom_abline(slope=1, intercept=0, color="orange") +
+    geom_point(alpha=0.3) +
+    geom_point(data=data.frame(x=1.5,y=1.5), color="forestgreen", size=3, alpha=0.7) +
+    facet_wrap(~n) +
+    labs(x="Likelihood model", y="Cox model")
   
-  # Plot of estimates (HIV)
-  # Export: 6" X 3"
-  ggplot(sim$results, aes(x=method, y=est_hiv, color=method)) +
-    geom_point(alpha=0.2, size=2) +
-    geom_hline(aes(yintercept=log(hr_hiv)), linetype="dotted") +
-    facet_wrap(~hr_hiv_lab, ncol=2) +
-    theme(legend.position="none")
-  
-  # Plot of estimates (ART)
-  # Export: 6" X 3"
-  ggplot(sim$results, aes(x=method, y=est_art, color=method)) +
-    geom_point(alpha=0.2, size=2) +
-    geom_hline(aes(yintercept=log(hr_art)), linetype="dotted") +
-    facet_wrap(~hr_art_lab, ncol=4) +
-    theme(legend.position="none")
-  
-  
-  
-  
-  
-  # !!!!! Calculate bias, variance inflation, power
-  
-  
-  # HIV graph
-  # Export PDF 3x8
-  ggplot(sim$results, aes(x=method, y=est_hr_hiv, color=method)) +
-    geom_point(alpha=0.2, size=2) +
-    geom_hline(aes(yintercept=hr_hiv), linetype="dotted") +
-    facet_wrap(~hr_hiv_lab, ncol=4) +
-    theme(legend.position="none") +
-    labs(title="Point estimates (50 simulation replicates per level)",
-         x="Method", y="Estimated hazard ratio (HIV+ART-)")
-  
-  # Coverage plots
-  summ <- sim %>% summary(
+  sim %>% summarize(
     coverage = list(
-      name="cov_hiv", estimate="est_hiv", truth="log_hr_hiv", se="se_hiv"
+      list(name="cov_cox", truth=1.5, lower="cox_beta_x_ci_lo", upper="cox_beta_x_ci_hi"),
+      list(name="cov_lik", truth=1.5, lower="lik_beta_x_ci_lo", upper="lik_beta_x_ci_hi")
     )
-  ) %>% mutate(
-    hr_hiv_lab = paste("HIV+ HR:",hr_hiv),
-    hr_art_lab = paste("ART+ HR:",hr_art),
   )
+
   
-  ggplot(summ, aes(x=method, y=cov_hiv, color=method)) +
-    geom_point(size=3) +
-    geom_hline(aes(yintercept=0.95), linetype="dotted") +
-    facet_wrap(~hr_hiv_lab, ncol=4) +
-    theme(legend.position="none") +
-    labs(title="Coverage (50 simulation replicates per level)",
-         x="Method", y="95% CI Coverage (HIV+ART-)")
+  
+  # # Read in simulation object
+  # sim <- readRDS("../simba.out/sim_20210615.simba")
+  
+  # # Transform results
+  # sim$results %<>% mutate(
+  #   # est_hr_hiv = exp(est_hiv),
+  #   # est_hr_art = exp(est_art),
+  #   hr_hiv_lab = paste("HIV+ HR:",hr_hiv),
+  #   hr_art_lab = paste("ART+ HR:",hr_art),
+  #   method = ifelse(method=="ideal","Ideal",ifelse(method=="mi","MI","")),
+  #   log_hr_hiv = log(hr_hiv),
+  #   log_hr_art = log(hr_art)
+  # )
+  
+  # # Plot of estimates (HIV)
+  # # Export: 6" X 3"
+  # ggplot(sim$results, aes(x=method, y=est_hiv, color=method)) +
+  #   geom_point(alpha=0.2, size=2) +
+  #   geom_hline(aes(yintercept=log(hr_hiv)), linetype="dotted") +
+  #   facet_wrap(~hr_hiv_lab, ncol=2) +
+  #   theme(legend.position="none")
+  
+  # # Plot of estimates (ART)
+  # # Export: 6" X 3"
+  # ggplot(sim$results, aes(x=method, y=est_art, color=method)) +
+  #   geom_point(alpha=0.2, size=2) +
+  #   geom_hline(aes(yintercept=log(hr_art)), linetype="dotted") +
+  #   facet_wrap(~hr_art_lab, ncol=4) +
+  #   theme(legend.position="none")
+  
+  
+  
+  
+  
+  # # HIV graph
+  # # Export PDF 3x8
+  # ggplot(sim$results, aes(x=method, y=est_hr_hiv, color=method)) +
+  #   geom_point(alpha=0.2, size=2) +
+  #   geom_hline(aes(yintercept=hr_hiv), linetype="dotted") +
+  #   facet_wrap(~hr_hiv_lab, ncol=4) +
+  #   theme(legend.position="none") +
+  #   labs(title="Point estimates (50 simulation replicates per level)",
+  #        x="Method", y="Estimated hazard ratio (HIV+ART-)")
+  
+  # # Coverage plots
+  # summ <- sim %>% summary(
+  #   coverage = list(
+  #     name="cov_hiv", estimate="est_hiv", truth="log_hr_hiv", se="se_hiv"
+  #   )
+  # ) %>% mutate(
+  #   hr_hiv_lab = paste("HIV+ HR:",hr_hiv),
+  #   hr_art_lab = paste("ART+ HR:",hr_art),
+  # )
+  
+  # ggplot(summ, aes(x=method, y=cov_hiv, color=method)) +
+  #   geom_point(size=3) +
+  #   geom_hline(aes(yintercept=0.95), linetype="dotted") +
+  #   facet_wrap(~hr_hiv_lab, ncol=4) +
+  #   theme(legend.position="none") +
+  #   labs(title="Coverage (50 simulation replicates per level)",
+  #        x="Method", y="95% CI Coverage (HIV+ART-)")
   
 }
 
