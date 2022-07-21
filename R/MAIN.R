@@ -74,19 +74,14 @@ if (Sys.getenv("sim_run") %in% c("first", "")) {
     n = c(500,1000,2000),
     max_time = 100,
     params = list(
-      "p" = list(gamma = c(log(1.3),log(1.002)),
-                 xi = c(log(1.2),log(1.001)),
-                 beta_x = log(1.5))
+      "p" = list(g_x = c(log(1.3),log(1.002)),
+                 g_y = c(log(1.2),log(1.001)),
+                 beta = log(1.5))
     )
     # method = c("ideal", "mi"),
     # hr_hiv = c(1.0,1.4), # c(0.6,1.0,1.4)
     # hr_art = c(0.6,1.0) # c(0.6,1.0,1.4)
   )
-  
-  
-  list(
-  )  
-  
   
   level_set <- get(cfg$level_set_which)
   
@@ -147,7 +142,7 @@ run_on_cluster(
 ##### Process results #####
 ###########################.
 
-if (FALSE) {
+if (F) {
   
   # r <- sim$results
   r500 <- filter(sim$results, n==500)
@@ -155,8 +150,8 @@ if (FALSE) {
   r2000 <- filter(sim$results, n==2000)
   ln <- c(nrow(r500), nrow(r1000), nrow(r2000))
   plot_data <- data.frame(
-    x = c(r500$lik_beta_x_est, r1000$lik_beta_x_est, r2000$lik_beta_x_est),
-    y = c(r500$cox_beta_x_est, r1000$cox_beta_x_est, r2000$cox_beta_x_est),
+    x = c(r500$lik_beta_est, r1000$lik_beta_est, r2000$lik_beta_est),
+    y = c(r500$cox_beta_est, r1000$cox_beta_est, r2000$cox_beta_est),
     n = c(rep(500, ln[1]), rep(1000, ln[2]), rep(2000, ln[3]))
   )
   ggplot(plot_data, aes(x=x, y=y)) +
@@ -168,8 +163,8 @@ if (FALSE) {
   
   sim %>% summarize(
     coverage = list(
-      list(name="cov_cox", truth=1.5, lower="cox_beta_x_ci_lo", upper="cox_beta_x_ci_hi"),
-      list(name="cov_lik", truth=1.5, lower="lik_beta_x_ci_lo", upper="lik_beta_x_ci_hi")
+      list(name="cov_cox", truth=1.5, lower="cox_beta_ci_lo", upper="cox_beta_ci_hi"),
+      list(name="cov_lik", truth=1.5, lower="lik_beta_ci_lo", upper="lik_beta_ci_hi")
     )
   )
 
@@ -245,7 +240,7 @@ if (FALSE) {
 ##### Run dataset checks #####
 ##############################.
 
-if (FALSE) {
+if (F) {
   
   # Setup
   library(dplyr)
@@ -384,7 +379,7 @@ if (FALSE) {
 ##### Mini-simulation #####
 ###########################.
 
-if (FALSE) {
+if (F) {
   
   n <- 100000
   
@@ -431,63 +426,5 @@ if (FALSE) {
     geom_point() +
     geom_hline(yintercept=0.8, linetype="dotted") +
     labs(x="Correlation between x and z", y="Estimated rho_xy")
-  
-}
-
-
-
-###################.
-##### Archive #####
-###################.
-
-if (FALSE) {
-  
-  # Misc MICE code
-  {
-    # Run analysis on each imputed dataset
-    for (j in 1:m) {
-      d_imputed <- mice::complete(imputation_object, j)
-    }
-    
-    # Get degrees of freedom from a single analysis
-    dfcom <- summary(cox_model_ideal)$waldtest[[2]]
-    
-    # Store list as mice::mira object and pool results
-    imputation_results <- as.mira(analysis_list)
-    pooled_model <- pool(imputation_results, dfcom = dfcom)
-    
-    # Get coefficient of hiv_status(3)
-    coeff_ideal <- summary(cox_model_ideal)$coefficients[2,1]
-    coeff_mi <- pooled_model$pooled[2,1]
-  }
-  
-  # Convert yearly probabilities to monthly probabilities
-  {
-    convert_to_monthly_prob <- function(p) { 1 - (1-p)^(1/12) }
-    psero <- list(
-      mtct = psero_year$mtct,
-      male = lapply(psero_year$male, convert_to_monthly_prob),
-      female = lapply(psero_year$female, convert_to_monthly_prob)
-    )
-  }
-  
-  # Dataset checks
-  {
-    
-    # Check 4: Look at cascade status by year and "testing case"
-    d4_orig <- dat_cp_orig %>% group_by(case, start_year) %>%
-      summarize(num_hivpos_artneg=sum(casc_status=="HIV+ART-"))  
-    d4_imp <- dat_cp_imp %>% group_by(case, start_year) %>%
-      summarize(num_hivpos_artneg=sum(casc_status=="HIV+ART-"))  
-    d4_orig$which <- "orig"
-    d4_imp$which <- "imp"
-    ggplot(
-      rbind(d4_orig,d4_imp),
-      aes(x=start_year, y=num_hivpos_artneg, group=which, fill=factor(case))
-    ) +
-      geom_bar(stat="identity", width=0.4) +
-      facet_grid(rows=vars(case), cols=vars(which), scales="free_y")
-    
-  }
   
 }

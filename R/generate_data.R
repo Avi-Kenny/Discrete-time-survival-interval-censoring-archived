@@ -14,9 +14,9 @@ generate_data <- function(n, max_time, params) {
   # !!!!!
   if (F) {
     params <- list(
-      gamma = c(log(1.3),log(1.002)),
-      xi = c(log(1.2),log(1.001)),
-      beta_x = log(1.5)
+      g_x = c(log(1.3),log(1.002)),
+      g_y = c(log(1.2),log(1.001)),
+      beta = log(1.5)
     )
     dat <- generate_data(n=100, max_time=100, params=params)
     sum(dplyr::summarize(group_by(dat,id), x=max(x))$x) # Number seroconverted
@@ -36,16 +36,16 @@ generate_data <- function(n, max_time, params) {
     "id" = integer(),
     "t_start" = integer(),
     "t_end" = integer(),
-    "z_sex" = integer(),
-    "z_age" = integer(),
+    "w_sex" = integer(),
+    "w_age" = integer(),
     "x" = integer(),
     "y" = integer()
   )
   
   # Generate baseline covariates
   id <- c(1:n)
-  z_sex <- sample(c(0,1), size=n, replace=T)
-  z_age <- sample(c(1:80), size=n, replace=T)
+  w_sex <- sample(c(0,1), size=n, replace=T)
+  w_age <- sample(c(1:80), size=n, replace=T)
   
   # Loop through individuals/time to generate events
   p <- params
@@ -55,26 +55,27 @@ generate_data <- function(n, max_time, params) {
     x <- y <- x_prev <- c()
     event <- 0
     t <- 1
-    z_sex_ <- z_sex[i]
-    z_age_ <- z_age[i]
+    w_sex_ <- w_sex[i]
+    w_age_ <- w_age[i]
     
     while (!event && t<=max_time) {
       
       # Sample seroconversion (x)
       if (t==1) {
-        p_sero <- b_hazard_x(t) * exp(p$g[1]*z_sex_ + p$g[2]*z_age_)
+        p_sero <- b_hazard_x(t) * exp(p$g_x[1]*w_sex_ + p$g_x[2]*w_age_)
         x[t] <- rbinom(n=1, size=1, prob=p_sero)
         x_prev <- 0
       } else {
         x_prev[t] <- x[round(t-1)]
         if (x_prev[t]==1) { x[t] <- 1 } else {
-          p_sero <- b_hazard_x(t) * exp(p$g[1]*z_sex_ + p$g[2]*z_age_)
+          p_sero <- b_hazard_x(t) * exp(p$g_x[1]*w_sex_ + p$g_x[2]*w_age_)
           x[t] <- rbinom(n=1, size=1, prob=p_sero)
         }
       }
       
       # Sample events
-      p_event <- b_hazard_y(t) * exp(p$x[1]*z_sex_ + p$x[2]*z_age_ + p$b*x[t])
+      p_event <- b_hazard_y(t) *
+        exp(p$g_y[1]*w_sex_ + p$g_y[2]*w_age_ + p$b*x[t])
       event <- rbinom(n=1, size=1, prob=p_event)
       y[t] <- event
       
@@ -88,7 +89,7 @@ generate_data <- function(n, max_time, params) {
     x_prev <- 
     dat <- rbind(dat, list(
       id=rep(i,len), t_start=c(0:(len-1)), t_end=c(1:len),
-      z_sex=rep(z_sex_,len), z_age=rep(z_age_,len), x=x, y=y, x_prev=x_prev
+      w_sex=rep(w_sex_,len), w_age=rep(w_age_,len), x=x, y=y, x_prev=x_prev
     ))
     
   }

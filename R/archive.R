@@ -1,4 +1,333 @@
 
+#################################################.
+##### Old posterior_param_sample() function #####
+#################################################.
+
+#' Take a posterior sample of parameter vector theta
+#' 
+#' @param fit Stan model fit returned by fit_stan()
+#' @param size Number of samples to take (m); one per imputation
+#' @return A list of parameter samples
+posterior_param_sample <- function(fit, size) {
+  
+  n.iter <- nrow(fit[[1]])
+  chains <- sample(c(1,2), size=size, replace=TRUE)
+  rows <- sample(c(1:n.iter), size=size, replace=FALSE)
+  alpha0 <- psi1 <- psi2 <- c()
+  for (i in 1:C$m) {
+    alpha0 <- c(alpha0, fit[[chains[i]]][[rows[i],"alpha0"]])
+    psi1 <- c(psi1, fit[[chains[i]]][[rows[i],"psi1"]])
+    psi2 <- c(psi2, fit[[chains[i]]][[rows[i],"psi2"]])
+  }
+  
+  return(list(
+    alpha0=alpha0, psi1=psi1, psi2=psi2
+  ))
+  
+}
+
+
+
+#######################################.
+##### Old run_analysis() function #####
+#######################################.
+
+#' Run Cox PH analysis
+#'
+#' @param dat_cp A dataset returned by transform_dataset()
+#' @param options Placeholder; currently unused
+#' @return A list containing the following:
+#'     est_hiv: point estimate of HIV+ART- exposure coefficient
+#'     se_hiv: standard error of HIV+ART- exposure coefficient
+#'     est_art: point estimate of HIV+ART+ exposure coefficient
+#'     se_art: standard error of HIV+ART+ exposure coefficient
+
+run_analysis <- function(dat_cp, options=list()) {
+  
+  # Create "censor" dataset
+  if (!is.null(options$method) && options$method=="censor") {
+    
+    # Add an ID row
+    dat_cp <- cbind("obs_id"=c(1:nrow(dat_cp)),dat_cp)
+    
+    # Exclude patients with no testing data
+    dat_cp %<>% filter(case!=1)
+    
+    # Exclude observation time prior to the first test
+    dat_cp %<>% filter(start_year>=first_test)
+    
+    # Exclude observation time after the last negative test for case 2
+    dat_cp %<>% filter(
+      !(replace_na(case==2 & start_year>last_neg_test,FALSE))
+    )
+    
+    # !!!!! Check censoring manually
+    
+  }
+  
+  # Fit time-varying Cox model ("ideal")
+  # !!!!! Also try with robust SEs
+  fit <- coxph(
+    Surv(start_time, end_time, y) ~ factor(casc_status) + age + sex +
+      cluster(id),
+    data = dat_cp
+  )
+  summ <- summary(fit)$coefficients
+  
+  # # !!!!! Fit a logistic discrete survival model
+  # fit2 <- glm(
+  #   y ~ factor(casc_status) + age + sex,
+  #   data = dat_cp,
+  #   # start = c(-0.1,-0.1,-0.1,-0.1,-0.1),
+  #   family = "binomial"
+  #   # family = binomial(link="log")
+  # )
+  # summ <- summary(fit2)$coefficients
+  
+  results <- list(
+    est_hiv = summ["factor(casc_status)HIV+ART-","coef"],
+    se_hiv = summ["factor(casc_status)HIV+ART-","se(coef)"],
+    est_art = summ["factor(casc_status)HIV+ART+","coef"],
+    se_art = summ["factor(casc_status)HIV+ART+","se(coef)"]
+    # est_hiv = summ["factor(casc_status)HIV+ART-","Estimate"],
+    # se_hiv = summ["factor(casc_status)HIV+ART-","Std. Error"],
+    # est_art = summ["factor(casc_status)HIV+ART+","Estimate"],
+    # se_art = summ["factor(casc_status)HIV+ART+","Std. Error"]
+  )
+  
+  return(results)
+  
+}
+
+
+
+############################################.
+##### Old transform_dataset() function #####
+############################################.
+
+#' Transform dataset into "counting process" format
+#'
+#' @param dat_baseline A dataset returned by generate_data_baseline()
+#' @param dat_events A dataset returned by generate_data_events()
+#' @return A dataset in "counting process" format for Cox PH analysis
+
+transform_dataset <- function(dat_baseline, dat_events) {
+  
+  # Extract variables
+  start_year <- attr(dat_baseline, "start_year")
+  end_year <- attr(dat_events, "end_year")
+  I <- nrow(dat_baseline)
+  
+  # Data transformation
+  dat_baseline$start_time <- 0
+  dat_baseline$end_time <- sapply(dat_events, function(d) { d$T_i })
+  dat_baseline$y_copy <- sapply(dat_events, function(d) { d$y[d$T_i] })
+  
+  # Put dataset into "counting process" format
+  dat_cp <- survSplit(
+    formula = Surv(start_time, end_time, y_copy) ~.,
+    data = dat_baseline,
+    cut = c(1:(12*(end_year-start_year)))
+  )
+  
+  # Convert dat_events to a dataframe and attach to dat_cp
+  # cbind is functioning as an inner join since both dataframes are sorted
+  df_ev <- as.data.frame(rbindlist(dat_events))
+  df_ev %<>% filter(y!=9)
+  df_ev %<>% subset(select=-id)
+  dat_cp %<>% cbind(df_ev)
+  
+  # Create exposure variable
+  dat_cp %<>% mutate(
+    casc_status = case_when(
+      x==0 ~ "HIV-",
+      x==1 & z==0 ~ "HIV+ART-",
+      x==1 & z==1 ~ "HIV+ART+"
+    ),
+    age = b_age + start_time/12
+  )
+  
+  return(dat_cp)
+  
+}
+
+
+
+#############################################.
+##### Old perform_imputation() function #####
+#############################################.
+
+#' Perform imputation on a dataset with missingness
+#'
+#' @param dat_baseline A dataset returned by generate_data_baseline()
+#' @param dat_events A dataset returned by generate_data_events()
+#' @param theta_m An posterior draw of the parameters
+#' @return dat_events, but with missing values in X imputed
+
+perform_imputation <- function(dat_baseline, dat_events, theta_m) {
+  
+  p <- theta_m
+  
+  # !!!!! Make sure we are memoising within perform_imputation
+  
+  # # !!!!! TESTING
+  # dat_events_backup <- dat_events
+  # dat_events <- dat_events[1:3]
+  
+  # Perform imputation for each patient
+  x_imputed <- lapply(dat_events, function(de) {
+    
+    db_i <- dat_baseline[de$i,]
+    
+    # S_iX is the set of X values with positive posterior probability
+    # The actual value assigned represents the number of zeros in X
+    S_iX <- case_when(
+      de$case == 1 ~ list(c(0:de$T_i)),
+      de$case == 2 ~ list(c(de$last_neg_test:de$T_i)),
+      de$case == 3 ~ list(c(de$last_neg_test:(de$first_pos_test-1))),
+      de$case == 4 ~ list(c(0:(de$first_pos_test-1)))
+    )[[1]]
+    
+    # Calculate component discrete hazards
+    # Note: p and db_i are accessed globally
+    p_it <- memoise(function(t) {
+      expit(
+        p$alpha0 + p$alpha1*db_i$sex + p$alpha2*(db_i$b_age+(t-1)/12) +
+          p$alpha3*db_i$u
+      )
+    })
+    q_it <- memoise(function(t,x) {
+      min(0.99999, expit(
+        p$gamma0 + p$gamma1*db_i$sex + p$gamma2*(db_i$b_age+(t-1)/12) +
+          p$gamma3*db_i$u
+      ) * exp(
+        log(p$psi1)*x*(1-de$z[t]) +
+          log(p$psi2)*x*de$z[t]
+      ))
+    })
+    
+    # In this block, we assign a probability to each possible value of S_iX
+    # Note: d is accessed globally
+    # Note: make sure these probabilities line up with those in
+    #     generate_data_events.R and fit_stan.R
+    probs <- sapply(S_iX, function(x) {
+      
+      # !!!!! Need to QA this
+      
+      if (de$case<=2) {
+        
+        if (x==de$last_neg_test) {
+          P_X <- p_it(x+1)
+        } else if (x %in% c((de$last_neg_test+1):(de$T_i-1))) {
+          P_X_part <- prod(sapply(c((de$last_neg_test+1):x), function(s) {
+            (1 - p_it(s))
+          }))
+          P_X <- P_X_part * p_it(x+1)
+        } else if (x==de$T_i) {
+          P_X <- prod(sapply(c((de$last_neg_test+1):de$T_i), function(s) {
+            (1 - p_it(s))
+          }))
+        } else {
+          stop("x is out of range; debug")
+        }
+        
+      } else if (de$case>=3) {
+        
+        sum_p <- sum(sapply(c((de$last_neg_test+1):de$first_pos_test), p_it))
+        P_X <- p_it(x+1) / sum_p
+        
+      }
+      
+      x_vec <- c(rep(0,x),rep(1,de$T_i-x))
+      P_Y_part <- prod(sapply(c(1:(de$T_i-1)), function(s) {
+        1 - q_it(s,x_vec[s])
+      }))
+      q_T_i <- q_it(de$T_i,x_vec[de$T_i])
+      P_Y <- P_Y_part * ifelse(de$y[de$T_i]==1, q_T_i, 1-q_T_i)
+      
+      return(P_X*P_Y)
+      
+    })
+    probs <- probs / sum(probs)
+    
+    if (round(sum(probs),6)!=1) {
+      stop("S_iX probabilities don't sum to one; debug")
+    }
+    mult <- which(as.integer(rmultinom(n=1, size=1, prob=probs))==1)
+    x_i_sample <- S_iX[mult]
+    
+    return (c(rep(0,x_i_sample),
+              rep(1,de$T_i-x_i_sample),
+              rep(9, sum(de$y==9))))
+    
+  })
+  
+  # Merge imputations back into dat_events
+  dat_imputed <- dat_events
+  for (i in 1:length(dat_events)) {
+    dat_imputed[[i]]$x <- x_imputed[[i]]
+  }
+  
+  return(dat_imputed)
+  
+}
+
+
+
+#########################.
+##### Old MAIN code #####
+#########################.
+
+# Misc MICE code
+{
+  # Run analysis on each imputed dataset
+  for (j in 1:m) {
+    d_imputed <- mice::complete(imputation_object, j)
+  }
+  
+  # Get degrees of freedom from a single analysis
+  dfcom <- summary(cox_model_ideal)$waldtest[[2]]
+  
+  # Store list as mice::mira object and pool results
+  imputation_results <- as.mira(analysis_list)
+  pooled_model <- pool(imputation_results, dfcom = dfcom)
+  
+  # Get coefficient of hiv_status(3)
+  coeff_ideal <- summary(cox_model_ideal)$coefficients[2,1]
+  coeff_mi <- pooled_model$pooled[2,1]
+}
+
+# Convert yearly probabilities to monthly probabilities
+{
+  convert_to_monthly_prob <- function(p) { 1 - (1-p)^(1/12) }
+  psero <- list(
+    mtct = psero_year$mtct,
+    male = lapply(psero_year$male, convert_to_monthly_prob),
+    female = lapply(psero_year$female, convert_to_monthly_prob)
+  )
+}
+
+# Dataset checks
+{
+  
+  # Check 4: Look at cascade status by year and "testing case"
+  d4_orig <- dat_cp_orig %>% group_by(case, start_year) %>%
+    summarize(num_hivpos_artneg=sum(casc_status=="HIV+ART-"))  
+  d4_imp <- dat_cp_imp %>% group_by(case, start_year) %>%
+    summarize(num_hivpos_artneg=sum(casc_status=="HIV+ART-"))  
+  d4_orig$which <- "orig"
+  d4_imp$which <- "imp"
+  ggplot(
+    rbind(d4_orig,d4_imp),
+    aes(x=start_year, y=num_hivpos_artneg, group=which, fill=factor(case))
+  ) +
+    geom_bar(stat="identity", width=0.4) +
+    facet_grid(rows=vars(case), cols=vars(which), scales="free_y")
+  
+}
+
+
+
 ############################################.
 ##### Old dataset generating functions #####
 ############################################.
