@@ -35,3 +35,6 @@ vignettes/*.pdf
 *.utf8.md
 *.knit.md
 HIV.multiple.imputation.Rproj
+
+# Manually added
+sim.rds
