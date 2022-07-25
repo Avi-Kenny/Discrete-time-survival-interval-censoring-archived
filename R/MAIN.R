@@ -53,11 +53,9 @@ if (cfg$local) {
 # Load SimEngine + functions
 {
   library(SimEngine)
-  source("generate_data.R")
-  source("run_analysis.R")
-  source("perform_imputation.R")
-  source("transform_dataset.R")
   source("one_simulation.R")
+  source("generate_data.R")
+  source("likelihood.R")
   source("helpers.R")
 }
 
@@ -69,18 +67,16 @@ if (cfg$local) {
 
 if (Sys.getenv("sim_run") %in% c("first", "")) {
   
-  # Simulation 1: !!!!!
+  # Simulation 1: basic
   level_set_1 <- list(
     n = c(500,1000,2000),
     max_time = 100,
     params = list(
       "p" = list(g_x = c(log(1.3),log(1.002)),
                  g_y = c(log(1.2),log(1.001)),
+                 g_v = c(log(1.2),log(1.001)),
                  beta = log(1.5))
     )
-    # method = c("ideal", "mi"),
-    # hr_hiv = c(1.0,1.4), # c(0.6,1.0,1.4)
-    # hr_art = c(0.6,1.0) # c(0.6,1.0,1.4)
   )
   
   level_set <- get(cfg$level_set_which)

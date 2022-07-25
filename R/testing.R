@@ -1,30 +1,75 @@
 
-##############################################.
-##### Generate dataset and fit Cox model #####
-##############################################.
+##################################################################.
+##### Generate dataset, run summary stats, and fit Cox model #####
+##################################################################.
 
-system.time({
-  
-  # Runtimes (seconds)
-  # 2 (n=500), 5 (n=1000), 18 (n=2000), 65 (n=4000)
+# Runtimes (seconds)
+# Note: need to update this
+# 2 (n=500), 5 (n=1000), 18 (n=2000), 65 (n=4000)
+
+# Set up vectors
+# T_minus <- T_plus <- c()
+c1 <- c2 <- c3 <- c4 <- c()
+num_pos <- num_ev <- num_ev_pos <- c()
+g_y_1 <- g_y_2 <- beta <- c()
+
+# Generate datasets and calculate summary stats
+n_reps <- 30
+for (i in c(1:n_reps)) {
   
   # Generate data
   dat <- generate_data(
-    n = 1000,
+    n = 500,
     max_time = 100,
     params = list(
       g_x = c(log(1.3),log(1.002)),
       g_y = c(log(1.2),log(1.001)),
+      g_v = c(log(1.2),log(1.001)),
       beta = log(1.5)
     )
   )
+  
+  # Summary stats
+  num_pos[i] <- sum(dplyr::summarize(group_by(dat,id), x=max(x))$x) # Number seroconverted
+  num_ev[i] <- sum(dat$y) # Number of events
+  num_ev_pos[i] <- sum(dat$x*dat$y) # Number of events among HIV+
+  
+  # T_minus[i] <- attr(dat, "T_minus")
+  # T_plus[i] <- attr(dat, "T_plus")
+  c1[i] <- sum(attr(dat, "c1"))
+  c2[i] <- sum(attr(dat, "c2"))
+  c3[i] <- sum(attr(dat, "c3"))
+  c4[i] <- sum(attr(dat, "c4"))
   
   # Run Cox PH model
   model <- coxph(
     Surv(t_start, t_end, y) ~ w_sex + w_age + x + cluster(id),
     data = dat
   )
-  print("True params: c(1.2, 1.001, 1.5)")
-  print(summary(model)$conf.int)
+  g_y_1[i] <- model$coefficients[1]
+  g_y_2[i] <- model$coefficients[2]
+  beta[i] <- model$coefficients[3]
   
-})
+}
+
+# Visualize summary stats
+# Export PDF 5" x 10"
+stats <- c("# case 1", "# case 2", "# case 3", "# case 4", "# seroconverted",
+           "# of events", "# of events among HIV+", "exp(gamma_y[1])",
+           "exp(gamma_y[2])", "exp(beta)")
+df_plot <- data.frame(
+  x = c(c1,c2,c3,c4,num_pos,num_ev,num_ev_pos,exp(g_y_1),exp(g_y_2),exp(beta)),
+  y = rep(0,n_reps),length(stats),
+  which = rep(factor(stats, levels=stats), each=n_reps)
+)
+ggplot(df_plot, aes(x=x, y=y, color=which)) +
+  geom_jitter(width=0, height=1, alpha=0.5, size=3) +
+  facet_wrap(~which, scales="free_x", ncol=1, strip.position="left") +
+  labs(y=NULL) +
+  ylim(-2,2) +
+  theme(axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        strip.text.y.left = element_text(angle=0),
+        legend.position="none")
