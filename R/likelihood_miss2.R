@@ -3,12 +3,11 @@
 #' @param par Vector of parameters governing the distribution.
 #' @return Numeric likelihood
 #' @notes This corresponds to the missing data structure
-negloglik_miss <- function(dat, par) {
+negloglik_miss2 <- function(dat, par) {
   
   # Convert parameter vector to a named list
   p <- par
-  params <- list(a_x=p[1], g_x=c(p[2],p[3]), a_y=p[4], g_y=c(p[5],p[6]),
-                 beta=p[7], a_v=p[8], g_v=c(p[9],p[10]))
+  params <- list(a_x=p[1], a_y=p[2], beta=p[3], a_v=p[4])
   
   # Compute the negative likelihood across individuals
   n <- attr(dat, "n")
@@ -18,7 +17,6 @@ negloglik_miss <- function(dat, par) {
     J <- nrow(dat_i)
     
     # Calculate vectors for patient i
-    w <- subset(dat, select=c(w_sex,w_age)) # !!!!! TEMP
     y <- dat_i$y
     v <- dat_i$v
     u <- dat_i$u
@@ -42,14 +40,12 @@ negloglik_miss <- function(dat, par) {
     }
     
     # Compute the likelihood for individual i
-    w <- t(w)
     f2 <- sum(unlist(lapply(X_i_set, function(x) {
       x_prev <- c(0,x[1:(length(x)-1)])
       prod(unlist(lapply(c(1:J), function(j) {
-        w_ij <- as.numeric(w[,j])
-        f_x(x=x[j], x_prev=x_prev[j], w=w_ij, params=params) *
-          f_y(y=y[j], x=x[j], w=w_ij, params=params) *
-          f_v(v=v[j], u_prev=u_prev[j], w=w_ij, params=params)
+        f_x2(x=x[j], x_prev=x_prev[j], params=params) *
+          f_y2(y=y[j], x=x[j], params=params) *
+          f_v2(v=v[j], u_prev=u_prev[j], params=params)
       })))
     })))
     if (f2<=0) {
@@ -65,67 +61,65 @@ negloglik_miss <- function(dat, par) {
 
 
 
-#' Calculate likelihood component f_x
+#' Calculate likelihood component f_x2
 #'
 #' @param x Seroconversion indicator (time j)
 #' @param x_prev Seroconversion indicator (time j-1)
-#' @param w Vector of covariates (time j)
 #' @param params Named list of parameters
 #' @return Numeric likelihood
-f_x <- function(x, x_prev, w, params) {
+f_x2 <- function(x, x_prev, params) {
   p <- params
   if (x==1) {
     if (x_prev==1) {
       return(1)
     } else {
-      return(min(exp(p$a_x + sum(p$g_x*w)),0.99999))
+      return(min(exp(p$a_x),0.99999))
     }
   } else {
     if (x_prev==1) {
       return(0)
     } else {
-      return(1 - min(exp(p$a_x + sum(p$g_x*w)),0.99999))
+      return(1 - min(exp(p$a_x),0.99999))
     }
   }
 }
 
 
 
-#' Calculate likelihood component f_y
+#' Calculate likelihood component f_y2
 #'
 #' @param y Event indicator (time j)
 #' @param x Seroconversion indicator (time j)
-#' @param w Vector of covariates (time j)
 #' @param params Named list of parameters
 #' @return Numeric likelihood
-f_y <- function(y, x, w, params) {
+f_y2 <- function(y, x, params) {
   p <- params
-  explin <- min(exp(p$a_y + sum(p$g_y*w) + p$beta*x),0.99999)
+  explin <- min(exp(p$a_y + p$beta*x),0.99999)
   if (y==1) { return(explin) } else { return(1-explin) }
 }
 
 
 
-#' Calculate likelihood component f_v
+#' Calculate likelihood component f_v2
 #'
 #' @param v Testing indicator (time j)
 #' @param u_prev Variable U indicator (time j-1)
-#' @param w Vector of covariates (time j)
 #' @param params Named list of parameters
 #' @return Numeric likelihood
-f_v <- function(v, u_prev, w, params) {
+f_v2 <- function(v, u_prev, params) {
   p <- params
   if (v==1) {
     if (u_prev==1) {
-      return(0)
+      warning("v==1 and u_prev==1")
+      return(0.00001)
     } else {
-      return(min(exp(p$a_v + sum(p$g_v*w)),0.99999))
+      return(min(exp(p$a_v),0.99999))
     }
   } else {
     if (u_prev==1) {
       return(1)
     } else {
-      return(1-min(exp(p$a_v + sum(p$g_v*w)),0.99999))
+      return(1-min(exp(p$a_v),0.99999))
     }
   }
 }

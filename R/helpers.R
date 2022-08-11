@@ -15,8 +15,9 @@ expit <- function(x) {1/(1+exp(-x))}
 #'     - Case 2: Only NEG tests
 #'     - Case 3: NEG test then POS test
 #'     - Case 4: first test POS
-case <- function(x,v) {
+case <- function(x,v, warn=F) {
   
+  case_i <- rep(NA, 4)
   sum_v <- sum(v)
   sum_vx <- sum(v*x)
   sum_v1x <- sum(v*(1-x))
@@ -25,10 +26,12 @@ case <- function(x,v) {
   case_i[3] <- as.integer(sum_v>0 & sum_v1x>0 & sum_vx==1)
   case_i[4] <- as.integer(sum_v==1 & sum_vx==1)
   if (sum(case_i)==0) {
-    stop("No applicable case")
+    if (warn) { warning("No applicable case") }
+    return(9)
   }
   if (sum(case_i)>1) {
-    stop("Multiple cases matched")
+    if (warn) { warning("Multiple cases matched") }
+    return(9)
   }
   return(which(case_i==1))
   
@@ -78,9 +81,11 @@ g_delta <- function(case, J, T_minus, T_plus) {
   } else if (case==2) {
     d <- c(rep(1,T_minus), rep(0,J-T_minus))
   } else if (case==3) {
-    d <- c(rep(0,T_plus-1), rep(1,J-T_plus+1))
+    d <- c(rep(1,T_minus), rep(0,T_plus-T_minus-1), rep(1,J-T_plus+1))
   } else if (case==4) {
-    d <- c(rep(1,T_minus), rep(1,T_plus-T_minus-1), rep(1,J-T_plus+1))
+    d <- c(rep(0,T_plus-1), rep(1,J-T_plus+1))
+  } else {
+    browser() # !!!!!
   }
   if (length(d)!=J) { stop("Delta is of the wrong length") }
   

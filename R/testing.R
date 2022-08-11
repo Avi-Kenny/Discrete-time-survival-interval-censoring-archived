@@ -19,8 +19,10 @@ for (i in c(1:n_reps)) {
   
   # Generate data
   dat <- generate_data(
-    n = 500,
-    max_time = 100,
+    n = 3,
+    max_time = 5,
+    # n = 500,
+    # max_time = 100,
     params = list(
       g_x = c(log(1.3),log(1.002)),
       g_y = c(log(1.2),log(1.001)),

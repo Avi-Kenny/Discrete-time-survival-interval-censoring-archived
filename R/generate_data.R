@@ -11,11 +11,11 @@
 generate_data <- function(n, max_time, params) {
   
   # Set baseline hazard functions
-  a_x <- function(t) { log(0.005) }
-  a_y <- function(t) { log(0.003) }
-  a_v <- function(t) { log(0.01) }
-  # b_hazard_x <- function(t) { log(0.003 + 0.003*(t/100)) }
-  # b_hazard_y <- function(t) { log(0.002 + 0.002*(t/100)) }
+  # Note: these have temporarily been set to constants, passed in through the
+  #     `params` argument
+  # a_x <- function(t) { log(0.005) }
+  # a_y <- function(t) { log(0.003) }
+  # a_v <- function(t) { log(0.1) }
   
   # Generate dataframe to hold results
   dat <- data.frame(
@@ -42,7 +42,7 @@ generate_data <- function(n, max_time, params) {
   i_T_minus <- i_T_plus <- i_case <- c()
   for (i in c(1:n)) {
     
-    x <- y <- v <- u <- c() # !!!!! check if all of these are needed
+    x <- y <- v <- u <- c()
     event <- u_prev <- x_prev <- 0
     j <- 0
     w_sex_ <- w_sex[i]
@@ -53,19 +53,26 @@ generate_data <- function(n, max_time, params) {
       # Increment time
       j <- round(j+1)
       
-      # Sample seroconversion (x)
-      p_sero <- x_prev + (1-x_prev) * exp(
-        a_x(j) + p$g_x[1]*w_sex_ + p$g_x[2]*w_age_
-      )
+      # Sample serostatus (x)
+      p_sero <- min(x_prev + (1-x_prev) * exp(
+        p$a_x + p$g_x[1]*w_sex_ + p$g_x[2]*w_age_
+        # a_x(j) + p$g_x[1]*w_sex_ + p$g_x[2]*w_age_
+      ), 1)
       x[j] <- x_prev <- rbinom(n=1, size=1, prob=p_sero)
       
       # Sample events
-      p_event <- exp(a_y(j) + p$g_y[1]*w_sex_ + p$g_y[2]*w_age_ + p$b*x[j])
+      p_event <- min(exp(
+        p$a_y + p$g_y[1]*w_sex_ + p$g_y[2]*w_age_ + p$b*x[j]
+        # a_y(j) + p$g_y[1]*w_sex_ + p$g_y[2]*w_age_ + p$b*x[j]
+      ), 1)
       event <- rbinom(n=1, size=1, prob=p_event)
       y[j] <- event
       
       # Sample testing
-      p_test <- (1-u_prev) * exp(a_v(j) + p$g_v[1]*w_sex_ + p$g_v[2]*w_age_)
+      p_test <- min((1-u_prev) * exp(
+        p$a_v + p$g_v[1]*w_sex_ + p$g_v[2]*w_age_
+        # a_v(j) + p$g_v[1]*w_sex_ + p$g_v[2]*w_age_
+      ), 1)
       v[j] <- rbinom(n=1, size=1, prob=p_test)
       
       # Calculate additional variables
