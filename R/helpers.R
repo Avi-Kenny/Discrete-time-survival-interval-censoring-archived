@@ -94,3 +94,16 @@ g_delta <- function(case, J, T_minus, T_plus) {
 }
 
 
+
+#' Helper function for debugging; prints timestamps
+#' 
+#' @param num Number
+#' @param msg Message
+chk <- function(num, msg="") {
+  if (msg=="") {
+    str <- paste0("Check ", num, ": ", Sys.time())
+  } else {
+    str <- paste0("Check ", num, " (", msg, "): ", Sys.time())
+  }
+  print(str)
+}

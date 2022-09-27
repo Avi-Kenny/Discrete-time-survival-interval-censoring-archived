@@ -11,7 +11,7 @@
 cfg <- list(
   level_set_which = "level_set_1",
   # run_or_update = "run",
-  num_sim = 250,
+  num_sim = 500,
   pkgs = c("dplyr", "survival", "data.table", "tidyr", "memoise", "Rsolnp"), # "rjags", "rstan"
   pkgs_nocluster = c("ggplot2"),
   parallel = "none", # none outer
@@ -57,7 +57,8 @@ if (cfg$local) {
   source("generate_data.R")
   source("likelihood_full.R")
   source("likelihood_miss.R")
-  source("likelihood_miss2.R")
+  source("likelihood_miss_nocovariates.R")
+  source("likelihood_miss3.R")
   source("helpers.R")
 }
 

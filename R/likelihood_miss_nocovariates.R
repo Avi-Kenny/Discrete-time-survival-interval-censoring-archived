@@ -3,7 +3,7 @@
 #' @param par Vector of parameters governing the distribution.
 #' @return Numeric likelihood
 #' @notes This corresponds to the missing data structure
-negloglik_miss2 <- function(dat, par) {
+negloglik_miss_nocovariates <- function(dat, par) {
   
   # Convert parameter vector to a named list
   p <- par

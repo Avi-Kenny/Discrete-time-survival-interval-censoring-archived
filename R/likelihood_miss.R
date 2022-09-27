@@ -8,7 +8,7 @@ negloglik_miss <- function(dat, par) {
   # Convert parameter vector to a named list
   p <- par
   params <- list(a_x=p[1], g_x=c(p[2],p[3]), a_y=p[4], g_y=c(p[5],p[6]),
-                 beta=p[7], a_v=p[8], g_v=c(p[9],p[10]))
+                 beta=p[7])
   
   # Compute the negative likelihood across individuals
   n <- attr(dat, "n")
@@ -48,8 +48,7 @@ negloglik_miss <- function(dat, par) {
       prod(unlist(lapply(c(1:J), function(j) {
         w_ij <- as.numeric(w[,j])
         f_x(x=x[j], x_prev=x_prev[j], w=w_ij, params=params) *
-          f_y(y=y[j], x=x[j], w=w_ij, params=params) *
-          f_v(v=v[j], u_prev=u_prev[j], w=w_ij, params=params)
+          f_y(y=y[j], x=x[j], w=w_ij, params=params)
       })))
     })))
     if (f2<=0) {
@@ -102,30 +101,4 @@ f_y <- function(y, x, w, params) {
   p <- params
   explin <- min(exp(p$a_y + sum(p$g_y*w) + p$beta*x),0.99999)
   if (y==1) { return(explin) } else { return(1-explin) }
-}
-
-
-
-#' Calculate likelihood component f_v
-#'
-#' @param v Testing indicator (time j)
-#' @param u_prev Variable U indicator (time j-1)
-#' @param w Vector of covariates (time j)
-#' @param params Named list of parameters
-#' @return Numeric likelihood
-f_v <- function(v, u_prev, w, params) {
-  p <- params
-  if (v==1) {
-    if (u_prev==1) {
-      return(0)
-    } else {
-      return(min(exp(p$a_v + sum(p$g_v*w)),0.99999))
-    }
-  } else {
-    if (u_prev==1) {
-      return(1)
-    } else {
-      return(1-min(exp(p$a_v + sum(p$g_v*w)),0.99999))
-    }
-  }
 }

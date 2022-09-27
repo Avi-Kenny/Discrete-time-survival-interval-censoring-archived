@@ -1,4 +1,32 @@
 
+# Try reading in AHRI dataset
+if (F) {
+  
+  library(readstata13)
+  dat <- read.dta13("../AHRI Surveillance Datasets/SurveillanceEpisodes.dta")
+  
+  dat2 <- dat[,1:9]
+  
+  # Testing whether years are "skipped"
+  for (i in c(2:500)) {
+    year_prev <- dat2[round(i-1),"CalendarYear"]
+    year_curr <- dat2[i,"CalendarYear"]
+    ind_prev <- dat2[round(i-1),"IndividualId"]
+    ind_curr <- dat2[i,"IndividualId"]
+    if (ind_prev==ind_curr && year_curr-year_prev>1) {
+      print(paste(year_prev,year_curr,ind_prev,ind_curr))
+    }
+  }
+  
+  # Number of unique ind-year combinations
+  # About 2 million
+  dat2 %<>% mutate(
+    key = paste0(IndividualId,"-",CalendarYear)
+  )
+  length(unique(dat2$key))
+  length(unique(dat2$IndividualId))
+  
+}
 
 # Checking source of TEMP ERROR A1
 if (F) {
