@@ -25,6 +25,7 @@ generate_data <- function(n, max_time, params) {
     "w_sex" = integer(),
     "w_age" = double(),
     "x" = integer(),
+    "z" = integer(),
     "y" = integer(),
     "v" = integer(),
     "u" = integer(),
@@ -45,8 +46,8 @@ generate_data <- function(n, max_time, params) {
   i_T_minus <- i_T_plus <- i_case <- c()
   for (i in c(1:n)) {
     
-    x <- y <- v <- u <- c()
-    event <- u_prev <- x_prev <- 0
+    x <- y <- v <- u <- z <- c()
+    event <- u_prev <- x_prev <- z_prev <- 0
     j <- 0
     w_sex_ <- w_sex[i]
     w_age_ <- w_age[i]
@@ -59,28 +60,38 @@ generate_data <- function(n, max_time, params) {
       # Sample serostatus (x)
       p_sero <- x_prev + (1-x_prev) * exp(
         p$a_x + p$g_x[1]*w_sex_ + p$g_x[2]*w_age_
-        # a_x(j) + p$g_x[1]*w_sex_ + p$g_x[2]*w_age_
       )
       x[j] <- x_prev <- rbinom(n=1, size=1, prob=p_sero)
-      
-      # Sample events
-      p_event <- exp(
-        p$a_y + p$g_y[1]*w_sex_ + p$g_y[2]*w_age_ + p$b*x[j]
-        # a_y(j) + p$g_y[1]*w_sex_ + p$g_y[2]*w_age_ + p$b*x[j]
-      )
-      event <- rbinom(n=1, size=1, prob=p_event)
-      y[j] <- event
       
       # Sample testing
       p_test <- (1-u_prev) * exp(
         p$a_v + p$g_v[1]*w_sex_ + p$g_v[2]*w_age_
-        # a_v(j) + p$g_v[1]*w_sex_ + p$g_v[2]*w_age_
       )
       v[j] <- rbinom(n=1, size=1, prob=p_test)
       
-      # Calculate additional variables
+      # Calculate U variable
       u[j] <- u_prev + (1-u_prev)*v[j]*x[j]
       u_prev <- u[j]
+      
+      # Sample ART status
+      if (u[j]==0) {
+        p_art <- 0
+      } else if (z_prev==1) {
+        p_art <- 1
+      } else {
+        p_art <- exp(
+          p$a_z + p$g_z[1]*w_sex_ + p$g_z[2]*w_age_
+        )
+      }
+      z[j] <- z_prev <- rbinom(n=1, size=1, prob=p_art)
+      
+      # Sample events
+      p_event <- exp(
+        p$a_y + p$g_y[1]*w_sex_ + p$g_y[2]*w_age_ +
+          p$beta_x*x[j] + p$beta_z*z[j]
+      )
+      event <- rbinom(n=1, size=1, prob=p_event)
+      y[j] <- event
       
     }
     J <- j
@@ -97,7 +108,7 @@ generate_data <- function(n, max_time, params) {
     # Add results to dataframe
     dat <- rbind(dat, list(
       id=rep(i,J), t_start=c(0:(J-1)), t_end=c(1:J), w_sex=rep(w_sex_,J),
-      w_age=rep(w_age_,J), x=x, y=y, v=v, u=u, d=d, xs=x*d
+      w_age=rep(w_age_,J), x=x, z=z, y=y, v=v, u=u, d=d, xs=x*d
     ))
     
     # Store additional vectors

@@ -11,7 +11,7 @@
 cfg <- list(
   level_set_which = "level_set_1",
   # run_or_update = "run",
-  num_sim = 500,
+  num_sim = 1000,
   pkgs = c("dplyr", "survival", "data.table", "tidyr", "memoise", "Rsolnp",
            "numDeriv"), # "rjags", "rstan"
   pkgs_nocluster = c("ggplot2"),
@@ -68,7 +68,7 @@ if (cfg$local) {
 
 if (Sys.getenv("sim_run") %in% c("first", "")) {
   
-  # L <- list(n=300,max_time=70,params=list(a_x=log(0.005),a_y=log(0.003),a_v=log(0.7),g_x=c(log(1.3),log(1.2)),g_y=c(log(1.2),log(1.1)),g_v=c(log(1.2),log(1.1)),beta=log(1.5)))
+  # L <- list(n=300,max_time=70,params=list(a_x=log(0.005), a_y=log(0.003), a_v=log(0.7),a_z=log(0.004),g_x=c(log(1.3),log(1.2)), g_y=c(log(1.2),log(1.1)),g_v=c(log(1.2),log(1.1)), g_z=c(log(1.2),log(1.1)),beta_x=log(1.5), beta_z=log(0.6)))
   
   # Simulation 1: basic
   # n=500,t=100 rep runs in 3.2 hrs # !!!!! outdated
@@ -78,37 +78,12 @@ if (Sys.getenv("sim_run") %in% c("first", "")) {
     max_time = 70,
     # max_time = 100,
     params = list(
-      # "10pct testing" = list(
-      #   a_x=log(0.005), a_y=log(0.003), a_v=log(0.1),
-      #   g_x=c(log(1.3),log(1.2)), g_y=c(log(1.2),log(1.1)),
-      #   g_v=c(log(1.2),log(1.1)), beta=log(1.5)
-      # ),
+      # "10pct testing" = list( a_v=log(0.1) ),
       "70pct testing" = list(
-        a_x=log(0.005), a_y=log(0.003), a_v=log(0.7),
+        a_x=log(0.005), a_y=log(0.003), a_v=log(0.7), a_z=log(0.01),
         g_x=c(log(1.3),log(1.2)), g_y=c(log(1.2),log(1.1)),
         g_v=c(log(1.2),log(1.1)), g_z=c(log(1.2),log(1.1)),
-        beta_x=log(1.5)
-      )
-      
-      
-      
-      # "70pct testing" = list( # !!!!! 2022-09-28
-      #   a_x=log(0.005), a_y=log(0.003), a_v=log(0.7), # !!!!! 2022-09-28
-      #   g_x=c(0,0), g_y=c(log(1.5),log(1.1)), # !!!!! 2022-09-28
-      #   g_v=c(log(1.2),log(1.1)), beta=log(1.5) # !!!!! 2022-09-28
-      # ) # !!!!! 2022-09-28
-    )
-  )
-  
-  # Simulation 2: no covariates
-  # n=500,t=100 rep runs in 3.2 hrs # !!!!! outdated
-  level_set_2 <- list(
-    n = 500,
-    max_time = 70,
-    params = list(
-      "70pct testing" = list(
-        a_x=log(0.005), a_y=log(0.003), a_v=log(0.7), g_x=c(0,0),
-        g_y=c(0,0), g_v=c(0,0), beta=log(1.5)
+        beta_x=log(1.5), beta_z=log(0.7)
       )
     )
   )
@@ -165,14 +140,10 @@ run_on_cluster(
 
 if (F) {
   
-  # True vals: a_x=log(0.005), a_y=log(0.003), a_v=log(0.7), g_x=c(log(1.3),log(1.2)), g_y=c(log(1.2),log(1.1)), g_v=c(log(1.2),log(1.1)), beta=log(1.5)
-  
-  # v <- c("lik_M_g_y1_est", "lik_M_beta_est")
-  # true_vals <- log(c(1.5,1.5))
   v <- c("lik_M_a_x_est", "lik_M_g_x1_est", "lik_M_g_x2_est", "lik_M_a_y_est",
-         "lik_M_g_y1_est", "lik_M_g_y2_est", "lik_M_beta_est")
-  # true_vals <- log(c(0.005,1.3,1.2,0.003,1.5,1.1,1.5))
-  true_vals <- log(c(0.005,1,1,0.003,1.5,1.1,1.5))
+         "lik_M_g_y1_est", "lik_M_g_y2_est", "lik_M_beta_x_est",
+         "lik_M_beta_z_est")
+  true_vals <- log(c(0.005,1.3,1.2,0.003,1.2,1.1,1.5,0.7))
   r <- filter(sim$results, params=="70pct testing")
   x <- unlist(lapply(v, function(col) { r[,col] }))
   df_true <- data.frame(
@@ -209,7 +180,8 @@ if (F) {
       list(name="sd_a_y_est", x="lik_M_a_y_se"),
       list(name="sd_g_y1_est", x="lik_M_g_y1_se"),
       list(name="sd_g_y2_est", x="lik_M_g_y2_se"),
-      list(name="sd_beta_est", x="lik_M_beta_se")
+      list(name="sd_beta_x_est", x="lik_M_beta_x_se"),
+      list(name="sd_beta_z_est", x="lik_M_beta_z_se")
     ),
     sd = list(
       list(name="sd_a_x_actual", x="lik_M_a_x_est"),
@@ -218,16 +190,18 @@ if (F) {
       list(name="sd_a_y_actual", x="lik_M_a_y_est"),
       list(name="sd_g_y1_actual", x="lik_M_g_y1_est"),
       list(name="sd_g_y2_actual", x="lik_M_g_y2_est"),
-      list(name="sd_beta_actual", x="lik_M_beta_est")
+      list(name="sd_beta_x_actual", x="lik_M_beta_x_est"),
+      list(name="sd_beta_z_actual", x="lik_M_beta_z_est")
     ),
     coverage = list(
       list(name="cov_a_x", truth=log(0.005), estimate="lik_M_a_x_est", se="lik_M_a_x_se", na.rm=T),
-      list(name="cov_g_x1", truth=log(1), estimate="lik_M_g_x1_est", se="lik_M_g_x1_se", na.rm=T),
-      list(name="cov_g_x2", truth=log(1), estimate="lik_M_g_x2_est", se="lik_M_g_x2_se", na.rm=T),
+      list(name="cov_g_x1", truth=log(1.3), estimate="lik_M_g_x1_est", se="lik_M_g_x1_se", na.rm=T),
+      list(name="cov_g_x2", truth=log(1.2), estimate="lik_M_g_x2_est", se="lik_M_g_x2_se", na.rm=T),
       list(name="cov_a_y", truth=log(0.003), estimate="lik_M_a_y_est", se="lik_M_a_y_se", na.rm=T),
-      list(name="cov_g_y1", truth=log(1.5), estimate="lik_M_g_y1_est", se="lik_M_g_y1_se", na.rm=T),
+      list(name="cov_g_y1", truth=log(1.2), estimate="lik_M_g_y1_est", se="lik_M_g_y1_se", na.rm=T),
       list(name="cov_g_y2", truth=log(1.1), estimate="lik_M_g_y2_est", se="lik_M_g_y2_se", na.rm=T),
-      list(name="cov_beta", truth=log(1.5), estimate="lik_M_beta_est", se="lik_M_beta_se", na.rm=T)
+      list(name="cov_beta_x", truth=log(1.5), estimate="lik_M_beta_x_est", se="lik_M_beta_x_se", na.rm=T),
+      list(name="cov_beta_z", truth=log(0.7), estimate="lik_M_beta_z_est", se="lik_M_beta_z_se", na.rm=T)
     )
   )
   
@@ -245,15 +219,15 @@ if (F) {
   
   # !!!!!
   {
-    # True params: a_x=0.005, a_y=0.003, a_v=0.1/0.7, g_x=c(1.3,1.002), g_y=c(1.2,1.001), g_v=c(1.2,1.001), beta=1.5
+    # True params: a_x=0.005, a_y=0.003, a_v=0.1/0.7, g_x=c(1.3,1.002), g_y=c(1.2,1.001), g_v=c(1.2,1.001), beta_x=1.5
     true_val <- 1.5
     x_window <- 0.2
     # v1 <- "cox_g_y2_est"
     # v2 <- "lik_F_g_y2_est"
     # v3 <- "lik_M_g_y2_est"
-    v1 <- "cox_beta_est"
-    v2 <- "lik_F_beta_est"
-    v3 <- "lik_M_beta_est"
+    v1 <- "cox_beta_x_est"
+    v2 <- "lik_F_beta_x_est"
+    v3 <- "lik_M_beta_x_est"
     r1 <- filter(sim$results, params=="10pct testing")
     r2 <- filter(sim$results, params=="70pct testing")
     # r1 <- filter(sim$results, n==1000 & max_time==100)
@@ -288,8 +262,8 @@ if (F) {
   r2000 <- filter(sim$results, n==2000)
   ln <- c(nrow(r500), nrow(r1000), nrow(r2000))
   plot_data <- data.frame(
-    x = c(r500$lik_beta_est, r1000$lik_beta_est, r2000$lik_beta_est),
-    y = c(r500$cox_beta_est, r1000$cox_beta_est, r2000$cox_beta_est),
+    x = c(r500$lik_beta_x_est, r1000$lik_beta_x_est, r2000$lik_beta_x_est),
+    y = c(r500$cox_beta_x_est, r1000$cox_beta_x_est, r2000$cox_beta_x_est),
     n = c(rep(500, ln[1]), rep(1000, ln[2]), rep(2000, ln[3]))
   )
   ggplot(plot_data, aes(x=x, y=y)) +
@@ -301,8 +275,8 @@ if (F) {
   
   sim %>% summarize(
     coverage = list(
-      list(name="cov_cox", truth=1.5, lower="cox_beta_ci_lo", upper="cox_beta_ci_hi"),
-      list(name="cov_lik", truth=1.5, lower="lik_beta_ci_lo", upper="lik_beta_ci_hi")
+      list(name="cov_cox", truth=1.5, lower="cox_beta_x_ci_lo", upper="cox_beta_x_ci_hi"),
+      list(name="cov_lik", truth=1.5, lower="lik_beta_x_ci_lo", upper="lik_beta_x_ci_hi")
     )
   )
 

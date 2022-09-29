@@ -7,12 +7,8 @@ negloglik_miss <- function(dat, par) {
   
   # Convert parameter vector to a named list
   p <- as.numeric(par)
-  
-  # params <- L$params # !!!!! 2022-09-28
-  # params$g_y[1] <- p[1] # !!!!! 2022-09-28
-  # params$beta[1] <- p[2] # !!!!! 2022-09-28
   params <- list(a_x=p[1], g_x=c(p[2],p[3]), a_y=p[4], g_y=c(p[5],p[6]),
-                 beta=p[7])
+                 beta_x=p[7], beta_z=p[8])
   
   # Compute the negative likelihood across individuals
   n <- attr(dat, "n")
@@ -24,6 +20,7 @@ negloglik_miss <- function(dat, par) {
     # Calculate vectors for patient i
     w <- subset(dat_i, select=c(w_sex,w_age)) # !!!!! TEMP
     y <- dat_i$y
+    z <- dat_i$z
     v <- dat_i$v
     u <- dat_i$u
     d <- dat_i$d
@@ -52,7 +49,7 @@ negloglik_miss <- function(dat, par) {
       prod(unlist(lapply(c(1:J), function(j) {
         w_ij <- as.numeric(w[,j])
         f_x(x=x[j], x_prev=x_prev[j], w=w_ij, params=params) *
-          f_y(y=y[j], x=x[j], w=w_ij, params=params)
+          f_y(y=y[j], x=x[j], w=w_ij, z=z[j], params=params)
       })))
     })))
     if (f2<=0) {
@@ -82,14 +79,12 @@ f_x <- function(x, x_prev, w, params) {
       return(1)
     } else {
       return(exp(p$a_x + sum(p$g_x*w)))
-      # return(min(exp(p$a_x + sum(p$g_x*w)),0.99999))
     }
   } else {
     if (x_prev==1) {
       return(0)
     } else {
       return(1 - exp(p$a_x + sum(p$g_x*w)))
-      # return(1 - min(exp(p$a_x + sum(p$g_x*w)),0.99999))
     }
   }
 }
@@ -101,11 +96,11 @@ f_x <- function(x, x_prev, w, params) {
 #' @param y Event indicator (time j)
 #' @param x Seroconversion indicator (time j)
 #' @param w Vector of covariates (time j)
+#' @param z ART indicator (time j)
 #' @param params Named list of parameters
 #' @return Numeric likelihood
-f_y <- function(y, x, w, params) {
+f_y <- function(y, x, w, z, params) {
   p <- params
-  explin <- exp(p$a_y + sum(p$g_y*w) + p$beta*x)
-  # explin <- min(exp(p$a_y + sum(p$g_y*w) + p$beta*x),0.99999)
+  explin <- exp(p$a_y + sum(p$g_y*w) + p$beta_x*x + p$beta_z*z)
   if (y==1) { return(explin) } else { return(1-explin) }
 }
