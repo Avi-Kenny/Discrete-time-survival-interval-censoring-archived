@@ -57,7 +57,6 @@ if (cfg$local) {
   source("one_simulation.R")
   source("generate_data.R")
   source("likelihood_miss.R")
-  source("likelihood_debug.R")
   source("likelihood_miss_nocovariates.R")
   source("helpers.R")
 }
