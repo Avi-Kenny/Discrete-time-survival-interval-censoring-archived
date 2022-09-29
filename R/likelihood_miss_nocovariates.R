@@ -44,8 +44,7 @@ negloglik_miss_nocovariates <- function(dat, par) {
       x_prev <- c(0,x[1:(length(x)-1)])
       prod(unlist(lapply(c(1:J), function(j) {
         f_x2(x=x[j], x_prev=x_prev[j], params=params) *
-          f_y2(y=y[j], x=x[j], params=params) *
-          f_v2(v=v[j], u_prev=u_prev[j], params=params)
+          f_y2(y=y[j], x=x[j], params=params)
       })))
     })))
     if (f2<=0) {
@@ -96,30 +95,4 @@ f_y2 <- function(y, x, params) {
   p <- params
   explin <- min(exp(p$a_y + p$beta*x),0.99999)
   if (y==1) { return(explin) } else { return(1-explin) }
-}
-
-
-
-#' Calculate likelihood component f_v2
-#'
-#' @param v Testing indicator (time j)
-#' @param u_prev Variable U indicator (time j-1)
-#' @param params Named list of parameters
-#' @return Numeric likelihood
-f_v2 <- function(v, u_prev, params) {
-  p <- params
-  if (v==1) {
-    if (u_prev==1) {
-      warning("v==1 and u_prev==1")
-      return(0.00001)
-    } else {
-      return(min(exp(p$a_v),0.99999))
-    }
-  } else {
-    if (u_prev==1) {
-      return(1)
-    } else {
-      return(1-min(exp(p$a_v),0.99999))
-    }
-  }
 }

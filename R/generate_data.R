@@ -23,7 +23,7 @@ generate_data <- function(n, max_time, params) {
     "t_start" = integer(),
     "t_end" = integer(),
     "w_sex" = integer(),
-    "w_age" = integer(),
+    "w_age" = double(),
     "x" = integer(),
     "y" = integer(),
     "v" = integer(),
@@ -36,6 +36,9 @@ generate_data <- function(n, max_time, params) {
   id <- c(1:n)
   w_sex <- sample(c(0,1), size=n, replace=T)
   w_age <- sample(c(1:80), size=n, replace=T)
+  
+  # !!!!! Temp: scale age variable
+  w_age <- w_age/100
   
   # Loop through individuals/time to generate events
   p <- params
@@ -54,25 +57,25 @@ generate_data <- function(n, max_time, params) {
       j <- round(j+1)
       
       # Sample serostatus (x)
-      p_sero <- min(x_prev + (1-x_prev) * exp(
+      p_sero <- x_prev + (1-x_prev) * exp(
         p$a_x + p$g_x[1]*w_sex_ + p$g_x[2]*w_age_
         # a_x(j) + p$g_x[1]*w_sex_ + p$g_x[2]*w_age_
-      ), 1)
+      )
       x[j] <- x_prev <- rbinom(n=1, size=1, prob=p_sero)
       
       # Sample events
-      p_event <- min(exp(
+      p_event <- exp(
         p$a_y + p$g_y[1]*w_sex_ + p$g_y[2]*w_age_ + p$b*x[j]
         # a_y(j) + p$g_y[1]*w_sex_ + p$g_y[2]*w_age_ + p$b*x[j]
-      ), 1)
+      )
       event <- rbinom(n=1, size=1, prob=p_event)
       y[j] <- event
       
       # Sample testing
-      p_test <- min((1-u_prev) * exp(
+      p_test <- (1-u_prev) * exp(
         p$a_v + p$g_v[1]*w_sex_ + p$g_v[2]*w_age_
         # a_v(j) + p$g_v[1]*w_sex_ + p$g_v[2]*w_age_
-      ), 1)
+      )
       v[j] <- rbinom(n=1, size=1, prob=p_test)
       
       # Calculate additional variables

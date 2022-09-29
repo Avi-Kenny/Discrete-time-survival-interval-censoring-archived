@@ -39,8 +39,8 @@ one_simulation <- function() {
   
   if (F) {
     
-    par <- log(c(0.003,1.2,1.001,0.002,1.1,1.0005,1.3,0.4,1.1,1.0005)) # Starting values
-    # par <- log(c(0.005,1.3,1.002,0.003,1.2,1.001,1.5,0.4,1.2,1.001)) # True values (except baseline testing rate)
+    par <- log(c(0.003,1.2,1.1,0.002,1.1,1,1.3,0.4,1.1,1.2)) # Starting values
+    # par <- log(c(0.005,1.3,1.2,0.003,1.2,1.1,1.5,0.4,1.2,1.1)) # True values (except baseline testing rate)
     
     # Run optimizer (full data structure)
     chk(2, "negloglik_full: START")
@@ -91,14 +91,21 @@ one_simulation <- function() {
   } # DEBUG: Cox model (ideal data structure)
   
   # Set initial parameters
-  par <- log(c(0.003,1.2,1.001,0.002,1.1,1.0005,1.3)) # Starting values
-  # par <- log(c(0.005,1.3,1.002,0.003,1.2,1.001,1.5)) # True values (except baseline testing rate)
+  # True values: log(c(0.005,1.3,1.2,0.003,1.2,1.1,1.5))
+  # par <- log(c(0.003,1.2,1.1,0.002,1.1,1,1.3)) # Starting values
+  par <- log(c(0.003,1.2,1.1,0.002,1.3,1,1.3)) # Starting values # !!!!! 2022-09-28
+  names(par) <- c("a_x", "g_x1", "g_x2", "a_y", "g_y1", "g_y2", "beta")
   
+  # pars_to_fix <- c(1,2,3,4,6) # !!!!! 2022-09-28
+  # par <- par[-pars_to_fix] # !!!!! 2022-09-28
+  
+  # system.time({
   chk(2, "negloglik_miss: START")
   fnc_miss <- function(par) { negloglik_miss(dat, par) }
   opt_miss <- optim(par=par, fn=fnc_miss)
   chk(2, "negloglik_miss: optimizer done")
-  hessian_miss <- optimHess(par=opt_miss$par, fn=fnc_miss)
+  # hessian_miss <- optimHess(par=opt_miss$par, fn=fnc_miss)
+  hessian_miss <- hessian(func=fnc_miss, x=opt_miss$par)
   chk(2, "negloglik_miss: hessian done")
   lik_miss <- list(ests=opt_miss$par)
   lik_miss$se <- sqrt(diag(solve(hessian_miss)))
@@ -106,18 +113,25 @@ one_simulation <- function() {
   lik_miss$ci_lo <- lik_miss$ests-1.96*lik_miss$se
   lik_miss$ci_hi <- lik_miss$ests+1.96*lik_miss$se
   chk(2, "negloglik_miss: END")
+  # })
   
-  res <- list(
-    lik_M_beta_est = lik_miss$ests[7],
-    lik_M_beta_ci_lo = lik_miss$ci_lo[7],
-    lik_M_beta_ci_hi = lik_miss$ci_hi[7],
-    lik_M_g_y1_est = lik_miss$ests[5],
-    lik_M_g_y1_lo = lik_miss$ci_lo[5],
-    lik_M_g_y1_hi = lik_miss$ci_hi[5],
-    lik_M_g_y2_est = lik_miss$ests[6],
-    lik_M_g_y2_lo = lik_miss$ci_lo[6],
-    lik_M_g_y2_hi = lik_miss$ci_hi[6]
-  )
+  res <- list() # !!!!! 2022-09-28
+  for (i in c(1:length(par))) { # !!!!! 2022-09-28
+    res[[paste0("lik_M_",names(par)[i],"_est")]] <- as.numeric(opt_miss$par[i]) # !!!!! 2022-09-28
+    res[[paste0("lik_M_",names(par)[i],"_se")]] <- sqrt(diag(solve(hessian_miss)))[i] # !!!!! 2022-09-28
+  } # !!!!! 2022-09-28
+  
+  # res <- list(
+  #   lik_M_beta_est = lik_miss$ests[7],
+  #   lik_M_beta_ci_lo = lik_miss$ci_lo[7],
+  #   lik_M_beta_ci_hi = lik_miss$ci_hi[7],
+  #   lik_M_g_y1_est = lik_miss$ests[5],
+  #   lik_M_g_y1_lo = lik_miss$ci_lo[5],
+  #   lik_M_g_y1_hi = lik_miss$ci_hi[5],
+  #   lik_M_g_y2_est = lik_miss$ests[6],
+  #   lik_M_g_y2_lo = lik_miss$ci_lo[6],
+  #   lik_M_g_y2_hi = lik_miss$ci_hi[6]
+  # )
   
   return(res)
   

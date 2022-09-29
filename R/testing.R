@@ -14,20 +14,17 @@ num_pos <- num_ev <- num_ev_pos <- c()
 g_y_1 <- g_y_2 <- beta <- c()
 
 # Generate datasets and calculate summary stats
-n_reps <- 30
+n_reps <- 5
 for (i in c(1:n_reps)) {
   
   # Generate data
   dat <- generate_data(
-    n = 3,
-    max_time = 5,
-    # n = 500,
-    # max_time = 100,
+    n = 500,
+    max_time = 70,
     params = list(
-      g_x = c(log(1.3),log(1.002)),
-      g_y = c(log(1.2),log(1.001)),
-      g_v = c(log(1.2),log(1.001)),
-      beta = log(1.5)
+      a_x=log(0.005), a_y=log(0.003), a_v=log(0.7),
+      g_x=c(log(1.3),log(1.2)), g_y=c(log(1.2),log(1.5)),
+      g_v=c(log(1.2),log(1.1)), beta=log(1.5)
     )
   )
   
@@ -38,10 +35,10 @@ for (i in c(1:n_reps)) {
   
   # T_minus[i] <- attr(dat, "T_minus")
   # T_plus[i] <- attr(dat, "T_plus")
-  c1[i] <- sum(attr(dat, "c1"))
-  c2[i] <- sum(attr(dat, "c2"))
-  c3[i] <- sum(attr(dat, "c3"))
-  c4[i] <- sum(attr(dat, "c4"))
+  c1[i] <- sum(attr(dat, "case")==1)
+  c2[i] <- sum(attr(dat, "case")==2)
+  c3[i] <- sum(attr(dat, "case")==3)
+  c4[i] <- sum(attr(dat, "case")==4)
   
   # Run Cox PH model
   model <- coxph(

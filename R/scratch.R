@@ -1,4 +1,80 @@
 
+# Plotting parameter profiles
+if (F) {
+  
+  # Try 2D plots of parameter surface
+  
+  fnc_miss(opt_miss$par) # 1007.201
+  
+  # P1 49.88202
+  # P2 0.004576096
+  # P3 9.425506
+  # P4 25.86428
+  # P5 0.003669396
+  # P6 7.77546
+  # P7 6.810297
+  
+  # Param 1
+  {
+    grid <- seq(-6.33825644, -4.33825644, length.out=11)
+    evals <- sapply(grid, function(p1) {
+      fnc_miss(c(p1, opt_miss$par[2:7]))
+    })
+    df <- data.frame(x=grid, y=evals)
+    lm_fit <- lm(y~x+I(x^2), data=df)
+    cf <- lm_fit$coefficients
+    fn_evals <- sapply(grid, function(x) {
+      cf[1] + cf[2]*x + cf[3]*x^2
+    })
+    ggplot(df, aes(x=x, y=y)) +
+      geom_point() +
+      geom_line(data=data.frame(x=grid, y=fn_evals), color="green")
+    print(cf[3]) # 49.88202
+  }
+  
+  # Param 7
+  {
+    grid <- seq(-0.5, 0.5, length.out=11)
+    evals <- sapply(grid, function(p7) {
+      fnc_miss(c(opt_miss$par[1:6], p7))
+    })
+    df <- data.frame(x=grid, y=evals)
+    lm_fit <- lm(y~x+I(x^2), data=df)
+    cf <- lm_fit$coefficients
+    fn_evals <- sapply(grid, function(x) {
+      cf[1] + cf[2]*x + cf[3]*x^2
+    })
+    ggplot(df, aes(x=x, y=y)) +
+      geom_point() +
+      geom_line(data=data.frame(x=grid, y=fn_evals), color="green")
+    print(cf[3]) # 6.810297
+  }
+  
+  # Param k
+  {
+    grid_lims <- list(c(0.002,0.008),c(1,1.5),c(1.2,2),c(0.001,0.005),c(0.7,1.4),c(1,2),c(1,1.7))
+    grid_lims <- lapply(grid_lims,log)
+    k <- 6
+    grid <- seq(grid_lims[[k]][1], grid_lims[[k]][2], length.out=9)
+    evals <- sapply(grid, function(p) {
+      prm <- replace(opt_miss$par, k, p)
+      fnc_miss(prm)
+    })
+    df <- data.frame(x=grid, y=evals)
+    lm_fit <- lm(y~x+I(x^2), data=df)
+    cf <- lm_fit$coefficients
+    fn_evals <- sapply(grid, function(x) {
+      cf[1] + cf[2]*x + cf[3]*x^2
+    })
+    ggplot(df, aes(x=x, y=y)) +
+      geom_point() +
+      geom_line(data=data.frame(x=grid, y=fn_evals), color="green") +
+      labs(title=paste("Param",k))
+    print(cf[3])
+  }
+  
+}
+
 # Try reading in AHRI dataset
 if (F) {
   
