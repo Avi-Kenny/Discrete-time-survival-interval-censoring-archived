@@ -60,7 +60,6 @@ one_simulation <- function() {
   names(par) <- c("a_x", "g_x1", "g_x2", "a_y", "g_y1", "g_y2",
                   "beta_x", "beta_z")
   
-  # system.time({
   chk(2, "negloglik_miss: START")
   fnc_miss <- function(par) { negloglik_miss(dat, par) }
   opt_miss <- optim(par=par, fn=fnc_miss)
@@ -73,25 +72,27 @@ one_simulation <- function() {
   lik_miss$ci_lo <- lik_miss$ests-1.96*lik_miss$se
   lik_miss$ci_hi <- lik_miss$ests+1.96*lik_miss$se
   chk(2, "negloglik_miss: END")
-  # })
-  
+
   res <- list() # !!!!! 2022-09-28
   for (i in c(1:length(par))) { # !!!!! 2022-09-28
     res[[paste0("lik_M_",names(par)[i],"_est")]] <- as.numeric(opt_miss$par[i]) # !!!!! 2022-09-28
     res[[paste0("lik_M_",names(par)[i],"_se")]] <- sqrt(diag(solve(hessian_miss)))[i] # !!!!! 2022-09-28
   } # !!!!! 2022-09-28
   
-  # res <- list(
-  #   lik_M_beta_x_est = lik_miss$ests[7],
-  #   lik_M_beta_x_ci_lo = lik_miss$ci_lo[7],
-  #   lik_M_beta_x_ci_hi = lik_miss$ci_hi[7],
-  #   lik_M_g_y1_est = lik_miss$ests[5],
-  #   lik_M_g_y1_lo = lik_miss$ci_lo[5],
-  #   lik_M_g_y1_hi = lik_miss$ci_hi[5],
-  #   lik_M_g_y2_est = lik_miss$ests[6],
-  #   lik_M_g_y2_lo = lik_miss$ci_lo[6],
-  #   lik_M_g_y2_hi = lik_miss$ci_hi[6]
-  # )
+  # Old code; archive???
+  if (F) {
+    res <- list(
+      lik_M_beta_x_est = lik_miss$ests[7],
+      lik_M_beta_x_ci_lo = lik_miss$ci_lo[7],
+      lik_M_beta_x_ci_hi = lik_miss$ci_hi[7],
+      lik_M_g_y1_est = lik_miss$ests[5],
+      lik_M_g_y1_lo = lik_miss$ci_lo[5],
+      lik_M_g_y1_hi = lik_miss$ci_hi[5],
+      lik_M_g_y2_est = lik_miss$ests[6],
+      lik_M_g_y2_lo = lik_miss$ci_lo[6],
+      lik_M_g_y2_hi = lik_miss$ci_hi[6]
+    )
+  }
   
   return(res)
   

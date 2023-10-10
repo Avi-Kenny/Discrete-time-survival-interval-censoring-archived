@@ -6,7 +6,12 @@
 ##################.
 ##### CONFIG #####
 ##################.
-
+install.packages(
+  pkgs = "rlang",
+  lib = "/home/akenny/R_lib",
+  repos = "http://cran.us.r-project.org",
+  dependencies = TRUE
+)
 # Set global config
 cfg <- list(
   level_set_which = "level_set_1",
@@ -15,6 +20,7 @@ cfg <- list(
            "numDeriv"),
   pkgs_nocluster = c("ggplot2"),
   parallel = F,
+  n_cores = 500,
   stop_at_error = F
 )
 
@@ -110,7 +116,9 @@ run_on_cluster(
     sim %<>% set_config(
       num_sim = cfg$num_sim,
       parallel = cfg$parallel,
+      n_cores = cfg$n_cores,
       stop_at_error = cfg$stop_at_error,
+      seed = 123,
       packages = cfg$pkgs
     )
     

@@ -94,7 +94,7 @@ generate_data <- function(n, max_time, params) {
       y[j] <- event
       
     }
-    J <- j
+    J <- j # !!!!! Maybe unnecessary
     
     # Calculate case indicators
     case_i <- case(x,v)
