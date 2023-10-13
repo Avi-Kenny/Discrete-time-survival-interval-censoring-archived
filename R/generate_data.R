@@ -94,21 +94,20 @@ generate_data <- function(n, max_time, params) {
       y[j] <- event
       
     }
-    J <- j # !!!!! Maybe unnecessary
-    
+
     # Calculate case indicators
     case_i <- case(x,v)
     
     # Calculate time(s) of most recent negative test and/or positive test
-    T_pm <- T_plusminus(case_i, J, x, v)
+    T_pm <- T_plusminus(case_i, j, x, v)
     
     # Calculate Delta
-    d <- g_delta(case_i, J, T_pm$T_minus, T_pm$T_plus)
+    d <- g_delta(case_i, j, T_pm$T_minus, T_pm$T_plus)
     
     # Add results to dataframe
     dat <- rbind(dat, list(
-      id=rep(i,J), t_start=c(0:(J-1)), t_end=c(1:J), w_sex=rep(w_sex_,J),
-      w_age=rep(w_age_,J), x=x, z=z, y=y, v=v, u=u, d=d, xs=x*d
+      id=rep(i,j), t_start=c(0:(j-1)), t_end=c(1:j), w_sex=rep(w_sex_,j),
+      w_age=rep(w_age_,j), x=x, z=z, y=y, v=v, u=u, d=d, xs=x*d
     ))
     
     # Store additional vectors
