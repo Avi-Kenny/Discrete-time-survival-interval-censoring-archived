@@ -8,7 +8,7 @@
 
 one_simulation <- function() {
   
-  chk(0, "Start")
+  chk(0, "START")
   
   # Generate dataset
   dat <- generate_data(
@@ -60,18 +60,19 @@ one_simulation <- function() {
   names(par) <- c("a_x", "g_x1", "g_x2", "a_y", "g_y1", "g_y2",
                   "beta_x", "beta_z")
   
-  chk(2, "negloglik_miss: START")
-  fnc_miss <- function(par) { negloglik_miss(dat, par) }
-  opt_miss <- optim(par=par, fn=fnc_miss)
-  chk(2, "negloglik_miss: optimizer done")
-  hessian_miss <- hessian(func=fnc_miss, x=opt_miss$par)
-  chk(2, "negloglik_miss: hessian done")
+  chk(2, "construct_negloglik_miss: START")
+  negloglik_miss <- construct_negloglik_miss(dat)
+  chk(2, "construct_negloglik_miss: END")
+  chk(2, "optim: START")
+  opt_miss <- optim(par=par, fn=negloglik_miss)
+  chk(2, "optim: END")
+  chk(2, "hessian: START")
+  hessian_miss <- hessian(func=negloglik_miss, x=opt_miss$par)
+  chk(2, "hessian: END")
   lik_miss <- list(ests=opt_miss$par)
   lik_miss$se <- sqrt(diag(solve(hessian_miss)))
-  chk(2, "negloglik_miss: SE extraction done")
   lik_miss$ci_lo <- lik_miss$ests-1.96*lik_miss$se
   lik_miss$ci_hi <- lik_miss$ests+1.96*lik_miss$se
-  chk(2, "negloglik_miss: END")
 
   res <- list() # !!!!! 2022-09-28
   for (i in c(1:length(par))) { # !!!!! 2022-09-28
@@ -93,6 +94,8 @@ one_simulation <- function() {
       lik_M_g_y2_hi = lik_miss$ci_hi[6]
     )
   }
+  
+  chk(3, "END")
   
   return(res)
   
