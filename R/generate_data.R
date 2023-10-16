@@ -99,10 +99,11 @@ generate_data <- function(n, max_time, params) {
     case_i <- case(x,v)
     
     # Calculate time(s) of most recent negative test and/or positive test
-    T_pm <- T_plusminus(case_i, j, x, v)
+    T_pm <- T_plusminus(case=case_i, s_i=1, t_i=j, x=x, v=v)
     
     # Calculate Delta
-    d <- g_delta(case_i, j, T_pm$T_minus, T_pm$T_plus)
+    d <- g_delta(case=case_i, s_i=1, t_i=j, T_minus=T_pm$T_minus,
+                 T_plus=T_pm$T_plus)
     
     # Add results to dataframe
     dat <- rbind(dat, list(

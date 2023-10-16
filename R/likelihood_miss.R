@@ -15,8 +15,9 @@ negloglik_miss <- function(dat, par) {
   -1 * sum(log(unlist(lapply(c(1:n), function(i) {
     
     dat_i <- filter(dat, id==i)
-    J <- nrow(dat_i)
-    
+    s_i <- min(dat_i$t_end)
+    t_i <- max(dat_i$t_end)
+
     # Calculate vectors for patient i
     w <- subset(dat_i, select=c(w_sex,w_age)) # !!!!! TEMP
     y <- dat_i$y
@@ -27,23 +28,24 @@ negloglik_miss <- function(dat, par) {
 
     # Calculate the set X_i to sum over
     X_i_set <- list()
-    for (j in c(1:(J+1))) {
-      x_ <- c(rep(0,J-j+1), rep(1,j-1))
+    for (j in c(1:(t_i-s_i+2))) {
+      x_ <- c(rep(0,t_i-s_i-j+2), rep(1,j-1))
       case_i_ <- case(x_,v)
-      T_pm <- T_plusminus(case_i_, J, x_, v)
+      T_pm <- T_plusminus(case=case_i_, s_i=1, t_i=t_i, x=x_, v=v)
       if (case_i_!=9 &&
           all(u==x_*d) &&
-          all(d==g_delta(case_i_, J, T_pm$T_minus, T_pm$T_plus))
+          all(d==g_delta(case=case_i_, s_i=1, t_i=t_i, T_minus=T_pm$T_minus,
+                         T_plus=T_pm$T_plus))
       ) {
         X_i_set <- c(X_i_set, list(x_))
       }
     }
-    
+
     # Compute the likelihood for individual i
     w <- t(w)
     f2 <- sum(unlist(lapply(X_i_set, function(x) {
       x_prev <- c(0,x[1:(length(x)-1)])
-      prod(unlist(lapply(c(1:J), function(j) {
+      prod(unlist(lapply(c(1:(t_i-s_i+1)), function(j) {
         w_ij <- as.numeric(w[,j])
         f_x(x=x[j], x_prev=x_prev[j], w=w_ij, params=params) *
           f_y(y=y[j], x=x[j], w=w_ij, z=z[j], params=params)

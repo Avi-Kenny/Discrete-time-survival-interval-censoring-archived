@@ -46,17 +46,22 @@ case <- function(x,v, warn=F) {
 #' @param x Vector of seroconversion indicators for one individual
 #' @param v Vector of testing indicators for one individual
 #' @return A list containing T_minus and T_plus
-T_plusminus <- function(case, J, x, v) {
+T_plusminus <- function(case, s_i, t_i, x, v) {
+  
+  len <- t_i-s_i+1
+  if (!length(v)==len || !length(x)==len) { stop("Incorrect vectors lengths.") }
   
   if (case %in% c(2,3)) {
     # Time of most recent negative test
-    T_minus <- which.max(c(1:J)*v*(1-x))
+    T_minus_index <- which.max(c(s_i:t_i)*v*(1-x))
+    T_minus <- c(s_i:t_i)[T_minus_index]
   } else {
     T_minus <- 0
   }
   if (case %in% c(3,4)) {
     # Time of positive test
-    T_plus <- which.max(v*x)
+    T_plus_index <- which.max(v*x)
+    T_plus <- c(s_i:t_i)[T_plus_index]
   } else {
     T_plus <- 0
   }
@@ -74,20 +79,20 @@ T_plusminus <- function(case, J, x, v) {
 #' @param x Vector of seroconversion indicators for one individual
 #' @param v Vector of testing indicators for one individual
 #' @return The vector Delta
-g_delta <- function(case, J, T_minus, T_plus) {
+g_delta <- function(case, s_i, t_i, T_minus, T_plus) {
   
   if (case==1) {
-    d <- rep(0, J)
+    d <- rep(0, t_i-s_i+1)
   } else if (case==2) {
-    d <- c(rep(1,T_minus), rep(0,J-T_minus))
+    d <- c(rep(1,T_minus-s_i+1), rep(0,t_i-T_minus))
   } else if (case==3) {
-    d <- c(rep(1,T_minus), rep(0,T_plus-T_minus-1), rep(1,J-T_plus+1))
+    d <- c(rep(1,T_minus-s_i+1), rep(0,T_plus-T_minus-1), rep(1,t_i-T_plus+1))
   } else if (case==4) {
-    d <- c(rep(0,T_plus-1), rep(1,J-T_plus+1))
+    d <- c(rep(0,T_plus-s_i), rep(1,t_i-T_plus+1))
   } else {
-    browser() # !!!!!
+    stop("Error in computing g_delta.")
   }
-  if (length(d)!=J) { stop("Delta is of the wrong length") }
+  if (length(d)!=(t_i-s_i+1)) { stop("Delta is of the wrong length.") }
   
   return(d)
   
