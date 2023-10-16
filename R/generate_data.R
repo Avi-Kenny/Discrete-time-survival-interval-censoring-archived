@@ -28,9 +28,8 @@ generate_data <- function(n, max_time, params) {
     "z" = integer(),
     "y" = integer(),
     "v" = integer(),
-    "u" = integer(),
     "d" = integer(),
-    "xs" = integer()
+    "u" = integer()
   )
   
   # Generate baseline covariates
@@ -46,8 +45,9 @@ generate_data <- function(n, max_time, params) {
   i_T_minus <- i_T_plus <- i_case <- c()
   for (i in c(1:n)) {
     
-    x <- y <- v <- u <- z <- c()
-    event <- u_prev <- x_prev <- z_prev <- 0
+    x <- y <- v <- z <- c()
+    event <- x_prev <- z_prev <- 0
+    known_pos <- known_pos_prev <- 0
     j <- 0
     w_sex_ <- w_sex[i]
     w_age_ <- w_age[i]
@@ -64,17 +64,17 @@ generate_data <- function(n, max_time, params) {
       x[j] <- x_prev <- rbinom(n=1, size=1, prob=p_sero)
       
       # Sample testing
-      p_test <- (1-u_prev) * exp(
+      p_test <- (1-known_pos_prev) * exp(
         p$a_v + p$g_v[1]*w_sex_ + p$g_v[2]*w_age_
       )
       v[j] <- rbinom(n=1, size=1, prob=p_test)
       
-      # Calculate U variable
-      u[j] <- u_prev + (1-u_prev)*v[j]*x[j]
-      u_prev <- u[j]
+      # Calculate "known positive" variable
+      known_pos[j] <- known_pos_prev + (1-known_pos_prev)*v[j]*x[j]
+      known_pos_prev <- known_pos[j]
       
       # Sample ART status
-      if (u[j]==0) {
+      if (known_pos[j]==0) {
         p_art <- 0
       } else if (z_prev==1) {
         p_art <- 1
@@ -107,7 +107,7 @@ generate_data <- function(n, max_time, params) {
     # Add results to dataframe
     dat <- rbind(dat, list(
       id=rep(i,j), t_start=c(0:(j-1)), t_end=c(1:j), w_sex=rep(w_sex_,j),
-      w_age=rep(w_age_,j), x=x, z=z, y=y, v=v, u=u, d=d, xs=x*d
+      w_age=rep(w_age_,j), x=x, z=z, y=y, v=v, d=d, u=x*d
     ))
     
     # Store additional vectors

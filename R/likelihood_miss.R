@@ -23,7 +23,7 @@ negloglik_miss <- function(dat, par) {
     z <- dat_i$z
     v <- dat_i$v
     d <- dat_i$d
-    xs <- dat_i$xs
+    u <- dat_i$u
 
     # Calculate the set X_i to sum over
     X_i_set <- list()
@@ -32,7 +32,7 @@ negloglik_miss <- function(dat, par) {
       case_i_ <- case(x_,v)
       T_pm <- T_plusminus(case_i_, J, x_, v)
       if (case_i_!=9 &&
-          all(xs==x_*d) &&
+          all(u==x_*d) &&
           all(d==g_delta(case_i_, J, T_pm$T_minus, T_pm$T_plus))
       ) {
         X_i_set <- c(X_i_set, list(x_))
