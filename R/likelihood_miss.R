@@ -23,6 +23,7 @@ construct_negloglik_miss <- function(dat) {
     d$v <- d$dat_i$v
     d$d <- d$dat_i$d
     d$u <- d$dat_i$u
+    d$cal_time <- d$dat_i$t_end / 100 # Rescaling is done to prevent optimization issues
     
     # Calculate the set X_i to sum over
     d$X_i_set <- list()
@@ -48,7 +49,7 @@ construct_negloglik_miss <- function(dat) {
     # Convert parameter vector to a named list
     p <- as.numeric(par)
     params <- list(a_x=p[1], g_x=c(p[2],p[3]), a_y=p[4], g_y=c(p[5],p[6]),
-                   beta_x=p[7], beta_z=p[8])
+                   beta_x=p[7], beta_z=p[8], t_x=p[9], t_y=p[10])
     
     # Compute the negative likelihood across individuals
     -1 * sum(log(unlist(lapply(c(1:n), function(i) {
@@ -61,9 +62,15 @@ construct_negloglik_miss <- function(dat) {
       f2 <- sum(unlist(lapply(d$X_i_set, function(x) {
         x_prev <- c(0,x[1:(length(x)-1)])
         prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
+          # Note: here, j is the index of time within an individual rather than
+          #       a calendar time index
           w_ij <- as.numeric(w[,j])
-          f_x(x=x[j], x_prev=x_prev[j], w=w_ij, params=params) *
-            f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], params=params)
+          return(
+            f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time[j],
+                s=In(d$cal_time[j]==d$s_i), params=params) *
+              f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], j=d$cal_time[j],
+                  params=params)
+          )
         })))
       })))
       if (f2<=0) {
@@ -90,20 +97,29 @@ construct_negloglik_miss <- function(dat) {
 #' @param w Vector of covariates (time j)
 #' @param params Named list of parameters
 #' @return Numeric likelihood
-f_x <- function(x, x_prev, w, params) {
-  if (x==1) {
-    if (x_prev==1) {
-      return(1)
+f_x <- function(x, x_prev, w, j, s, params) {
+  # if (s==0) {
+    if (x==1) {
+      if (x_prev==1) {
+        return(1)
+      } else {
+        return(exp(params$a_x + params$t_x*j + sum(params$g_x*w)))
+      }
     } else {
-      return(exp(params$a_x + sum(params$g_x*w)))
+      if (x_prev==1) {
+        return(0)
+      } else {
+        return(1 - exp(params$a_x + params$t_x*j + sum(params$g_x*w)))
+      }
     }
-  } else {
-    if (x_prev==1) {
-      return(0)
-    } else {
-      return(1 - exp(params$a_x + sum(params$g_x*w)))
-    }
-  }
+  # } else {
+  #   expitlin <- expit(params$a_s + params$t_s*j + sum(params$g_s*w)) # !!!!! Need to add these params
+  #   if (x==1) {
+  #     return(expitlin)
+  #   } else {
+  #     return(1-expitlin)
+  #   }
+  # }
 }
 
 
@@ -116,8 +132,8 @@ f_x <- function(x, x_prev, w, params) {
 #' @param z ART indicator (time j)
 #' @param params Named list of parameters
 #' @return Numeric likelihood
-f_y <- function(y, x, w, z, params) {
-  explin <- exp(params$a_y + sum(params$g_y*w) + params$beta_x*x +
+f_y <- function(y, x, w, z, j, params) {
+  explin <- exp(params$a_y + params$t_y*j + sum(params$g_y*w) + params$beta_x*x +
                   params$beta_z*z)
   if (y==1) { return(explin) } else { return(1-explin) }
 }

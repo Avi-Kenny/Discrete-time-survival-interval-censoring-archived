@@ -55,10 +55,10 @@ one_simulation <- function() {
   } # DEBUG: Cox model (ideal data structure)
   
   # Set initial parameters
-  # True values: log(c(0.005,1.3,1.2,0.003,1.2,1.1,1.5,0.6))
-  par <- log(c(0.003,1.2,1.1,0.002,1.3,1,1.3,0.8)) # Starting values # !!!!! 2022-09-28
-  names(par) <- c("a_x", "g_x1", "g_x2", "a_y", "g_y1", "g_y2",
-                  "beta_x", "beta_z")
+  # True values: log(c(0.005,1.3,1.2,0.003,1.2,1.1,1.5,0.6,1,1))
+  par <- log(c(0.003,1.2,1.1,0.002,1.3,1,1.3,0.8,0.999,1.001)) # Starting values
+  names(par) <- c("a_x", "g_x1", "g_x2", "a_y", "g_y1", "g_y2", "beta_x",
+                  "beta_z", "t_x", "t_y")
   
   chk(2, "construct_negloglik_miss: START")
   negloglik_miss <- construct_negloglik_miss(dat)

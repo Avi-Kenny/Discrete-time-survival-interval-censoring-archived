@@ -1,3 +1,7 @@
+#' Alias for as.integer
+#' 
+In <- as.integer
+
 #' Expit function
 #' 
 #' @param x Numeric input
@@ -21,10 +25,10 @@ case <- function(x,v, warn=F) {
   sum_v <- sum(v)
   sum_vx <- sum(v*x)
   sum_v1x <- sum(v*(1-x))
-  case_i[1] <- as.integer(sum_v==0)
-  case_i[2] <- as.integer(sum_v>0 & sum_vx==0)
-  case_i[3] <- as.integer(sum_v>0 & sum_v1x>0 & sum_vx==1)
-  case_i[4] <- as.integer(sum_v==1 & sum_vx==1)
+  case_i[1] <- In(sum_v==0)
+  case_i[2] <- In(sum_v>0 & sum_vx==0)
+  case_i[3] <- In(sum_v>0 & sum_v1x>0 & sum_vx==1)
+  case_i[4] <- In(sum_v==1 & sum_vx==1)
   if (sum(case_i)==0) {
     if (warn) { warning("No applicable case") }
     return(9)

@@ -15,6 +15,7 @@
 # Set global config
 cfg <- list(
   level_set_which = "level_set_1",
+  # num_sim = 1, # 1000
   num_sim = 500, # 1000
   pkgs = c("dplyr", "survival", "data.table", "tidyr", "memoise", "Rsolnp",
            "numDeriv"),
@@ -77,6 +78,7 @@ if (Sys.getenv("sim_run") %in% c("first", "")) {
   # Simulation 1: basic
   # n=500,t=100 rep runs in 3.2 hrs # !!!!! outdated
   level_set_1 <- list(
+    # n = 50,
     n = 500,
     # n = c(500,1000,2000),
     max_time = 70,
@@ -148,8 +150,8 @@ if (F) {
   
   v <- c("lik_M_a_x_est", "lik_M_g_x1_est", "lik_M_g_x2_est", "lik_M_a_y_est",
          "lik_M_g_y1_est", "lik_M_g_y2_est", "lik_M_beta_x_est",
-         "lik_M_beta_z_est")
-  true_vals <- log(c(0.005,1.3,1.2,0.003,1.2,1.1,1.5,0.7))
+         "lik_M_beta_z_est", "lik_M_t_x_est", "lik_M_t_y_est")
+  true_vals <- log(c(0.005,1.3,1.2,0.003,1.2,1.1,1.5,0.7,1,1))
   r <- filter(sim$results, params=="70pct testing")
   x <- unlist(lapply(v, function(col) { r[,col] }))
   df_true <- data.frame(
@@ -187,6 +189,8 @@ if (F) {
     list(stat="mean", name="g_y2__sd_est", x="lik_M_g_y2_se"),
     list(stat="mean", name="beta_x__sd_est", x="lik_M_beta_x_se"),
     list(stat="mean", name="beta_z__sd_est", x="lik_M_beta_z_se"),
+    list(stat="mean", name="t_x__sd_est", x="lik_M_t_x_se"),
+    list(stat="mean", name="t_y__sd_est", x="lik_M_t_y_se"),
     list(stat="sd", name="a_x__sd_actual", x="lik_M_a_x_est"),
     list(stat="sd", name="g_x1__sd_actual", x="lik_M_g_x1_est"),
     list(stat="sd", name="g_x2__sd_actual", x="lik_M_g_x2_est"),
@@ -195,6 +199,8 @@ if (F) {
     list(stat="sd", name="g_y2__sd_actual", x="lik_M_g_y2_est"),
     list(stat="sd", name="beta_x__sd_actual", x="lik_M_beta_x_est"),
     list(stat="sd", name="beta_z__sd_actual", x="lik_M_beta_z_est"),
+    list(stat="sd", name="t_x__sd_actual", x="lik_M_t_x_est"),
+    list(stat="sd", name="t_y__sd_actual", x="lik_M_t_y_est"),
     list(stat="coverage", name="a_x__cov", truth=true_vals[1],
          estimate="lik_M_a_x_est", se="lik_M_a_x_se", na.rm=T),
     list(stat="coverage", name="g_x1__cov", truth=true_vals[2],
@@ -210,7 +216,11 @@ if (F) {
     list(stat="coverage", name="beta_x__cov", truth=true_vals[7],
          estimate="lik_M_beta_x_est", se="lik_M_beta_x_se", na.rm=T),
     list(stat="coverage", name="beta_z__cov", truth=true_vals[8],
-         estimate="lik_M_beta_z_est", se="lik_M_beta_z_se", na.rm=T)
+         estimate="lik_M_beta_z_est", se="lik_M_beta_z_se", na.rm=T),
+    list(stat="coverage", name="t_x__cov", truth=true_vals[9],
+         estimate="lik_M_t_x_est", se="lik_M_t_x_se", na.rm=T),
+    list(stat="coverage", name="t_y__cov", truth=true_vals[10],
+         estimate="lik_M_t_y_est", se="lik_M_t_y_se", na.rm=T)
   )
   
   l_id <- 1
