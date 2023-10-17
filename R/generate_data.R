@@ -35,29 +35,44 @@ generate_data <- function(n, max_time, params) {
   # Generate baseline covariates
   id <- c(1:n)
   w_sex <- sample(c(0,1), size=n, replace=T)
-  w_age <- sample(c(1:80), size=n, replace=T)
+  w_age <- sample(c(13:80), size=n, replace=T)
   
   # !!!!! Temp: scale age variable
   w_age <- w_age/100
+  
+  # Sample start time
+  s_i <- sample(c(1:100), size=n, replace=T)
   
   # Loop through individuals/time to generate events
   p <- params
   i_T_minus <- i_T_plus <- i_case <- c()
   for (i in c(1:n)) {
     
+    # Initial values
     x <- y <- v <- z <- c()
-    event <- x_prev <- z_prev <- 0
+    event <- z_prev <- 0
     known_pos <- known_pos_prev <- 0
     j <- 0
     w_sex_ <- w_sex[i]
     w_age_ <- w_age[i]
+    cal_time <- s_i_ <- s_i[i] # Currently unused
+    
+    # Sample baseline serostatus
+    # !!!!! Add calendar time trend
+    # p_bsero <- expit(p$a_s + p$t_s*cal_time + sum(p$g_s*c(w_sex_,w_age_)))
+    p_bsero <- expit(p$a_s + sum(p$g_s*c(w_sex_,w_age_)))
+    x_prev <- rbinom(n=1, size=1, prob=p_bsero)
     
     while (!event && j<=max_time) {
       
+      # !!!!! Need to increment age each loop
+      
       # Increment time
       j <- round(j+1)
+      cal_time <- cal_time+1 # Currently unused
       
       # Sample serostatus (x)
+      # !!!!! Add calendar time trend
       p_sero <- x_prev + (1-x_prev) * exp(
         p$a_x + p$g_x[1]*w_sex_ + p$g_x[2]*w_age_
       )
@@ -86,6 +101,7 @@ generate_data <- function(n, max_time, params) {
       z[j] <- z_prev <- rbinom(n=1, size=1, prob=p_art)
       
       # Sample events
+      # !!!!! Add calendar time trend
       p_event <- exp(
         p$a_y + p$g_y[1]*w_sex_ + p$g_y[2]*w_age_ +
           p$beta_x*x[j] + p$beta_z*z[j]
@@ -99,16 +115,16 @@ generate_data <- function(n, max_time, params) {
     case_i <- case(x,v)
     
     # Calculate time(s) of most recent negative test and/or positive test
-    T_pm <- T_plusminus(case=case_i, s_i=1, t_i=j, x=x, v=v)
+    T_pm <- T_plusminus(case=case_i, s_i=s_i_, t_i=j+s_i_-1, x=x, v=v)
     
     # Calculate Delta
-    d <- g_delta(case=case_i, s_i=1, t_i=j, T_minus=T_pm$T_minus,
+    d <- g_delta(case=case_i, s_i=s_i_, t_i=j+s_i_-1, T_minus=T_pm$T_minus,
                  T_plus=T_pm$T_plus)
     
     # Add results to dataframe
     dat <- rbind(dat, list(
-      id=rep(i,j), t_start=c(0:(j-1)), t_end=c(1:j), w_sex=rep(w_sex_,j),
-      w_age=rep(w_age_,j), x=x, z=z, y=y, v=v, d=d, u=x*d
+      id=rep(i,j), t_start=c(s_i_:(s_i_+j-1)), t_end=c((s_i_+1):(s_i_+j)),
+      w_sex=rep(w_sex_,j), w_age=rep(w_age_,j), x=x, z=z, y=y, v=v, d=d, u=x*d
     ))
     
     # Store additional vectors

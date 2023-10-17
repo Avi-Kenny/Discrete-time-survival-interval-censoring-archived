@@ -49,7 +49,8 @@ construct_negloglik_miss <- function(dat) {
     # Convert parameter vector to a named list
     p <- as.numeric(par)
     params <- list(a_x=p[1], g_x=c(p[2],p[3]), a_y=p[4], g_y=c(p[5],p[6]),
-                   beta_x=p[7], beta_z=p[8], t_x=p[9], t_y=p[10])
+                   beta_x=p[7], beta_z=p[8], t_x=p[9], t_y=p[10],
+                   a_s=p[11], t_s=p[12], g_s=c(p[13],p[14]))
     
     # Compute the negative likelihood across individuals
     -1 * sum(log(unlist(lapply(c(1:n), function(i) {
@@ -98,7 +99,7 @@ construct_negloglik_miss <- function(dat) {
 #' @param params Named list of parameters
 #' @return Numeric likelihood
 f_x <- function(x, x_prev, w, j, s, params) {
-  # if (s==0) {
+  if (s==0) {
     if (x==1) {
       if (x_prev==1) {
         return(1)
@@ -112,14 +113,14 @@ f_x <- function(x, x_prev, w, j, s, params) {
         return(1 - exp(params$a_x + params$t_x*j + sum(params$g_x*w)))
       }
     }
-  # } else {
-  #   expitlin <- expit(params$a_s + params$t_s*j + sum(params$g_s*w)) # !!!!! Need to add these params
-  #   if (x==1) {
-  #     return(expitlin)
-  #   } else {
-  #     return(1-expitlin)
-  #   }
-  # }
+  } else {
+    expitlin <- expit(params$a_s + params$t_s*j + sum(params$g_s*w)) # !!!!! Need to add these params
+    if (x==1) {
+      return(expitlin)
+    } else {
+      return(1-expitlin)
+    }
+  }
 }
 
 

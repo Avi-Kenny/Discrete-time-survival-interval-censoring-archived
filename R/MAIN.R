@@ -89,7 +89,8 @@ if (Sys.getenv("sim_run") %in% c("first", "")) {
         a_x=log(0.005), a_y=log(0.003), a_v=log(0.7), a_z=log(0.01),
         g_x=c(log(1.3),log(1.2)), g_y=c(log(1.2),log(1.1)),
         g_v=c(log(1.2),log(1.1)), g_z=c(log(1.2),log(1.1)),
-        beta_x=log(1.5), beta_z=log(0.7)
+        beta_x=log(1.5), beta_z=log(0.7),
+        a_s=log(0.05), g_s=c(log(2),log(1.5))
       )
     )
   )
