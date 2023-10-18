@@ -1,24 +1,17 @@
 # Title: "Modeling HIV seroconversion dates"
 # Author: Avi Kenny
 
-
-
 ##################.
 ##### CONFIG #####
 ##################.
-# install.packages(
-#   pkgs = "stats",
-#   lib = "/home/akenny/R_lib",
-#   repos = "http://cran.us.r-project.org",
-#   dependencies = TRUE
-# )
+
 # Set global config
 cfg <- list(
   level_set_which = "level_set_1",
   # num_sim = 1, # 1000
   num_sim = 500, # 1000
   pkgs = c("dplyr", "survival", "data.table", "tidyr", "memoise", "Rsolnp",
-           "numDeriv"),
+           "numDeriv", "rslurm"),
   pkgs_nocluster = c("ggplot2"),
   parallel = F,
   n_cores = 500,
@@ -64,6 +57,16 @@ if (cfg$local) {
   source("likelihood_miss.R", local=T)
   source("helpers.R", local=T)
 }
+
+# !!!!!
+if (T) {
+  
+  set.seed(1)
+  source("analysis.R", local=T)
+  
+}
+
+stop("MAIN stopped.")
 
 
 
@@ -149,10 +152,10 @@ run_on_cluster(
 
 if (F) {
   
-  v <- c("lik_M_a_x_est", "lik_M_g_x1_est", "lik_M_g_x2_est", "lik_M_a_y_est",
-         "lik_M_g_y1_est", "lik_M_g_y2_est", "lik_M_beta_x_est",
-         "lik_M_beta_z_est", "lik_M_t_x_est", "lik_M_t_y_est")
-  true_vals <- log(c(0.005,1.3,1.2,0.003,1.2,1.1,1.5,0.7,1,1))
+  params <- c("a_x", "g_x1", "g_x2", "a_y", "g_y1", "g_y2", "beta_x", "beta_z",
+              "t_x", "t_y", "a_s", "t_s", "g_s1", "g_s2")
+  true_vals <- log(c(0.005,1.3,1.2,0.003,1.2,1.1,1.5,0.7,1,1,0.05,1,2,1.5))
+  v <- paste0("lik_M_",params,"_est")
   r <- filter(sim$results, params=="70pct testing")
   x <- unlist(lapply(v, function(col) { r[,col] }))
   df_true <- data.frame(
@@ -180,50 +183,21 @@ if (F) {
           strip.text.y.left = element_text(angle=0),
           legend.position="none")
   
-  # Coverage
-  summ <- sim %>% SimEngine::summarize(
-    list(stat="mean", name="a_x__sd_est", x="lik_M_a_x_se"),
-    list(stat="mean", name="g_x1__sd_est", x="lik_M_g_x1_se"),
-    list(stat="mean", name="g_x2__sd_est", x="lik_M_g_x2_se"),
-    list(stat="mean", name="a_y__sd_est", x="lik_M_a_y_se"),
-    list(stat="mean", name="g_y1__sd_est", x="lik_M_g_y1_se"),
-    list(stat="mean", name="g_y2__sd_est", x="lik_M_g_y2_se"),
-    list(stat="mean", name="beta_x__sd_est", x="lik_M_beta_x_se"),
-    list(stat="mean", name="beta_z__sd_est", x="lik_M_beta_z_se"),
-    list(stat="mean", name="t_x__sd_est", x="lik_M_t_x_se"),
-    list(stat="mean", name="t_y__sd_est", x="lik_M_t_y_se"),
-    list(stat="sd", name="a_x__sd_actual", x="lik_M_a_x_est"),
-    list(stat="sd", name="g_x1__sd_actual", x="lik_M_g_x1_est"),
-    list(stat="sd", name="g_x2__sd_actual", x="lik_M_g_x2_est"),
-    list(stat="sd", name="a_y__sd_actual", x="lik_M_a_y_est"),
-    list(stat="sd", name="g_y1__sd_actual", x="lik_M_g_y1_est"),
-    list(stat="sd", name="g_y2__sd_actual", x="lik_M_g_y2_est"),
-    list(stat="sd", name="beta_x__sd_actual", x="lik_M_beta_x_est"),
-    list(stat="sd", name="beta_z__sd_actual", x="lik_M_beta_z_est"),
-    list(stat="sd", name="t_x__sd_actual", x="lik_M_t_x_est"),
-    list(stat="sd", name="t_y__sd_actual", x="lik_M_t_y_est"),
-    list(stat="coverage", name="a_x__cov", truth=true_vals[1],
-         estimate="lik_M_a_x_est", se="lik_M_a_x_se", na.rm=T),
-    list(stat="coverage", name="g_x1__cov", truth=true_vals[2],
-         estimate="lik_M_g_x1_est", se="lik_M_g_x1_se", na.rm=T),
-    list(stat="coverage", name="g_x2__cov", truth=true_vals[3],
-         estimate="lik_M_g_x2_est", se="lik_M_g_x2_se", na.rm=T),
-    list(stat="coverage", name="a_y__cov", truth=true_vals[4],
-         estimate="lik_M_a_y_est", se="lik_M_a_y_se", na.rm=T),
-    list(stat="coverage", name="g_y1__cov", truth=true_vals[5],
-         estimate="lik_M_g_y1_est", se="lik_M_g_y1_se", na.rm=T),
-    list(stat="coverage", name="g_y2__cov", truth=true_vals[6],
-         estimate="lik_M_g_y2_est", se="lik_M_g_y2_se", na.rm=T),
-    list(stat="coverage", name="beta_x__cov", truth=true_vals[7],
-         estimate="lik_M_beta_x_est", se="lik_M_beta_x_se", na.rm=T),
-    list(stat="coverage", name="beta_z__cov", truth=true_vals[8],
-         estimate="lik_M_beta_z_est", se="lik_M_beta_z_se", na.rm=T),
-    list(stat="coverage", name="t_x__cov", truth=true_vals[9],
-         estimate="lik_M_t_x_est", se="lik_M_t_x_se", na.rm=T),
-    list(stat="coverage", name="t_y__cov", truth=true_vals[10],
-         estimate="lik_M_t_y_est", se="lik_M_t_y_se", na.rm=T)
-  )
-  
+  # Summary stats
+  summ_mean <- summ_sd <- summ_cov <- list()
+  for (i in c(1:length(params))) {
+    p <- params[i]
+    summ_mean[[i]] <- list(stat="mean",
+                           name=paste0(p,"__sd_est"),
+                           x=paste0("lik_M_",p,"_se"))
+    summ_sd[[i]] <- list(stat="sd", name=paste0(p,"__sd_actual"),
+                         x=paste0("lik_M_",p,"_est"))
+    summ_cov[[i]] <- list(stat="coverage", name=paste0(p,"__cov"),
+                          truth=true_vals[i],
+                          estimate=paste0("lik_M_",p,"_est"),
+                          se=paste0("lik_M_",p,"_se"), na.rm=T)
+  }
+  summ <- do.call(SimEngine::summarize, c(list(sim), summ_mean, summ_sd, summ_cov))
   l_id <- 1
   summ2 <- summ[summ$level_id==l_id]
   df_results <- data.frame(
@@ -232,7 +206,6 @@ if (F) {
     "sd_actual" = double(),
     "coverage" = double()
   )
-  params <- c("a_x", "g_x1", "g_x2", "a_y", "g_y1", "g_y2", "beta_x", "beta_z")
   for (p in params) {
     df_results[nrow(df_results)+1,] <- c(
       p,
