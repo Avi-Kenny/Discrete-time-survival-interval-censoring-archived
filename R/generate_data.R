@@ -57,12 +57,6 @@ generate_data <- function(n, max_time, params) {
     w_age_ <- w_age[i]
     cal_time <- s_i_ <- s_i[i] # Currently unused
     
-    # Sample baseline serostatus
-    # !!!!! Add calendar time trend
-    # p_bsero <- expit(p$a_s + p$t_s*cal_time + sum(p$g_s*c(w_sex_,w_age_)))
-    p_bsero <- expit(p$a_s + sum(p$g_s*c(w_sex_,w_age_)))
-    x_prev <- rbinom(n=1, size=1, prob=p_bsero)
-    
     while (!event && j<=max_time) {
       
       # !!!!! Need to increment age each loop
@@ -73,9 +67,15 @@ generate_data <- function(n, max_time, params) {
       
       # Sample serostatus (x)
       # !!!!! Add calendar time trend
-      p_sero <- x_prev + (1-x_prev) * exp(
-        p$a_x + p$g_x[1]*w_sex_ + p$g_x[2]*w_age_
-      )
+      if (j==1) {
+        # Sample baseline serostatus
+        # !!!!! Add calendar time trend: + p$t_s*cal_time
+        p_sero <- expit(p$a_s + sum(p$g_s*c(w_sex_,w_age_)))
+      } else {
+        p_sero <- x_prev + (1-x_prev) * exp(
+          p$a_x + p$g_x[1]*w_sex_ + p$g_x[2]*w_age_
+        )
+      }
       x[j] <- x_prev <- rbinom(n=1, size=1, prob=p_sero)
       
       # Sample testing
