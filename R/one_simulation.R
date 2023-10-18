@@ -42,7 +42,7 @@ one_simulation <- function() {
     # Get estimates and SEs from Cox model
     chk(10, "Cox: START")
     model <- coxph(
-      Surv(t_start, t_end, y) ~ w_sex + w_age + x + cluster(id),
+      Surv(t_start, t_end, y) ~ w_1 + w_2 + x + cluster(id),
       data = dat
     )
     cox_full <- list(

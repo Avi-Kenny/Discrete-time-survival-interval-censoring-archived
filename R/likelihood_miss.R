@@ -17,7 +17,7 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL) {
     d$t_i <- max(d$dat_i$t_end)
     
     # Data vectors
-    d$w <- subset(d$dat_i, select=c(w_sex,w_age)) # !!!!! Subset command is temporary
+    d$w <- subset(d$dat_i, select=names(dat)[substr(names(dat), 1, 2)=="w_"])
     d$y <- d$dat_i$y
     d$z <- d$dat_i$z
     d$v <- d$dat_i$v

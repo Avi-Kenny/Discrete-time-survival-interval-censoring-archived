@@ -128,7 +128,7 @@ if (cfg2$process_data) {
   }
   
   # Read in data; see generate_data() for expected columns
-  dat <- read.csv("data_raw.csv")
+  dat_raw <- read.csv("data_raw.csv")
 
   # # Add x_prev column
   # dat %<>% arrange(id, t_end)

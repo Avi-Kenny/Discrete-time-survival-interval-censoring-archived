@@ -22,8 +22,8 @@ generate_data <- function(n, max_time, params) {
     "id" = integer(),
     "t_start" = integer(),
     "t_end" = integer(),
-    "w_sex" = integer(),
-    "w_age" = double(),
+    "w_1" = integer(),
+    "w_2" = double(),
     "x" = integer(),
     "z" = integer(),
     "y" = integer(),
@@ -34,11 +34,11 @@ generate_data <- function(n, max_time, params) {
   
   # Generate baseline covariates
   id <- c(1:n)
-  w_sex <- sample(c(0,1), size=n, replace=T)
-  w_age <- sample(c(13:80), size=n, replace=T)
+  w_1 <- sample(c(0,1), size=n, replace=T)
+  w_2 <- sample(c(13:80), size=n, replace=T)
   
   # !!!!! Temp: scale age variable
-  w_age <- w_age/100
+  w_2 <- w_2/100
   
   # Sample start time
   s_i <- sample(c(1:100), size=n, replace=T)
@@ -53,8 +53,8 @@ generate_data <- function(n, max_time, params) {
     event <- z_prev <- 0
     known_pos <- known_pos_prev <- 0
     j <- 0
-    w_sex_ <- w_sex[i]
-    w_age_ <- w_age[i]
+    w_1_ <- w_1[i]
+    w_2_ <- w_2[i]
     cal_time <- s_i_ <- s_i[i] # Currently unused
     
     while (!event && j<=max_time) {
@@ -70,17 +70,17 @@ generate_data <- function(n, max_time, params) {
       if (j==1) {
         # Sample baseline serostatus
         # !!!!! Add calendar time trend: + p$t_s*cal_time
-        p_sero <- expit(p$a_s + sum(p$g_s*c(w_sex_,w_age_)))
+        p_sero <- expit(p$a_s + sum(p$g_s*c(w_1_,w_2_)))
       } else {
         p_sero <- x_prev + (1-x_prev) * exp(
-          p$a_x + p$g_x[1]*w_sex_ + p$g_x[2]*w_age_
+          p$a_x + p$g_x[1]*w_1_ + p$g_x[2]*w_2_
         )
       }
       x[j] <- x_prev <- rbinom(n=1, size=1, prob=p_sero)
       
       # Sample testing
       p_test <- (1-known_pos_prev) * exp(
-        p$a_v + p$g_v[1]*w_sex_ + p$g_v[2]*w_age_
+        p$a_v + p$g_v[1]*w_1_ + p$g_v[2]*w_2_
       )
       v[j] <- rbinom(n=1, size=1, prob=p_test)
       
@@ -95,7 +95,7 @@ generate_data <- function(n, max_time, params) {
         p_art <- 1
       } else {
         p_art <- exp(
-          p$a_z + p$g_z[1]*w_sex_ + p$g_z[2]*w_age_
+          p$a_z + p$g_z[1]*w_1_ + p$g_z[2]*w_2_
         )
       }
       z[j] <- z_prev <- rbinom(n=1, size=1, prob=p_art)
@@ -103,7 +103,7 @@ generate_data <- function(n, max_time, params) {
       # Sample events
       # !!!!! Add calendar time trend
       p_event <- exp(
-        p$a_y + p$g_y[1]*w_sex_ + p$g_y[2]*w_age_ +
+        p$a_y + p$g_y[1]*w_1_ + p$g_y[2]*w_2_ +
           p$beta_x*x[j] + p$beta_z*z[j]
       )
       event <- rbinom(n=1, size=1, prob=p_event)
@@ -124,7 +124,7 @@ generate_data <- function(n, max_time, params) {
     # Add results to dataframe
     dat <- rbind(dat, list(
       id=rep(i,j), t_start=c(s_i_:(s_i_+j-1)), t_end=c((s_i_+1):(s_i_+j)),
-      w_sex=rep(w_sex_,j), w_age=rep(w_age_,j), x=x, z=z, y=y, v=v, d=d, u=x*d
+      w_1=rep(w_1_,j), w_2=rep(w_2_,j), x=x, z=z, y=y, v=v, d=d, u=x*d
     ))
     
     # Store additional vectors
