@@ -42,7 +42,7 @@ one_simulation <- function() {
     # Get estimates and SEs from Cox model
     chk(10, "Cox: START")
     model <- coxph(
-      Surv(t_start, t_end, y) ~ w_sex + w_age + x + cluster(id),
+      Surv(t_start, t_end, y) ~ w_1 + w_2 + x + cluster(id),
       data = dat
     )
     cox_full <- list(
@@ -54,11 +54,12 @@ one_simulation <- function() {
     
   } # DEBUG: Cox model (ideal data structure)
   
-  # Set initial parameters
-  # True values: log(c(0.005,1.3,1.2,0.003,1.2,1.1,1.5,0.6,1,1))
-  par <- log(c(0.003,1.2,1.1,0.002,1.3,1,1.3,0.8,0.999,1.001)) # Starting values
-  names(par) <- c("a_x", "g_x1", "g_x2", "a_y", "g_y1", "g_y2", "beta_x",
-                  "beta_z", "t_x", "t_y")
+  # Set initial parameter estimate - should roughly (but not exactly) equal the
+  # true parameters
+  par <- log(c(
+    a_x=0.003, g_x1=1.2, g_x2=1.1, a_y=0.002, g_y1=1.3, g_y2=1, beta_x=1.3,
+    beta_z=0.8, t_x=0.999, t_y=1.001, a_s=0.03, t_s=1.001, g_s1=1.8, g_s2=1.7
+  ))
   
   chk(2, "construct_negloglik_miss: START")
   negloglik_miss <- construct_negloglik_miss(dat)
@@ -69,31 +70,13 @@ one_simulation <- function() {
   chk(2, "optim: END")
   chk(2, "hessian: START")
   hessian_miss <- hessian(func=negloglik_miss, x=opt_miss$par)
+  hessian_inv <- solve(hessian_miss)
   chk(2, "hessian: END")
-  lik_miss <- list(ests=opt_miss$par)
-  lik_miss$se <- sqrt(diag(solve(hessian_miss)))
-  lik_miss$ci_lo <- lik_miss$ests-1.96*lik_miss$se
-  lik_miss$ci_hi <- lik_miss$ests+1.96*lik_miss$se
 
-  res <- list() # !!!!! 2022-09-28
-  for (i in c(1:length(par))) { # !!!!! 2022-09-28
-    res[[paste0("lik_M_",names(par)[i],"_est")]] <- as.numeric(opt_miss$par[i]) # !!!!! 2022-09-28
-    res[[paste0("lik_M_",names(par)[i],"_se")]] <- sqrt(diag(solve(hessian_miss)))[i] # !!!!! 2022-09-28
-  } # !!!!! 2022-09-28
-  
-  # Old code; archive???
-  if (F) {
-    res <- list(
-      lik_M_beta_x_est = lik_miss$ests[7],
-      lik_M_beta_x_ci_lo = lik_miss$ci_lo[7],
-      lik_M_beta_x_ci_hi = lik_miss$ci_hi[7],
-      lik_M_g_y1_est = lik_miss$ests[5],
-      lik_M_g_y1_lo = lik_miss$ci_lo[5],
-      lik_M_g_y1_hi = lik_miss$ci_hi[5],
-      lik_M_g_y2_est = lik_miss$ests[6],
-      lik_M_g_y2_lo = lik_miss$ci_lo[6],
-      lik_M_g_y2_hi = lik_miss$ci_hi[6]
-    )
+  res <- list()
+  for (i in c(1:length(par))) {
+    res[[paste0("lik_M_",names(par)[i],"_est")]] <- as.numeric(opt_miss$par[i])
+    res[[paste0("lik_M_",names(par)[i],"_se")]] <- sqrt(diag(hessian_inv))[i]
   }
   
   chk(3, "END")

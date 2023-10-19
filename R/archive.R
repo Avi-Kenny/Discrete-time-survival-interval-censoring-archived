@@ -24,7 +24,7 @@ if (F) {
       J <- nrow(dat_i)
       
       # Calculate vectors for patient i
-      w <- subset(dat_i, select=c(w_sex,w_age)) # !!!!! TEMP
+      w <- subset(dat_i, select=c(w_1,w_2))
       y <- dat_i$y
       z <- dat_i$z
       v <- dat_i$v

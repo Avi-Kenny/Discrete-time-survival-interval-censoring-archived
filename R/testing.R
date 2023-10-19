@@ -46,7 +46,7 @@ for (i in c(1:n_reps)) {
   
   # Run Cox PH model
   model <- coxph(
-    Surv(t_start, t_end, y) ~ w_sex + w_age + x + cluster(id),
+    Surv(t_start, t_end, y) ~ w_1 + w_2 + x + cluster(id),
     data = dat
   )
   g_y_1[i] <- model$coefficients[1]
