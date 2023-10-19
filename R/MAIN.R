@@ -8,8 +8,8 @@
 # Set global config
 cfg <- list(
   level_set_which = "level_set_1",
-  # num_sim = 1, # 1000
-  num_sim = 500, # 1000
+  num_sim = 1, # 1000
+  # num_sim = 500, # 1000
   pkgs = c("dplyr", "survival", "data.table", "tidyr", "memoise", "Rsolnp",
            "numDeriv", "lubridate"), # "rslurm"
   pkgs_nocluster = c("ggplot2"),
@@ -81,8 +81,8 @@ if (Sys.getenv("sim_run") %in% c("first", "")) {
   # Simulation 1: basic
   # n=500,t=100 rep runs in 3.2 hrs # !!!!! outdated
   level_set_1 <- list(
-    # n = 50,
-    n = 500,
+    n = 100,
+    # n = 500,
     # n = c(500,1000,2000),
     max_time = 70,
     # max_time = 100,
