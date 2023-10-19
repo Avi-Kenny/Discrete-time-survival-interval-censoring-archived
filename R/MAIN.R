@@ -8,8 +8,8 @@
 # Set global config
 cfg <- list(
   level_set_which = "level_set_1",
-  # num_sim = 1, # 1000
-  num_sim = 500, # 1000
+  num_sim = 1, # 1000
+  # num_sim = 500, # 1000
   pkgs = c("dplyr", "survival", "data.table", "tidyr", "memoise", "Rsolnp",
            "numDeriv", "lubridate"), # "rslurm"
   pkgs_nocluster = c("ggplot2"),
