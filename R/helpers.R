@@ -53,8 +53,8 @@ case <- function(x,v, warn=F) {
 T_plusminus <- function(case, s_i, t_i, x, v) {
   
   len <- t_i-s_i+1
-  if (!length(v)==len || !length(x)==len) { stop("Incorrect vectors lengths.") }
-  
+  if (!length(v)==len || !length(x)==len) { stop("Incorrect vector lengths.") }
+
   if (case %in% c(2,3)) {
     # Time of most recent negative test
     T_minus_index <- which.max(c(s_i:t_i)*v*(1-x))

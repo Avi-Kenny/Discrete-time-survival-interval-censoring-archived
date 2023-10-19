@@ -45,7 +45,7 @@ generate_data <- function(n, max_time, params) {
   
   # Loop through individuals/time to generate events
   p <- params
-  vec_T_minus <- vec_T_plus <- vec_case <- c()
+  vec_T_minus <- vec_T_plus <- vec_case <- vec_s_i <- vec_t_i <- c()
   for (i in c(1:n)) {
     
     # Initial values
@@ -116,7 +116,7 @@ generate_data <- function(n, max_time, params) {
     
     # Calculate time(s) of most recent negative test and/or positive test
     T_pm <- T_plusminus(case=case_i, s_i=s_i_, t_i=j+s_i_-1, x=x, v=v)
-    
+
     # Calculate Delta
     d <- g_delta(case=case_i, s_i=s_i_, t_i=j+s_i_-1, T_minus=T_pm$T_minus,
                  T_plus=T_pm$T_plus)

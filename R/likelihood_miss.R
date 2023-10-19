@@ -10,7 +10,7 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL) {
   dat_objs <- lapply(c(1:n), function(i) {
     
     d <- list()
-    dat_i <- dat[i,] # Does dat_i need to be returned with r?
+    dat_i <- dat[dat$id==i,] # Does dat_i need to be returned with r?
     
     # Start and end times
     d$s_i <- attr(dat, "s_i")[i]
@@ -74,7 +74,7 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL) {
           )
         })))
       })))
-      if (is.nan(f2) || is.nan(f2)) { browser() }
+      # if (is.nan(f2) || is.nan(f2)) { browser() } # Debugging
       if (f2<=0) {
         f2 <- 1e-10
         # warning("Likelihood of zero")
@@ -85,7 +85,7 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL) {
     }
     
     # !!!!! Debugging
-    if (T) {
+    if (F) {
       print("Debugging: START")
       print("cl")
       print(cl)
