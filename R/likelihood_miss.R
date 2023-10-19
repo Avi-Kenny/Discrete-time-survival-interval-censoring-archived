@@ -20,7 +20,7 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL) {
     d$w <- subset(dat_i, select=names(dat)[substr(names(dat), 1, 2)=="w_"])
     d$y <- dat_i$y
     d$z <- dat_i$z
-    d$v <- dat_i$v # !!!!! Move this to a different step
+    d$v <- dat_i$v
     d$d <- dat_i$d
     d$u <- dat_i$u
     d$cal_time <- dat_i$t_end

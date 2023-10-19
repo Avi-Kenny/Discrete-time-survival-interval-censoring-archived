@@ -17,7 +17,7 @@ one_simulation <- function() {
     params = L$params
   )
   chk(1, "Data generated")
-
+  
   # Add x_prev column
   dat %<>% arrange(id, t_end)
   dat$x_prev <- ifelse(
@@ -66,7 +66,6 @@ one_simulation <- function() {
   chk(2, "construct_negloglik_miss: END")
   chk(2, "optim: START")
   opt_miss <- optim(par=par, fn=negloglik_miss)
-  browser()
   chk(2, "optim: END")
   chk(2, "hessian: START")
   hessian_miss <- hessian(func=negloglik_miss, x=opt_miss$par)

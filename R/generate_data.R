@@ -52,7 +52,7 @@ generate_data <- function(n, max_time, params) {
     x <- y <- v <- z <- c()
     event <- z_prev <- 0
     known_pos <- known_pos_prev <- 0
-    j <- 0
+    j <- 1
     w_1_ <- w_1[i]
     w_2_ <- w_2[i]
     cal_time <- s_i_ <- s_i[i] # cal_time currently unused
@@ -60,10 +60,6 @@ generate_data <- function(n, max_time, params) {
     while (!event && j<=max_time) {
       
       # !!!!! Need to increment age each loop
-      
-      # Increment time
-      j <- round(j+1)
-      cal_time <- cal_time+1 # Currently unused
       
       # Sample serostatus (x)
       # !!!!! Add calendar time trend
@@ -109,7 +105,14 @@ generate_data <- function(n, max_time, params) {
       event <- rbinom(n=1, size=1, prob=p_event)
       y[j] <- event
       
+      # Increment time
+      j <- round(j+1)
+      cal_time <- cal_time+1 # Currently unused; also account for scaling
+      
     }
+    
+    # Need to subtract one from j since it is incremented at the end of the loop
+    j <- j-1
 
     # Calculate case indicators
     case_i <- case(x,v)
@@ -118,12 +121,12 @@ generate_data <- function(n, max_time, params) {
     T_pm <- T_plusminus(case=case_i, s_i=s_i_, t_i=j+s_i_-1, x=x, v=v)
 
     # Calculate Delta
-    d <- g_delta(case=case_i, s_i=s_i_, t_i=j+s_i_-1, T_minus=T_pm$T_minus,
+    d <- g_delta(case=case_i, s_i=s_i_, t_i=s_i_+j-1, T_minus=T_pm$T_minus,
                  T_plus=T_pm$T_plus)
     
     # Add results to dataframe
     dat <- rbind(dat, list(
-      id=rep(i,j), t_start=c(s_i_:(s_i_+j-1)), t_end=c((s_i_+1):(s_i_+j)),
+      id=rep(i,j), t_start=c((s_i_-1):(s_i_+j-2)), t_end=c(s_i_:(s_i_+j-1)),
       w_1=rep(w_1_,j), w_2=rep(w_2_,j), x=x, z=z, y=y, v=v, d=d, u=x*d
     ))
     
