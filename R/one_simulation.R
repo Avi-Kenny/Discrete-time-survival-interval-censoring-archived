@@ -66,13 +66,12 @@ one_simulation <- function() {
   chk(2, "construct_negloglik_miss: END")
   chk(2, "optim: START")
   opt_miss <- optim(par=par, fn=negloglik_miss)
-  browser() # !!!!!
   chk(2, "optim: END")
   chk(2, "hessian: START")
   hessian_miss <- hessian(func=negloglik_miss, x=opt_miss$par)
   hessian_inv <- solve(hessian_miss)
   chk(2, "hessian: END")
-
+  
   res <- list()
   for (i in c(1:length(par))) {
     res[[paste0("lik_M_",names(par)[i],"_est")]] <- as.numeric(opt_miss$par[i])

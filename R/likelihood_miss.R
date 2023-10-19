@@ -47,6 +47,8 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL) {
   
   negloglik_miss <- function(par) {
     
+    print(paste("negloglik_miss() called:",Sys.time())) # !!!!!
+
     # Convert parameter vector to a named list
     p <- as.numeric(par)
     params <- list(a_x=p[1], g_x=c(p[2],p[3]), a_y=p[4], g_y=c(p[5],p[6]),
@@ -149,9 +151,25 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL) {
 
     # Compute the negative likelihood across individuals
     if (parallelize) {
-      return(-1 * sum(log(unlist(parallel::parLapply(cl, c(1:n), lik_fn)))))
+      
+      n_batches <- length(cl)
+      folds <- cut(c(1:n), breaks=n_batches, labels=FALSE)
+      batches <- lapply(c(1:n_batches), function(batch) {
+        c(1:n)[folds==batch]
+      })
+      parallel::clusterExport(cl, c("batches"), envir=environment())
+      return(-1 * sum(unlist(parallel::parLapply(
+        cl,
+        c(1:n_batches),
+        function(batch) { sum(log(unlist(lapply(batches[[batch]], lik_fn)))) })
+      )))
+      
+      # return(-1 * sum(log(unlist(parallel::parLapply(cl, c(1:n), lik_fn)))))
+      
     } else {
+      
       return(-1 * sum(log(unlist(lapply(c(1:n), lik_fn)))))
+      
     }
     
   }

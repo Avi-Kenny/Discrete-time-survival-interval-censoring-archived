@@ -59,7 +59,7 @@ if (cfg$local) {
 }
 
 # !!!!!
-if (F) {
+if (T) {
   
   set.seed(1)
   source("analysis.R", local=T)

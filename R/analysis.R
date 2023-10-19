@@ -90,10 +90,21 @@ chk(0, "START")
 cfg2 <- list(
   process_data = TRUE,
   save_data = TRUE,
-  run_dqa = TRUE,
+  run_dqa = FALSE,
   run_analysis = TRUE,
   parallelize = TRUE
 )
+
+# !!!!! TEMP
+if (Sys.getenv("avi_para")=="yes") {
+  print("parallelizing")
+  cfg2$parallelize <- TRUE
+} else {
+  print("not parallelizing")
+  cfg2$parallelize <- FALSE
+}
+
+
 
 ###########################.
 ##### Data processing #####
@@ -102,12 +113,12 @@ cfg2 <- list(
 chk(1, "Data reading/processing: START")
 if (cfg2$process_data) {
   
-  if (F) {
+  if (T) {
     # Generate dataset
+    n <- 4000
+    print(paste("n=",n))
     dat <- generate_data(
-      n = 200,
-      # n = 2000,
-      # n = 10000,
+      n = n,
       max_time = 70,
       params = list(
         a_x=log(0.005), a_y=log(0.003), a_v=log(0.7), a_z=log(0.01),
@@ -125,153 +136,138 @@ if (cfg2$process_data) {
       c(0,dat$x[c(1:(length(dat$x)-1))]),
       0
     )
-  }
-  
-  # Read in data; see generate_data() for expected columns
-  dat_prc <- dat_raw <- read.csv("data_raw.csv")
-  
-  # Drop unnecessary columns
-  dat_prc %<>% subset(select=-c(enter, exit, X_t, X_t0))
-  # !!!!! Drop hiv_result_fill, earliestartinitdate ?????
-  
-  # Start time
-  window_start <- min(dat_prc$month)
-  
-  # Function to convert dates
-  date_start <- as.Date("01jan1960", format="%d%b%Y")
-  # date_vars <- c("dob", "dod", "enter", "exit", "first_hiv_pos_dt",
-  #                "last_hiv_neg_dt", "earliestartinitdate")
-  convert_date <- memoise(function(date) {
-    date <- as.Date(date, format="%d%b%Y")
-    # Subtract window_start ?????
-    return(lubridate::interval(start=date_start, end=date) %/% months(1))
-  })
-  
-  # Data wrangling
-  dat_prc %<>% dplyr::mutate(
-    # iintid = as.numeric(factor(iintid)),
-    sex = ifelse(sex=="Male", 1, 0),
-    died = ifelse(is.na(died), 0, died),
-    dob = convert_date(dob),
-    dod = convert_date(dod),
-    first_hiv_pos_dt = convert_date(first_hiv_pos_dt),
-    last_hiv_neg_dt = convert_date(last_hiv_neg_dt),
-    earliestartinitdate = convert_date(earliestartinitdate),
-    onart = ifelse(is.na(onart), 0, onart),
-    month_prev = month - 1
-  )
-  
-  # !!!!! Standardize all variables to have [0,1] range
-  
-  # Rearrange columns
-  dat_prc %<>% dplyr::relocate(month_prev, .before=month)
-  
-  # Rename columns
-  dat_prc %<>% dplyr::rename(
-    "id" = iintid,
-    "w_1" = sex,
-    "w_2" = dob,
-    "y" = died,
-    "z" = onart,
-    "t_start" = month_prev,
-    "t_end" = month
-  )
-  
-  # Sort dataframe
-  dat_prc %<>% dplyr::arrange(id,t_start)
-  
-  # Create grouped dataset
-  dat_grp <- dat_prc %>% dplyr::group_by(id) %>%
-    dplyr::summarize(
-      count = n(),
-      T_minus = last_hiv_neg_dt[1],
-      T_plus = first_hiv_pos_dt[1],
-      s_i = min(t_end),
-      t_i = max(t_end)
+    
+    # if (cfg2$parallelize) { saveRDS(dat, "dat_sim_10000.rds") }
+    
+  } else {
+    
+    # Read in data; see generate_data() for expected columns
+    dat_prc <- dat_raw <- read.csv("data_raw.csv")
+    
+    # Drop unnecessary columns
+    dat_prc %<>% subset(select=-c(enter, exit, X_t, X_t0))
+    # !!!!! Drop hiv_result_fill, earliestartinitdate ?????
+    
+    # Start time
+    window_start <- min(dat_prc$month)
+    
+    # Function to convert dates
+    date_start <- as.Date("01jan1960", format="%d%b%Y")
+    convert_date <- memoise(function(date) {
+      date <- as.Date(date, format="%d%b%Y")
+      # Subtract window_start ?????
+      return(lubridate::interval(start=date_start, end=date) %/% months(1))
+    })
+    
+    # Data wrangling
+    dat_prc %<>% dplyr::mutate(
+      iintid = as.numeric(factor(iintid)),
+      sex = ifelse(sex=="Male", 1, 0),
+      died = ifelse(is.na(died), 0, died),
+      dob = convert_date(dob),
+      dod = convert_date(dod),
+      first_hiv_pos_dt = convert_date(first_hiv_pos_dt),
+      last_hiv_neg_dt = convert_date(last_hiv_neg_dt),
+      earliestartinitdate = convert_date(earliestartinitdate),
+      onart = ifelse(is.na(onart), 0, onart),
+      month_prev = month - 1
     )
-  dat_grp %<>% dplyr::mutate(
-    case = case_when(
-      is.na(T_minus) & is.na(T_plus) ~ 1,
-      !is.na(T_minus) & is.na(T_plus) ~ 2,
-      !is.na(T_minus) & !is.na(T_plus) ~ 3,
-      is.na(T_minus) & !is.na(T_plus) ~ 4,
-      TRUE ~ 999
+    
+    # !!!!! Standardize all variables to have [0,1] range before adding to model
+    
+    # Rearrange columns
+    dat_prc %<>% dplyr::relocate(month_prev, .before=month)
+    
+    # Rename columns
+    dat_prc %<>% dplyr::rename(
+      "id" = iintid,
+      "w_1" = sex,
+      "w_2" = dob,
+      "y" = died,
+      "z" = onart,
+      "t_start" = month_prev,
+      "t_end" = month
     )
-  )
-  
-  # !!!!! Remove all data before 13th birthday; check for any testing before this
-  
-  # !!!!! Temporary
-  if (T) {
-    bad_ids <- which(dat_grp$T_plus-dat_grp$T_minus<0)
-    dat_prc %<>% dplyr::filter(!(id %in% bad_ids))
-    dat_grp %<>% dplyr::filter(!(id %in% bad_ids))
-  }
-  
-  # !!!!! Check that `first_hiv_pos_dt` and `last_hiv_neg_dt` lie within `t_start` and `t_end`
-  
-  # Set data attributes
-  attr(dat_prc, "n") <- max(dat_prc$id)
-  attr(dat_prc, "T_minus") <- dat_grp$T_minus
-  attr(dat_prc, "T_plus") <- dat_grp$T_plus
-  attr(dat_prc, "s_i") <- dat_grp$s_i
-  attr(dat_prc, "t_i") <- dat_grp$t_i
-  attr(dat_prc, "case") <- dat_grp$case
-  
-  # Generate delta column
-  delta <- rep(NA, nrow(dat_prc))
-  for (id in c(1:attr(dat_prc, "n"))) {
-    index_first <- NA
-    index_last <- NA
-    delta_i <- g_delta(
-      case = dat_grp$case[i],
-      s_i = dat_grp$s_i[i],
-      t_i = dat_grp$t_i[i],
-      T_minus = dat_grp$T_minus[i],
-      T_plus = dat_grp$plus[i]
+    
+    # Sort dataframe
+    dat_prc %<>% dplyr::arrange(id,t_start)
+    
+    # Create grouped dataset
+    dat_grp <- dat_prc %>% dplyr::group_by(id) %>%
+      dplyr::summarize(
+        count = n(),
+        T_minus = last_hiv_neg_dt[1],
+        T_plus = first_hiv_pos_dt[1],
+        s_i = min(t_end),
+        t_i = max(t_end)
+      )
+    dat_grp %<>% dplyr::mutate(
+      case = case_when(
+        is.na(T_minus) & is.na(T_plus) ~ 1,
+        !is.na(T_minus) & is.na(T_plus) ~ 2,
+        !is.na(T_minus) & !is.na(T_plus) ~ 3,
+        is.na(T_minus) & !is.na(T_plus) ~ 4,
+        TRUE ~ 999
+      )
     )
-    delta[c(index_first:index_last)] <- delta_i
+    
+    # !!!!! Remove all data before 13th birthday; check for any testing before this
+    
+    # !!!!! Temporary
+    if (T) {
+      bad_ids <- which(dat_grp$T_plus-dat_grp$T_minus<0)
+      dat_prc %<>% dplyr::filter(!(id %in% bad_ids))
+      dat_grp %<>% dplyr::filter(!(id %in% bad_ids))
+    }
+    
+    # !!!!! Check that `first_hiv_pos_dt` and `last_hiv_neg_dt` lie within `t_start` and `t_end`
+    
+    # Set data attributes
+    attr(dat_prc, "n") <- max(dat_prc$id)
+    attr(dat_prc, "T_minus") <- dat_grp$T_minus
+    attr(dat_prc, "T_plus") <- dat_grp$T_plus
+    attr(dat_prc, "s_i") <- dat_grp$s_i
+    attr(dat_prc, "t_i") <- dat_grp$t_i
+    attr(dat_prc, "case") <- dat_grp$case
+    
+    # Generate delta column
+    delta <- rep(NA, nrow(dat_prc))
+    for (id in c(1:attr(dat_prc, "n"))) {
+      index_first <- NA
+      index_last <- NA
+      delta_i <- g_delta(
+        case = dat_grp$case[i],
+        s_i = dat_grp$s_i[i],
+        t_i = dat_grp$t_i[i],
+        T_minus = dat_grp$T_minus[i],
+        T_plus = dat_grp$plus[i]
+      )
+      delta[c(index_first:index_last)] <- delta_i
+    }
+    
+    # # !!!!!
+    # print(dat_prc[c(630:636),])
+    
+    # TO DO: change "baseline age" to "age" (i.e. make it time-varying)
+    
+    # # Add x_prev column
+    # dat %<>% arrange(id, t_end)
+    # dat$x_prev <- ifelse(
+    #   dat$id==c(0,dat$id[c(1:(length(dat$id)-1))]),
+    #   c(0,dat$x[c(1:(length(dat$x)-1))]),
+    #   0
+    # )
+    # 
+    # # TEMP: filter out individuals who migrated out
+    # if (T) {
+    #   
+    #   # !!!!! TO DO
+    #   
+    # }
+    # 
+    # if (cfg2$save_data) { saveRDS(dat, "dat.rds") }
+    
   }
-  
-  # !!!!!
-  print(dat_prc[c(630:636),])
-  
-  #
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  # TO DO: change "baseline age" to "age" (i.e. make it time-varying)
-  
-
-  # # Add x_prev column
-  # dat %<>% arrange(id, t_end)
-  # dat$x_prev <- ifelse(
-  #   dat$id==c(0,dat$id[c(1:(length(dat$id)-1))]),
-  #   c(0,dat$x[c(1:(length(dat$x)-1))]),
-  #   0
-  # )
-  # 
-  # # TEMP: filter out individuals who migrated out
-  # if (T) {
-  #   
-  #   # !!!!! TO DO
-  #   
-  # }
-  # 
-  # if (cfg2$save_data) { saveRDS(dat, "dat.rds") }
   
 } else {
   
@@ -331,11 +327,10 @@ if (cfg2$run_analysis) {
   chk(3, "construct_negloglik_miss: START")
   if (cfg2$parallelize) {
     n_cores <- parallel::detectCores() - 1
+    n_cores <- 10 # !!!!!
     print(paste0("Using ", n_cores, " cores."))
-    # cl <- parallel::makeCluster(n_cores) # !!!!!
-    cl <- parallel::makeCluster(35) # !!!!!
+    cl <- parallel::makeCluster(n_cores)
     parallel::clusterExport(cl, ls(.GlobalEnv))
-    # cl <- NULL # !!!!!
     negloglik_miss <- construct_negloglik_miss(dat, parallelize=T, cl=cl)
   } else {
     negloglik_miss <- construct_negloglik_miss(dat, parallelize=F, cl=NULL)
