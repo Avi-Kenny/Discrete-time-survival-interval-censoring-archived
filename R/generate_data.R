@@ -45,7 +45,7 @@ generate_data <- function(n, max_time, params) {
   
   # Loop through individuals/time to generate events
   p <- params
-  i_T_minus <- i_T_plus <- i_case <- c()
+  vec_T_minus <- vec_T_plus <- vec_case <- c()
   for (i in c(1:n)) {
     
     # Initial values
@@ -55,7 +55,7 @@ generate_data <- function(n, max_time, params) {
     j <- 0
     w_1_ <- w_1[i]
     w_2_ <- w_2[i]
-    cal_time <- s_i_ <- s_i[i] # Currently unused
+    cal_time <- s_i_ <- s_i[i] # cal_time currently unused
     
     while (!event && j<=max_time) {
       
@@ -128,18 +128,22 @@ generate_data <- function(n, max_time, params) {
     ))
     
     # Store additional vectors
-    i_T_minus[i] <- T_pm$T_minus
-    i_T_plus[i] <- T_pm$T_plus
-    i_case[i] <- case_i
+    vec_T_minus[i] <- T_pm$T_minus
+    vec_T_plus[i] <- T_pm$T_plus
+    vec_case[i] <- case_i
+    vec_s_i[i] <- s_i_
+    vec_t_i[i] <- j+s_i_-1
     
   }
   
   attr(dat, "n") <- n
   attr(dat, "max_time") <- max_time
   attr(dat, "params") <- params
-  attr(dat, "T_minus") <- i_T_minus
-  attr(dat, "T_plus") <- i_T_plus
-  attr(dat, "case") <- i_case
+  attr(dat, "T_minus") <- vec_T_minus
+  attr(dat, "T_plus") <- vec_T_plus
+  attr(dat, "case") <- vec_case
+  attr(dat, "s_i") <- vec_s_i
+  attr(dat, "t_i") <- vec_t_i
   
   return (dat)
   

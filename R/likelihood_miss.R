@@ -10,20 +10,20 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL) {
   dat_objs <- lapply(c(1:n), function(i) {
     
     d <- list()
-    d$dat_i <- dat[dat$id==i,] # Does dat_i need to be returned with r?
+    dat_i <- dat[i,] # Does dat_i need to be returned with r?
     
     # Start and end times
-    d$s_i <- min(d$dat_i$t_end)
-    d$t_i <- max(d$dat_i$t_end)
+    d$s_i <- attr(dat, "s_i")[i]
+    d$t_i <- attr(dat, "t_i")[i]
     
     # Data vectors
-    d$w <- subset(d$dat_i, select=names(dat)[substr(names(dat), 1, 2)=="w_"])
-    d$y <- d$dat_i$y
-    d$z <- d$dat_i$z
-    d$v <- d$dat_i$v
-    d$d <- d$dat_i$d
-    d$u <- d$dat_i$u
-    d$cal_time <- d$dat_i$t_end
+    d$w <- subset(dat_i, select=names(dat)[substr(names(dat), 1, 2)=="w_"])
+    d$y <- dat_i$y
+    d$z <- dat_i$z
+    d$v <- dat_i$v # !!!!! Move this to a different step
+    d$d <- dat_i$d
+    d$u <- dat_i$u
+    d$cal_time <- dat_i$t_end
     d$cal_time_sc <- d$cal_time / 100 # Rescaling is done to prevent optimization issues
     
     # Calculate the set X_i to sum over
