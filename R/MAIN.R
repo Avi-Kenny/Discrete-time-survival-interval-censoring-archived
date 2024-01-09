@@ -33,8 +33,8 @@ cluster_config <- list(
 # Set local vs. cluster variables
 if (Sys.getenv("USERDOMAIN")=="AVI-KENNY-T460") {
   # Local
-  setwd(paste0("C:/Users/avike/OneDrive/Desktop/Avi/Biostats + Research/Resear",
-               "ch/Mark Siedner/Project - HIVMI/HIV.multiple.imputation/R"))
+  setwd(paste0("C:/Users/avike/OneDrive/Desktop/Avi/Research/HIVMI/Code - HIVM",
+               "I/R"))
   cfg$local <- TRUE
 } else {
   # Cluster

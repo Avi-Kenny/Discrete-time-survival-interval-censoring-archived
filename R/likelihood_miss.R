@@ -48,6 +48,7 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL) {
   negloglik_miss <- function(par) {
     
     print(paste("negloglik_miss() called:",Sys.time())) # !!!!!
+    # fn_calls <<- fn_calls+1 # !!!!!
 
     # Convert parameter vector to a named list
     p <- as.numeric(par)

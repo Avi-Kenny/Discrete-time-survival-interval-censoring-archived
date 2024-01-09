@@ -116,7 +116,9 @@ if (cfg2$process_data) {
   if (T) {
     # Generate dataset
     n <- 4000
-    print(paste("n=",n))
+    print(paste("n=",n)) # !!!!!
+    print(paste0("method: ", Sys.getenv("avi_method"))) # !!!!!
+    print(paste0("rows in dataset: ", nrow(dat))) # !!!!!
     dat <- generate_data(
       n = n,
       max_time = 70,
@@ -142,10 +144,12 @@ if (cfg2$process_data) {
   } else {
     
     # Read in data; see generate_data() for expected columns
-    dat_prc <- dat_raw <- read.csv("data_raw.csv")
+    # dat_prc <- dat_raw <- read.csv("../../Data/data_raw_1000.csv")
+    dat_prc <- dat_raw <- read.csv("../../Data/data_raw_1000_v2.csv")
     
     # Drop unnecessary columns
-    dat_prc %<>% subset(select=-c(enter, exit, X_t, X_t0))
+    # dat_prc %<>% subset(select=-c(enter, exit, X_t, X_t0))
+    dat_prc %<>% subset(select=-c(enter, exit))
     # !!!!! Drop hiv_result_fill, earliestartinitdate ?????
     
     # Start time
@@ -172,6 +176,10 @@ if (cfg2$process_data) {
       onart = ifelse(is.na(onart), 0, onart),
       month_prev = month - 1
     )
+    
+    # QA Check
+    n_err <- sum(dat_prc$first_hiv_pos_dt<dat_prc$last_hiv_neg_dt, na.rm=T)
+    if (n_err>0) { stop("first_hiv_pos_dt>last_hiv_neg_dt for some inds.") }
     
     # !!!!! Standardize all variables to have [0,1] range before adding to model
     
@@ -328,6 +336,7 @@ if (cfg2$run_analysis) {
   if (cfg2$parallelize) {
     n_cores <- parallel::detectCores() - 1
     n_cores <- 10 # !!!!!
+    # assign("fn_calls", 0, envir=.GlobalEnv) # !!!!!
     print(paste0("Using ", n_cores, " cores."))
     cl <- parallel::makeCluster(n_cores)
     parallel::clusterExport(cl, ls(.GlobalEnv))
@@ -345,7 +354,9 @@ if (cfg2$run_analysis) {
   
   # Run optimizer
   chk(4, "optim: START")
-  opt_miss <- optim(par=par, fn=negloglik_miss)
+  # opt_miss <- optim(par=par, fn=negloglik_miss) # !!!!!
+  opt_miss <- optim(par=par, fn=negloglik_miss, method=Sys.getenv("avi_method")) # !!!!!
+  # print(paste0("objective function calls (optim): ", fn_calls)) # !!!!!
   if (F) {
     optim(par=par, fn=negloglik_miss, control=list(trace=6))
     library(optimParallel)
@@ -381,6 +392,7 @@ if (cfg2$run_analysis) {
     )
   }
   print(res)
+  # print(paste0("objective function calls (total): ", fn_calls)) # !!!!!
   
 }
 

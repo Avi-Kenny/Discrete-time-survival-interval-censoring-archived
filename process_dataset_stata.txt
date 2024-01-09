@@ -1,0 +1,22 @@
+use "C:\Users\avike\OneDrive\Desktop\Avi\Biostats + Research\Research\Mark Siedner\Project - HIVMI\pip_by_month_hiv_ART.dta" 
+codebook iintid, compact
+keep if iintid<1000
+export delimited output.csv, delimiter(,)
+
+
+. use "C:\Users\avike\OneDrive\Desktop\Avi\Research\HIVMI\Data\pip_by_month_hiv_ART_testing_dates_
+> 2024_01_05.dta" 
+(AHRI Basic HIV Surveillance Episodes 2022 V2)
+
+. codebook iintid, compact
+
+Variable        Obs Unique      Mean  Min     Max  Label
+--------------------------------------------------------------------------------------------------
+iintid     2.86e+07 245833  98840.65   11  262823  Unique PIP internal individual identifier
+--------------------------------------------------------------------------------------------------
+
+. keep if iintid<1000
+(28,413,447 observations deleted)
+
+. export delimited output.csv, delimiter(,)
+file output.csv saved
