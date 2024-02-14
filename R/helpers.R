@@ -10,6 +10,27 @@ expit <- function(x) {1/(1+exp(-x))}
 
 
 
+#' Modified exp function (see scratch for derivation)
+#' 
+#' @param x Numeric input
+#' @return Numeric output
+exp2 <- (function() {
+  
+  expit <- function(x) {1/(1+exp(-x))}
+  logit <- function(x) { log(x/(1-x)) }
+  e <- -0.1
+  ell <- logit(exp(e))
+  x_0 <- e - (ell*exp(ell))/(exp(e)*(1+exp(ell))^2)
+  k_0 <- exp(e-ell)*(1+exp(ell))^2
+  exp2 <- function(x) {
+    In(x<=e) * exp(x) +
+      In(x>e) * expit(k_0*(x-x_0))
+  }
+  return(exp2)
+})()
+
+
+
 #' Compute "case" indicator variables
 #' 
 #' @param x Vector of seroconversion indicators for one individual
