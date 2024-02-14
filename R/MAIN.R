@@ -24,10 +24,10 @@ source("R/config.R", local=T)
   source("R/helpers.R", local=T)
 }
 
-if (run_analysis) {
+if (cfg$run_analysis) {
   
   set.seed(1)
-  source("analysis.R", local=T)
+  source("R/analysis.R", local=T)
   
 } else if (cfg$run_sims) {
   
