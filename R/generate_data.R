@@ -2,7 +2,7 @@
 #'
 #' @param n Number of patients in cohort
 #' @param max_time Number of time points in the study
-#' @param params List of parameters governing the distribution.
+#' @param params List of parameters governing the distribution; see levels.R
 #' @return A dataframe, one row per patient, containing the following fields:
 #'     - id: patient ID variable
 #' @notes

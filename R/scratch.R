@@ -1,4 +1,41 @@
 
+# TEMP debugging (new link function)
+if (F) {
+  
+  grid <- seq(-3,0.5,0.001)
+  expit <- function(x) { 1/(1+exp(-x)) }
+  logit <- function(x) { log(x/(1-x)) }
+  e <- -0.1
+  ell <- logit(exp(e))
+  x_0 <- e - (ell*exp(ell))/(exp(e)*(1+exp(ell))^2)
+  k_0 <- exp(e-ell)*(1+exp(ell))^2
+  exp2 <- Vectorize(function(x) {
+    In(x<=e) * exp(x) +
+    In(x>e) * expit(k_0*(x-x_0))
+  })
+  df <- data.frame(
+    x = rep(grid,2),
+    y = c(sapply(grid,exp), sapply(grid,exp2)),
+    which = rep(c("exp", "exp2"), each=length(grid))
+  )
+  ggplot(df, aes(x=x, y=y, color=which)) + geom_line()
+  ggplot(df, aes(x=x, y=y, color=which)) + geom_line() +
+    lims(x=c(-0.3,0.1), y=c(0.7,1.1))
+  
+  cloglog <- function(x) { log(-log(1-x)) }
+  cloglog_i <- function(x) { 1 - exp(-exp(x)) }
+  df <- data.frame(
+    x = rep(grid,3),
+    y = c(sapply(grid,exp), sapply(grid,exp2), sapply(grid,cloglog_i)),
+    which = rep(c("exp", "exp2", "cloglog_i"), each=length(grid))
+  )
+  ggplot(df, aes(x=x, y=y, color=which)) + geom_line()
+  ggplot(df, aes(x=x, y=y, color=which)) + geom_line() +
+    lims(x=c(-0.3,0.1), y=c(0.7,1.1))
+  
+  
+}
+
 # Plotting parameter profiles
 if (F) {
   
