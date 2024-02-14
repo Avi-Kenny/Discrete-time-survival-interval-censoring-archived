@@ -95,13 +95,17 @@ cfg2 <- list(
   parallelize = TRUE
 )
 
-# !!!!! TEMP
-if (Sys.getenv("avi_para")=="yes") {
-  print("parallelizing")
-  cfg2$parallelize <- TRUE
-} else {
-  print("not parallelizing")
-  cfg2$parallelize <- FALSE
+# !!!!! TEMPORARY: testing different parallelization methods
+if (T) {
+  avi_para <- Sys.getenv("avi_para")
+  avi_method <- Sys.getenv("avi_method")
+  if (avi_para=="yes") {
+    print("parallelizing")
+    cfg2$parallelize <- TRUE
+  } else {
+    print("not parallelizing")
+    cfg2$parallelize <- FALSE
+  }
 }
 
 
@@ -114,13 +118,13 @@ chk(1, "Data reading/processing: START")
 if (cfg2$process_data) {
   
   if (T) {
+    
     # Generate dataset
-    n <- 4000
     print(paste("n=",n)) # !!!!!
-    print(paste0("method: ", Sys.getenv("avi_method"))) # !!!!!
+    print(paste0("method: ", avi_method)) # !!!!!
     print(paste0("rows in dataset: ", nrow(dat))) # !!!!!
     dat <- generate_data(
-      n = n,
+      n = 4000,
       max_time = 70,
       params = list(
         a_x=log(0.005), a_y=log(0.003), a_v=log(0.7), a_z=log(0.01),
@@ -355,7 +359,7 @@ if (cfg2$run_analysis) {
   # Run optimizer
   chk(4, "optim: START")
   # opt_miss <- optim(par=par, fn=negloglik_miss) # !!!!!
-  opt_miss <- optim(par=par, fn=negloglik_miss, method=Sys.getenv("avi_method")) # !!!!!
+  opt_miss <- optim(par=par, fn=negloglik_miss, method=avi_method) # !!!!!
   # print(paste0("objective function calls (optim): ", fn_calls)) # !!!!!
   if (F) {
     optim(par=par, fn=negloglik_miss, control=list(trace=6))
