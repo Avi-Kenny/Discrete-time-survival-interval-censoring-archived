@@ -1,53 +1,15 @@
-# Title: "Modeling HIV seroconversion dates"
-# Author: Avi Kenny
-
-##################.
-##### CONFIG #####
-##################.
-
-# Set global config
+# Main config
 cfg <- list(
   level_set_which = "level_set_1",
   num_sim = 1, # 1000
   # num_sim = 500, # 1000
-  pkgs = c("dplyr", "survival", "data.table", "tidyr", "memoise", "Rsolnp",
-           "numDeriv", "lubridate"), # "rslurm"
-  pkgs_nocluster = c("ggplot2"),
   parallel = F,
   n_cores = 500,
   stop_at_error = F
 )
 
-# Set cluster config
-cluster_config <- list(
-  js = "slurm",
-  dir = "/home/akenny/z.hivmi"
-)
-
-
-
-#################.
-##### Setup #####
-#################.
-
-# Set local vs. cluster variables
-if (Sys.getenv("USERDOMAIN")=="AVI-KENNY-T460") {
-  # Local
-  setwd(paste0("C:/Users/avike/OneDrive/Desktop/Avi/Research/HIVMI/Code - HIVM",
-               "I/R"))
-  cfg$local <- TRUE
-} else {
-  # Cluster
-  setwd("z.hivmi/R")
-  cfg$local <- FALSE
-}
-
-# Load packages (if running locally)
-if (cfg$local) {
-  for (pkg in c(cfg$pkgs,cfg$pkgs_nocluster)) {
-    suppressMessages({ do.call("library", list(pkg)) })
-  }
-}
+# Secondary config
+source("R/config.R", local=T)
 
 # Load SimEngine + functions
 {
@@ -58,7 +20,7 @@ if (cfg$local) {
   source("helpers.R", local=T)
 }
 
-# !!!!!
+# !!!!! TEMPORARY
 if (T) {
   
   set.seed(1)
