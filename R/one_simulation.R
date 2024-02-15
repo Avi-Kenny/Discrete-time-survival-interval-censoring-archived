@@ -56,7 +56,7 @@ one_simulation <- function() {
   
   # Set initial parameter estimate - should roughly (but not exactly) equal the
   # true parameters
-  par <- log(c(
+  par_init <- log(c(
     a_x=0.003, g_x1=1.2, g_x2=1.1, a_y=0.002, g_y1=1.3, g_y2=1, beta_x=1.3,
     beta_z=0.8, t_x=0.999, t_y=1.001, a_s=0.03, t_s=1.001, g_s1=1.8, g_s2=1.7
   ))
@@ -65,7 +65,7 @@ one_simulation <- function() {
   negloglik_miss <- construct_negloglik_miss(dat)
   chk(2, "construct_negloglik_miss: END")
   chk(2, "optim: START")
-  opt_miss <- optim(par=par, fn=negloglik_miss)
+  opt_miss <- optim(par=par_init, fn=negloglik_miss)
   chk(2, "optim: END")
   chk(2, "hessian: START")
   hessian_miss <- hessian(func=negloglik_miss, x=opt_miss$par)
@@ -73,9 +73,10 @@ one_simulation <- function() {
   chk(2, "hessian: END")
   
   res <- list()
-  for (i in c(1:length(par))) {
-    res[[paste0("lik_M_",names(par)[i],"_est")]] <- as.numeric(opt_miss$par[i])
-    res[[paste0("lik_M_",names(par)[i],"_se")]] <- sqrt(diag(hessian_inv))[i]
+  pn <- names(par_init)
+  for (i in c(1:length(par_init))) {
+    res[[paste0("lik_M_",pn[i],"_est")]] <- as.numeric(opt_miss$par[i])
+    res[[paste0("lik_M_",pn[i],"_se")]] <- sqrt(diag(hessian_inv))[i]
   }
   
   chk(3, "END")

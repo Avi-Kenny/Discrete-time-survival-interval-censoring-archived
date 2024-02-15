@@ -92,11 +92,14 @@ cfg2 <- list(
   save_data = TRUE,
   run_dqa = FALSE,
   run_analysis = TRUE,
-  parallelize = TRUE
+  parallelize = TRUE,
+  use_simulated_dataset = TRUE
 )
 
 # !!!!! TEMPORARY: testing different parallelization methods
 if (T) {
+  # avi_para <- "no"
+  # avi_method <- "Nelder-Mead"
   avi_para <- Sys.getenv("avi_para")
   avi_method <- Sys.getenv("avi_method")
   if (avi_para=="yes") {
@@ -115,41 +118,38 @@ if (T) {
 ###########################.
 
 chk(1, "Data reading/processing: START")
-if (cfg2$process_data) {
+if (cfg2$use_simulated_dataset) {
   
-  if (T) {
-    
-    # Generate dataset
-    print(paste("n=",n)) # !!!!!
-    print(paste0("method: ", avi_method)) # !!!!!
-    print(paste0("rows in dataset: ", nrow(dat))) # !!!!!
-    dat <- generate_data(
-      n = 4000,
-      max_time = 70,
-      params = list(
-        a_x=log(0.005), a_y=log(0.003), a_v=log(0.7), a_z=log(0.01),
-        g_x=c(log(1.3),log(1.2)), g_y=c(log(1.2),log(1.1)),
-        g_v=c(log(1.2),log(1.1)), g_z=c(log(1.2),log(1.1)),
-        beta_x=log(1.5), beta_z=log(0.7),
-        a_s=log(0.05), g_s=c(log(2),log(1.5))
-      )
-    )
-    
-    # Add x_prev column
-    dat %<>% arrange(id, t_end)
-    dat$x_prev <- ifelse(
-      dat$id==c(0,dat$id[c(1:(length(dat$id)-1))]),
-      c(0,dat$x[c(1:(length(dat$x)-1))]),
-      0
-    )
-    
-    # if (cfg2$parallelize) { saveRDS(dat, "dat_sim_10000.rds") }
-    
-  } else {
+  # Generate dataset
+  # n <- 4000
+  n <- 1000
+  par_true_full <- lapply(list(
+    a_x=0.005, a_y=0.003, a_v=0.7, a_z=0.01, g_x=c(1.3,1.2), g_y=c(1.2,1.1),
+    g_v=c(1.2,1.1), g_z=c(1.2,1.1), beta_x=1.5, beta_z=0.7, a_s=0.05,
+    g_s=c(2,1.5), t_s=1, t_x=1, t_y=1
+  ), log)
+  dat <- generate_data(n=n, max_time=70, params=par_true_full)
+  print(paste("n:",n)) # !!!!!
+  print(paste("method:", avi_method)) # !!!!!
+  print(paste("rows in dataset:", nrow(dat))) # !!!!!
+  
+  # Add x_prev column
+  dat %<>% arrange(id, t_end)
+  dat$x_prev <- ifelse(
+    dat$id==c(0,dat$id[c(1:(length(dat$id)-1))]),
+    c(0,dat$x[c(1:(length(dat$x)-1))]),
+    0
+  )
+  
+  # if (cfg2$parallelize) { saveRDS(dat, "dat_sim_10000.rds") }
+  
+} else {
+  
+  if (cfg2$process_data) {
     
     # Read in data; see generate_data() for expected columns
     # dat_prc <- dat_raw <- read.csv("../../Data/data_raw_1000.csv")
-    dat_prc <- dat_raw <- read.csv("../../Data/data_raw_1000_v2.csv")
+    dat_prc <- dat_raw <- read.csv("../Data/data_raw_1000_v2.csv")
     
     # Drop unnecessary columns
     # dat_prc %<>% subset(select=-c(enter, exit, X_t, X_t0))
@@ -181,11 +181,13 @@ if (cfg2$process_data) {
       month_prev = month - 1
     )
     
-    # QA Check
-    n_err <- sum(dat_prc$first_hiv_pos_dt<dat_prc$last_hiv_neg_dt, na.rm=T)
-    if (n_err>0) { stop("first_hiv_pos_dt>last_hiv_neg_dt for some inds.") }
-    
-    # !!!!! Standardize all variables to have [0,1] range before adding to model
+    # Filter out records with a negative test after a positive test
+    print(nrow(dat_prc))
+    dat_prc %<>% dplyr::filter(
+      is.na(first_hiv_pos_dt) | is.na(last_hiv_neg_dt) |
+        first_hiv_pos_dt>last_hiv_neg_dt
+    )
+    print(nrow(dat_prc))
     
     # Rearrange columns
     dat_prc %<>% dplyr::relocate(month_prev, .before=month)
@@ -200,6 +202,8 @@ if (cfg2$process_data) {
       "t_start" = month_prev,
       "t_end" = month
     )
+    
+    # !!!!! Standardize all variables to have [0,1] range before adding to model
     
     # Sort dataframe
     dat_prc %<>% dplyr::arrange(id,t_start)
@@ -224,14 +228,6 @@ if (cfg2$process_data) {
     )
     
     # !!!!! Remove all data before 13th birthday; check for any testing before this
-    
-    # !!!!! Temporary
-    if (T) {
-      bad_ids <- which(dat_grp$T_plus-dat_grp$T_minus<0)
-      dat_prc %<>% dplyr::filter(!(id %in% bad_ids))
-      dat_grp %<>% dplyr::filter(!(id %in% bad_ids))
-    }
-    
     # !!!!! Check that `first_hiv_pos_dt` and `last_hiv_neg_dt` lie within `t_start` and `t_end`
     
     # Set data attributes
@@ -279,11 +275,11 @@ if (cfg2$process_data) {
     # 
     # if (cfg2$save_data) { saveRDS(dat, "dat.rds") }
     
+  } else {
+    
+    dat <- readRDS("dat.rds")
+    
   }
-  
-} else {
-  
-  dat <- readRDS("dat.rds")
   
 }
 chk(1, "Data reading/processing: END")
@@ -351,20 +347,27 @@ if (cfg2$run_analysis) {
   chk(3, "construct_negloglik_miss: END")
   
   # Set initial parameter estimates
-  par <- log(c(
+  par_init <- log(c(
     a_x=0.003, g_x1=1.2, g_x2=1.1, a_y=0.002, g_y1=1.3, g_y2=1, beta_x=1.3,
     beta_z=0.8, t_x=0.999, t_y=1.001, a_s=0.03, t_s=1.001, g_s1=1.8, g_s2=1.7
   ))
+  par_true <- c(
+    par_true_full$a_x, par_true_full$g_x[1], par_true_full$g_x[2],
+    par_true_full$a_y, par_true_full$g_y[1], par_true_full$g_y[2],
+    par_true_full$beta_x, par_true_full$beta_z, par_true_full$t_x,
+    par_true_full$t_y, par_true_full$a_s, par_true_full$t_s,
+    par_true_full$g_s[1], par_true_full$g_s[2]
+  )
   
   # Run optimizer
   chk(4, "optim: START")
-  # opt_miss <- optim(par=par, fn=negloglik_miss) # !!!!!
-  opt_miss <- optim(par=par, fn=negloglik_miss, method=avi_method) # !!!!!
+  # opt_miss <- optim(par=par_init, fn=negloglik_miss) # !!!!!
+  opt_miss <- optim(par=par_init, fn=negloglik_miss, method=avi_method) # !!!!!
   # print(paste0("objective function calls (optim): ", fn_calls)) # !!!!!
   if (F) {
-    optim(par=par, fn=negloglik_miss, control=list(trace=6))
+    optim(par=par_init, fn=negloglik_miss, control=list(trace=6))
     library(optimParallel)
-    opt_miss <- optim(par=par, fn=negloglik_miss)
+    opt_miss <- optim(par=par_init, fn=negloglik_miss)
   }
   chk(4, "optim: END")
   
@@ -379,20 +382,24 @@ if (cfg2$run_analysis) {
   # Parse results
   res <- data.frame(
     "param" = character(),
+    "par_init" = double(),
+    "par_true" = double(),
     "est" = double(),
     "se" = double(),
     "ci_lo" = double(),
     "ci_up" = double()
   )
-  for (i in c(1:length(par))) {
+  for (i in c(1:length(par_init))) {
     est <- as.numeric(opt_miss$par[i])
     se <- sqrt(diag(hessian_inv))[i]
     res[i,] <- c(
-      param = par[i],
-      est = est,
-      se = se,
-      ci_lo = est - 1.96*se, # Maybe do transformations later
-      ci_up = est + 1.96*se # Maybe do transformations later
+      param = names(par_init)[i],
+      par_init = round(par_init[i],4),
+      par_true = round(par_true[i],4),
+      est = round(est,4),
+      se = round(se,4),
+      ci_lo = round(est-1.96*se,4), # Maybe do CI transformation later
+      ci_up = round(est + 1.96*se,4) # Maybe do CI transformation later
     )
   }
   print(res)
