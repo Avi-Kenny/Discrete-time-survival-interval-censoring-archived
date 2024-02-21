@@ -88,27 +88,23 @@ if (F) {
 
 chk(0, "START")
 cfg2 <- list(
-  process_data = TRUE,
-  save_data = TRUE,
-  run_dqa = FALSE,
-  run_analysis = TRUE,
-  parallelize = TRUE,
-  use_simulated_dataset = TRUE
+  process_data = T,
+  save_data = T,
+  run_dqa = F,
+  run_analysis = T,
+  parallelize = T,
+  use_simulated_dataset = F
 )
 
-# !!!!! TEMPORARY: testing different parallelization methods
+# !!!!! TEMPORARY: testing different optim config options
 if (T) {
-  # avi_para <- "no"
-  # avi_method <- "Nelder-Mead"
-  avi_para <- Sys.getenv("avi_para")
-  avi_method <- Sys.getenv("avi_method")
-  if (avi_para=="yes") {
-    print("parallelizing")
-    cfg2$parallelize <- TRUE
-  } else {
-    print("not parallelizing")
-    cfg2$parallelize <- FALSE
-  }
+  avi_maxit <- as.integer(Sys.getenv("avi_maxit"))
+  avi_reltol <- as.numeric(Sys.getenv("avi_reltol"))
+  print("OPTIM CONFIG")
+  print("------------")
+  print(paste("maxit:", avi_maxit))
+  print(paste("reltol:", avi_reltol))
+  print("------------")
 }
 
 
@@ -130,16 +126,16 @@ if (cfg2$use_simulated_dataset) {
   ), log)
   dat <- generate_data(n=n, max_time=70, params=par_true_full)
   print(paste("n:",n)) # !!!!!
-  print(paste("method:", avi_method)) # !!!!!
   print(paste("rows in dataset:", nrow(dat))) # !!!!!
   
-  # Add x_prev column
+  # Manipulate dataset
   dat %<>% arrange(id, t_end)
-  dat$x_prev <- ifelse(
-    dat$id==c(0,dat$id[c(1:(length(dat$id)-1))]),
-    c(0,dat$x[c(1:(length(dat$x)-1))]),
-    0
-  )
+  dat$x <- NULL # !!!!! New code: make this null and comment out below
+  attr(dat, "T_plus") <- NULL
+  attr(dat, "T_minus") <- NULL
+  attr(dat, "case") <- NULL
+  attr(dat, "max_time") <- NULL
+  attr(dat, "params") <- NULL
   
   # if (cfg2$parallelize) { saveRDS(dat, "dat_sim_10000.rds") }
   
@@ -169,7 +165,7 @@ if (cfg2$use_simulated_dataset) {
     
     # Data wrangling
     dat_prc %<>% dplyr::mutate(
-      iintid = as.numeric(factor(iintid)),
+      id = iintid,
       sex = ifelse(sex=="Male", 1, 0),
       died = ifelse(is.na(died), 0, died),
       dob = convert_date(dob),
@@ -194,7 +190,6 @@ if (cfg2$use_simulated_dataset) {
     
     # Rename columns
     dat_prc %<>% dplyr::rename(
-      "id" = iintid,
       "w_1" = sex,
       "w_2" = dob,
       "y" = died,
@@ -230,43 +225,74 @@ if (cfg2$use_simulated_dataset) {
     # !!!!! Remove all data before 13th birthday; check for any testing before this
     # !!!!! Check that `first_hiv_pos_dt` and `last_hiv_neg_dt` lie within `t_start` and `t_end`
     
+    # Make sure this step is done after dropping rows
+    dat_prc %<>% dplyr::mutate(id=as.integer(factor(id)))
+    
     # Set data attributes
-    attr(dat_prc, "n") <- max(dat_prc$id)
-    attr(dat_prc, "T_minus") <- dat_grp$T_minus
-    attr(dat_prc, "T_plus") <- dat_grp$T_plus
+    attr(dat_prc, "n") <- as.integer(max(dat_prc$id))
+    # attr(dat_prc, "T_minus") <- dat_grp$T_minus
+    # attr(dat_prc, "T_plus") <- dat_grp$T_plus
     attr(dat_prc, "s_i") <- dat_grp$s_i
     attr(dat_prc, "t_i") <- dat_grp$t_i
-    attr(dat_prc, "case") <- dat_grp$case
+    # attr(dat_prc, "case") <- dat_grp$case
+    
+    # Drop rows with duplicate time
+    print(nrow(dat_prc))
+    dupe_time_rows <- which(
+      dat_prc$id==c(NA,dat_prc$id[1:length(dat_prc$id)-1]) &
+        dat_prc$t_end==c(NA,dat_prc$t_end[1:length(dat_prc$t_end)-1])
+    )
+    if (length(dupe_time_rows)>0) { dat_prc <- dat_prc[-dupe_time_rows,] }
+    print(nrow(dat_prc))
     
     # Generate delta column
     delta <- rep(NA, nrow(dat_prc))
     for (id in c(1:attr(dat_prc, "n"))) {
-      index_first <- NA
-      index_last <- NA
+      rows_i <- which(dat_prc$id==id)
       delta_i <- g_delta(
-        case = dat_grp$case[i],
-        s_i = dat_grp$s_i[i],
-        t_i = dat_grp$t_i[i],
-        T_minus = dat_grp$T_minus[i],
-        T_plus = dat_grp$plus[i]
+        case = dat_grp$case[id],
+        s_i = dat_grp$s_i[id],
+        t_i = dat_grp$t_i[id],
+        T_minus = dat_grp$T_minus[id],
+        T_plus = dat_grp$T_plus[id]
       )
-      delta[c(index_first:index_last)] <- delta_i
+      if (length(rows_i)!=length(delta_i)) {
+        stop(paste0("Error with computation of delta for ID ", id, "."))
+      }
+      delta[rows_i] <- delta_i
+    }
+    dat_prc$delta <- delta
+    
+    # Create V (testing) and U (positive/known) indicators
+    dat_prc %<>% dplyr::mutate(
+      v = In(!is.na(dat_prc$monthoftest)),
+      u = In(!is.na(first_hiv_pos_dt) & t_end<=first_hiv_pos_dt)
+    )
+    
+    # # Save for validation
+    # write.table(dat_prc, file="dat_prc.csv", sep=",", row.names=FALSE)
+    # write.table(dat_raw, file="dat_raw.csv", sep=",", row.names=FALSE)
+    
+    # DQA
+    if (F) {
+      
+      set.seed(1)
+      case_1_ids <- sample(dplyr::filter(dat_grp, case==1)$id, size=5)
+      case_2_ids <- sample(dplyr::filter(dat_grp, case==2)$id, size=5)
+      case_3_ids <- sample(dplyr::filter(dat_grp, case==3)$id, size=5)
+      case_4_ids <- sample(dplyr::filter(dat_grp, case==4)$id, size=5)
+      
     }
     
-    # # !!!!!
-    # print(dat_prc[c(630:636),])
+    
+    
+    # !!!!! Check all variables for a handful of each case type
+    
+    # !!!!! Drop variables no longer needed (after QA)
     
     # TO DO: change "baseline age" to "age" (i.e. make it time-varying)
     
-    # # Add x_prev column
-    # dat %<>% arrange(id, t_end)
-    # dat$x_prev <- ifelse(
-    #   dat$id==c(0,dat$id[c(1:(length(dat$id)-1))]),
-    #   c(0,dat$x[c(1:(length(dat$x)-1))]),
-    #   0
-    # )
-    # 
-    # # TEMP: filter out individuals who migrated out
+    # # TEMP: filter out some observations for individuals who migrated out
     # if (T) {
     #   
     #   # !!!!! TO DO
@@ -274,6 +300,20 @@ if (cfg2$use_simulated_dataset) {
     # }
     # 
     # if (cfg2$save_data) { saveRDS(dat, "dat.rds") }
+    
+    # !!!!! These checks should be done after dataset processing is complete
+    id_1 <- c(as.integer(min(dat_prc$id)):as.integer(max(dat_prc$id)))
+    id_2 <- sort(unique(dat_prc$id))
+    if (!identical(id_1, id_2)) { stop("Issue with ID numbers.") }
+    
+    dat <- dat_prc
+    cols_to_drop <- c(
+      "iintid", "dod", "age_start", "age_end", "monthoftest", "resultdate",
+      "hivresult", "first_hiv_pos_dt", "last_hiv_neg_dt", "hiv_result_fill",
+      "earliestartinitdate"
+    )
+    for (col in cols_to_drop) { dat[[col]] <- NULL }
+    rm(dat_raw,dat_prc)
     
   } else {
     
@@ -351,29 +391,36 @@ if (cfg2$run_analysis) {
     a_x=0.003, g_x1=1.2, g_x2=1.1, a_y=0.002, g_y1=1.3, g_y2=1, beta_x=1.3,
     beta_z=0.8, t_x=0.999, t_y=1.001, a_s=0.03, t_s=1.001, g_s1=1.8, g_s2=1.7
   ))
-  par_true <- c(
-    par_true_full$a_x, par_true_full$g_x[1], par_true_full$g_x[2],
-    par_true_full$a_y, par_true_full$g_y[1], par_true_full$g_y[2],
-    par_true_full$beta_x, par_true_full$beta_z, par_true_full$t_x,
-    par_true_full$t_y, par_true_full$a_s, par_true_full$t_s,
-    par_true_full$g_s[1], par_true_full$g_s[2]
-  )
+  # par_true <- c(
+  #   par_true_full$a_x, par_true_full$g_x[1], par_true_full$g_x[2],
+  #   par_true_full$a_y, par_true_full$g_y[1], par_true_full$g_y[2],
+  #   par_true_full$beta_x, par_true_full$beta_z, par_true_full$t_x,
+  #   par_true_full$t_y, par_true_full$a_s, par_true_full$t_s,
+  #   par_true_full$g_s[1], par_true_full$g_s[2]
+  # )
   
   # Run optimizer
   chk(4, "optim: START")
-  # opt_miss <- optim(par=par_init, fn=negloglik_miss) # !!!!!
-  opt_miss <- optim(par=par_init, fn=negloglik_miss, method=avi_method) # !!!!!
+  # opt_miss <- stats::optim(par=par_init, fn=negloglik_miss) # !!!!!
+  
+  opt_miss <- stats::optim(
+    par = par_init,
+    fn = negloglik_miss,
+    method = "Nelder-Mead",
+    control = list(maxit=avi_maxit,
+                   reltol=avi_reltol)) # !!!!!
+  
   # print(paste0("objective function calls (optim): ", fn_calls)) # !!!!!
   if (F) {
-    optim(par=par_init, fn=negloglik_miss, control=list(trace=6))
+    stats::optim(par=par_init, fn=negloglik_miss, control=list(trace=6))
     library(optimParallel)
-    opt_miss <- optim(par=par_init, fn=negloglik_miss)
+    opt_miss <- stats::optim(par=par_init, fn=negloglik_miss)
   }
   chk(4, "optim: END")
   
   # Compute Hessian
   chk(5, "hessian: START")
-  hessian_miss <- hessian(func=negloglik_miss, x=opt_miss$par)
+  hessian_miss <- numDeriv::hessian(func=negloglik_miss, x=opt_miss$par)
   hessian_inv <- solve(hessian_miss)
   chk(5, "hessian: END")
   
@@ -383,7 +430,7 @@ if (cfg2$run_analysis) {
   res <- data.frame(
     "param" = character(),
     "par_init" = double(),
-    "par_true" = double(),
+    # "par_true" = double(),
     "est" = double(),
     "se" = double(),
     "ci_lo" = double(),
@@ -395,7 +442,7 @@ if (cfg2$run_analysis) {
     res[i,] <- c(
       param = names(par_init)[i],
       par_init = round(par_init[i],4),
-      par_true = round(par_true[i],4),
+      # par_true = round(par_true[i],4),
       est = round(est,4),
       se = round(se,4),
       ci_lo = round(est-1.96*se,4), # Maybe do CI transformation later
@@ -405,7 +452,16 @@ if (cfg2$run_analysis) {
   print(res)
   # print(paste0("objective function calls (total): ", fn_calls)) # !!!!!
   
+  # !!!!! temp
+  saveRDS(
+    list(
+      avi_maxit = avi_maxit,
+      avi_reltol = avi_reltol,
+      res = res
+    ),
+    file = paste0("res_", runif(1))
+  )
+  
 }
-
 
 chk(6, "END")
