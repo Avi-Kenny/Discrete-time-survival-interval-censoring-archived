@@ -420,7 +420,20 @@ if (cfg2$run_analysis) {
   
   # Compute Hessian
   chk(5, "hessian: START")
-  hessian_miss <- numDeriv::hessian(func=negloglik_miss, x=opt_miss$par)
+  # hessian_miss <- numDeriv::hessian(func=negloglik_miss, x=opt_miss$par)
+  hessian_miss <- numDeriv::hessian(
+    func = negloglik_miss,
+    x = opt_miss$par,
+    method = "Richardson", # "Richardson" "complex"
+    method.args = list(
+      eps = 1e-4,
+      d = 0.1,
+      zero.tol = sqrt(.Machine$double.eps/7e-7),
+      r = 4,
+      v = 2,
+      show.details = F
+    )
+  )
   hessian_inv <- solve(hessian_miss)
   chk(5, "hessian: END")
   
