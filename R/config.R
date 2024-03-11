@@ -1,5 +1,5 @@
 # Change library path
-.libPaths(c("/home/akenny/R_lib", .libPaths()))
+.libPaths(c("/home/akenny/R_lib", "/hpc/home/ak811/R_lib", .libPaths()))
 
 # Set packages
 cfg$pkgs <- c(
@@ -16,11 +16,11 @@ if (Sys.getenv("HOME")=="/home/akenny") {
     dir = paste0("/home/akenny/", Sys.getenv("proj"),
                  "/Code__", Sys.getenv("proj"))
   )
-} else if (Sys.getenv("HOME")=="/home/users/avikenny") {
+} else if (Sys.getenv("HOME")=="/hpc/home/ak811") {
   # Bayes
   cluster_config <- list(
-    js = "ge",
-    dir = paste0("/home/users/avikenny/Desktop/", Sys.getenv("proj"),
+    js = "slurm",
+    dir = paste0("/hpc/home/ak811/", Sys.getenv("proj"),
                  "/Code__", Sys.getenv("proj"))
   )
 } else {
