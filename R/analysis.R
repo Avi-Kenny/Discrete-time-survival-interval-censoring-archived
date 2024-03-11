@@ -87,6 +87,7 @@ if (F) {
 # stop("Stopping examples.")
 
 chk(0, "START")
+.t_start <- Sys.time()
 cfg2 <- list(
   process_data = T,
   save_data = T,
@@ -98,12 +99,17 @@ cfg2 <- list(
 
 # !!!!! TEMPORARY: testing different optim config options
 if (T) {
-  avi_maxit <- as.integer(Sys.getenv("avi_maxit"))
-  avi_reltol <- as.numeric(Sys.getenv("avi_reltol"))
+  # avi_maxit <- as.integer(Sys.getenv("avi_maxit"))
+  # avi_reltol <- as.numeric(Sys.getenv("avi_reltol"))
+  # avi_r <- as.numeric(Sys.getenv("avi_r"))
+  avi_maxit <- 200
+  avi_reltol <- 1e-5
+  avi_r <- 2
   print("OPTIM CONFIG")
   print("------------")
   print(paste("maxit:", avi_maxit))
   print(paste("reltol:", avi_reltol))
+  print(paste("r:", avi_r))
   print("------------")
 }
 
@@ -145,7 +151,9 @@ if (cfg2$use_simulated_dataset) {
     
     # Read in data; see generate_data() for expected columns
     # dat_prc <- dat_raw <- read.csv("../../Data/data_raw_1000.csv")
-    dat_prc <- dat_raw <- read.csv("../Data/data_raw_1000_v2.csv")
+    # dat_prc <- dat_raw <- read.csv("../Data/data_raw_1000_v2.csv")
+    # dat_prc <- dat_raw <- read.csv("../Data/data_raw_1000_v3.csv")
+    dat_prc <- dat_raw <- read.csv("../Data/data_raw_10000.csv")
     
     # Drop unnecessary columns
     # dat_prc %<>% subset(select=-c(enter, exit, X_t, X_t0))
@@ -153,14 +161,14 @@ if (cfg2$use_simulated_dataset) {
     # !!!!! Drop hiv_result_fill, earliestartinitdate ?????
     
     # Start time
-    window_start <- min(dat_prc$month)
+    window_start <- min(dat_prc$year)
     
     # Function to convert dates
     date_start <- as.Date("01jan1960", format="%d%b%Y")
     convert_date <- memoise(function(date) {
       date <- as.Date(date, format="%d%b%Y")
-      # Subtract window_start ?????
-      return(lubridate::interval(start=date_start, end=date) %/% months(1))
+      # return(lubridate::interval(start=date_start, end=date) %/% years(1))
+      return(lubridate::year(date))
     })
     
     # Data wrangling
@@ -174,7 +182,7 @@ if (cfg2$use_simulated_dataset) {
       last_hiv_neg_dt = convert_date(last_hiv_neg_dt),
       earliestartinitdate = convert_date(earliestartinitdate),
       onart = ifelse(is.na(onart), 0, onart),
-      month_prev = month - 1
+      year_prev = year - 1
     )
     
     # Filter out records with a negative test after a positive test
@@ -186,7 +194,7 @@ if (cfg2$use_simulated_dataset) {
     print(nrow(dat_prc))
     
     # Rearrange columns
-    dat_prc %<>% dplyr::relocate(month_prev, .before=month)
+    dat_prc %<>% dplyr::relocate(year_prev, .before=year)
     
     # Rename columns
     dat_prc %<>% dplyr::rename(
@@ -194,8 +202,8 @@ if (cfg2$use_simulated_dataset) {
       "w_2" = dob,
       "y" = died,
       "z" = onart,
-      "t_start" = month_prev,
-      "t_end" = month
+      "t_start" = year_prev,
+      "t_end" = year
     )
     
     # !!!!! Standardize all variables to have [0,1] range before adding to model
@@ -265,8 +273,20 @@ if (cfg2$use_simulated_dataset) {
     
     # Create V (testing) and U (positive/known) indicators
     dat_prc %<>% dplyr::mutate(
-      v = In(!is.na(dat_prc$monthoftest)),
+      v = In(!is.na(dat_prc$yearoftest)),
       u = In(!is.na(first_hiv_pos_dt) & t_end<=first_hiv_pos_dt)
+    )
+    
+    # Rescale time variable to start at 1
+    dat_prc %<>% dplyr::mutate(
+      w_2 = (w_2 - window_start) + 1,
+      dod = (dod - window_start) + 1,
+      t_start = (t_start - window_start) + 1,
+      t_end = (t_end - window_start) + 1,
+      yearoftest = (yearoftest - window_start) + 1,
+      first_hiv_pos_dt = (first_hiv_pos_dt - window_start) + 1,
+      last_hiv_neg_dt = (last_hiv_neg_dt - window_start) + 1,
+      earliestartinitdate = (earliestartinitdate - window_start) + 1
     )
     
     # # Save for validation
@@ -283,8 +303,6 @@ if (cfg2$use_simulated_dataset) {
       case_4_ids <- sample(dplyr::filter(dat_grp, case==4)$id, size=5)
       
     }
-    
-    
     
     # !!!!! Check all variables for a handful of each case type
     
@@ -308,7 +326,7 @@ if (cfg2$use_simulated_dataset) {
     
     dat <- dat_prc
     cols_to_drop <- c(
-      "iintid", "dod", "age_start", "age_end", "monthoftest", "resultdate",
+      "iintid", "dod", "age_start", "age_end", "yearoftest", "resultdate",
       "hivresult", "first_hiv_pos_dt", "last_hiv_neg_dt", "hiv_result_fill",
       "earliestartinitdate"
     )
@@ -375,7 +393,7 @@ if (cfg2$run_analysis) {
   chk(3, "construct_negloglik_miss: START")
   if (cfg2$parallelize) {
     n_cores <- parallel::detectCores() - 1
-    n_cores <- 10 # !!!!!
+    n_cores <- 50 # !!!!!
     # assign("fn_calls", 0, envir=.GlobalEnv) # !!!!!
     print(paste0("Using ", n_cores, " cores."))
     cl <- parallel::makeCluster(n_cores)
@@ -387,10 +405,25 @@ if (cfg2$run_analysis) {
   chk(3, "construct_negloglik_miss: END")
   
   # Set initial parameter estimates
+  # par_init <- log(c(
+  #   a_x=0.005, g_x1=1, g_x2=1, a_y=0.01, g_y1=1, g_y2=1, beta_x=1, beta_z=1,
+  #   t_x=1, t_y=1, a_s=0.01, t_s=1, g_s1=1, g_s2=1
+  # ))
   par_init <- log(c(
-    a_x=0.003, g_x1=1.2, g_x2=1.1, a_y=0.002, g_y1=1.3, g_y2=1, beta_x=1.3,
-    beta_z=0.8, t_x=0.999, t_y=1.001, a_s=0.03, t_s=1.001, g_s1=1.8, g_s2=1.7
+    a_x=0.005, g_x1=0.7, g_x2=2.3, a_y=0.003, g_y1=1.6, g_y2=1, beta_x=1, beta_z=1,
+    t_x=1, t_y=1, a_s=0.01, t_s=1, g_s1=1, g_s2=1
   ))
+  
+  # !!!!! This run failed:
+  # !!!!! Check coefficients for g_x2, g_y1, 
+  # a_x        g_x1        g_x2         a_y        g_y1        g_y2
+  # -5.32852474 -0.34193155  0.82024858 -5.95234858  0.48797883 -0.04553217
+  # beta_x      beta_z         t_x         t_y         a_s         t_s
+  # 0.54400070  0.64742092 -0.18296162  0.11885859 -4.68109315  0.05165397
+  # g_s1        g_s2
+  # 0.22352346  0.37743330
+  
+  
   # par_true <- c(
   #   par_true_full$a_x, par_true_full$g_x[1], par_true_full$g_x[2],
   #   par_true_full$a_y, par_true_full$g_y[1], par_true_full$g_y[2],
@@ -401,14 +434,13 @@ if (cfg2$run_analysis) {
   
   # Run optimizer
   chk(4, "optim: START")
-  # opt_miss <- stats::optim(par=par_init, fn=negloglik_miss) # !!!!!
-  
   opt_miss <- stats::optim(
     par = par_init,
     fn = negloglik_miss,
     method = "Nelder-Mead",
     control = list(maxit=avi_maxit,
                    reltol=avi_reltol)) # !!!!!
+  print(opt_miss$par)
   
   # print(paste0("objective function calls (optim): ", fn_calls)) # !!!!!
   if (F) {
@@ -420,20 +452,19 @@ if (cfg2$run_analysis) {
   
   # Compute Hessian
   chk(5, "hessian: START")
-  # hessian_miss <- numDeriv::hessian(func=negloglik_miss, x=opt_miss$par)
   hessian_miss <- numDeriv::hessian(
     func = negloglik_miss,
     x = opt_miss$par,
     method = "Richardson", # "Richardson" "complex"
     method.args = list(
-      eps = 1e-4,
-      d = 0.1,
+      eps = 0.0001,
+      d = 0.0001, # d gives the fraction of x to use for the initial numerical approximation
       zero.tol = sqrt(.Machine$double.eps/7e-7),
-      r = 4,
-      v = 2,
-      show.details = F
+      r = avi_r, # r gives the number of Richardson improvement iterations (repetitions with successly smaller d
+      v = 2 # v gives the reduction factor
     )
   )
+  print(hessian_miss)
   hessian_inv <- solve(hessian_miss)
   chk(5, "hessian: END")
   
@@ -466,10 +497,16 @@ if (cfg2$run_analysis) {
   # print(paste0("objective function calls (total): ", fn_calls)) # !!!!!
   
   # !!!!! temp
+  .t_end <- Sys.time()
+  .runtime <- round(as.numeric(.t_end-.t_start))
+  print(paste0("Runtime: ", .runtime))
   saveRDS(
     list(
+      runtime = .runtime,
+      n_cores = n_cores,
       avi_maxit = avi_maxit,
       avi_reltol = avi_reltol,
+      avi_r = avi_r,
       res = res
     ),
     file = paste0("res_", runif(1))

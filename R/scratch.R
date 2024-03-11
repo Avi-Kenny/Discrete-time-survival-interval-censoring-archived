@@ -1,4 +1,79 @@
 
+# Tweaking Hessian tuning params
+if (F) {
+  
+  negloglik_miss <- function(x) {
+    Sys.sleep(0.1)
+    (x[1]-1)^2 + (x[2]-2)^2 + (x[3]-3)^2
+  }
+  
+  # No Hessian
+  system.time({
+    opt_miss <- stats::optim(
+      par = c(0,0,0),
+      fn = negloglik_miss,
+      method = "Nelder-Mead",
+      control = list(maxit=500,
+                     reltol=1e-8)
+    )
+    print(opt_miss)
+  })
+  
+  # Hessian (single call)
+  system.time({
+    opt_miss <- stats::optim(
+      par = c(0,0,0),
+      fn = negloglik_miss,
+      method = "Nelder-Mead",
+      control = list(maxit=500,
+                     reltol=1e-8),
+      hessian = T
+    )
+    print(opt_miss)
+  })
+  
+  # Hessian (separate calls)
+  system.time({
+    opt_miss <- stats::optim(
+      par = c(0,0,0),
+      fn = negloglik_miss,
+      method = "Nelder-Mead",
+      control = list(maxit=20,
+                     reltol=1e-8)
+    )
+    print(opt_miss)
+    
+  })
+  system.time({
+    opt_hess <- stats::optimHess(
+      par = opt_miss$par,
+      fn = negloglik_miss,
+      control = list(maxit=20,
+                     reltol=0.01)
+    )
+    print(opt_hess)
+    
+  })
+  
+  system.time({
+    hessian_miss <- numDeriv::hessian(
+      func = negloglik_miss,
+      x = opt_miss$par,
+      method = "Richardson",
+      method.args = list(
+        eps = 0.0001,
+        d = 0.0001, # d gives the fraction of x to use for the initial numerical approximation
+        zero.tol = sqrt(.Machine$double.eps/7e-7),
+        r = 4, # r gives the number of Richardson improvement iterations (repetitions with successly smaller d
+        v = 2, # v gives the reduction factor
+        show.details = F
+      )
+    )
+    print(round(hessian_miss, 4))
+  })
+  
+}
+
 # TEMP debugging (new link function)
 if (F) {
   

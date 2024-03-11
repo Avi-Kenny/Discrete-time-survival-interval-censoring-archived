@@ -1,6 +1,6 @@
 use "C:\Users\avike\OneDrive\Desktop\Avi\Biostats + Research\Research\Mark Siedner\Project - HIVMI\pip_by_month_hiv_ART.dta" 
 codebook iintid, compact
-keep if iintid<1000
+keep if iintid<10000
 export delimited output.csv, delimiter(,)
 
 

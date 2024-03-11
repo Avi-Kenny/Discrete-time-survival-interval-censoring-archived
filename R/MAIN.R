@@ -1,14 +1,15 @@
+
 # Main config
 cfg <- list(
-  run_sims = F,
+  run_sims = T,
   run_process = F,
-  run_analysis = T,
+  run_analysis = F,
   sim_level_set = "level_set_1",
   sim_run_or_update = "run",
-  sim_num = 20, # 1000
-  # sim_num = 500, # 1000
+  # sim_num = 50, # 1000
+  sim_num = 350, # 1000
   sim_parallel = F,
-  sim_n_cores = 20,
+  sim_n_cores = 350,
   # sim_n_cores = 500,
   sim_stop_at_error = F
 )
