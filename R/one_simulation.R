@@ -69,8 +69,8 @@ one_simulation <- function() {
   opt_miss <- stats::optim(
     par = par_init,
     fn = negloglik_miss,
-    method = "Nelder-Mead",
-    control = list(maxit=200) # !!!!! New (to speed up code)
+    method = "Nelder-Mead"
+    # control = list(maxit=200) # !!!!! New (to speed up code)
   )
   chk(2, "optim: END")
   chk(2, "hessian: START")
@@ -78,8 +78,8 @@ one_simulation <- function() {
   hessian_miss <- numDeriv::hessian(
     func = negloglik_miss,
     x = opt_miss$par,
-    method = "Richardson",
-    method.args = list(r=2) # !!!!! New; default is r=4, which takes roughly twice as long
+    method = "Richardson"
+    # method.args = list(r=2) # !!!!! New; default is r=4, which takes roughly twice as long
   )
   hessian_inv <- solve(hessian_miss)
   chk(2, "hessian: END")
