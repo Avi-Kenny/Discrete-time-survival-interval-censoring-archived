@@ -1,4 +1,22 @@
 
+# New DGM parameters
+if (F) {
+  
+  # a_s = 0.05, # Yearly
+  # a_x = 0.005, # Yearly
+  # a_y = 0.003, # Yearly
+  # a_z = 0.01, # Yearly
+  
+  new_alpha <- function(alpha) { log(1-(1-exp(alpha))^12) }
+  
+  old_a <- log(0.01)
+  new_a <- new_alpha(old_a)
+  
+  print(paste("Prob (mth):", round(exp(old_a),4)))
+  print(paste("Prob (yr):", round(exp(new_a),4)))
+  
+}
+
 # Tweaking Hessian tuning params
 if (F) {
   

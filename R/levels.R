@@ -11,19 +11,20 @@ if (cfg$run_sims && Sys.getenv("sim_run") %in% c("first", "")) {
   # Simulation 1: basic
   # Figures: ...
   level_sets[["level_set_1"]] <- list(
-    # n = 100,
     n = 500,
-    # n = c(500,1000,2000),
-    max_time = 70,
-    # max_time = 100,
+    # max_time = 70, # Monthly
+    max_time = 20, # Yearly
     params = list(
-      # "10pct testing" = list( a_v=log(0.1) ),
       "70pct testing" = lapply(list(
         a_s = 0.05,
-        a_v = 0.7,
-        a_x = 0.005,
-        a_y = 0.003,
-        a_z = 0.01,
+        # a_v = 0.7, # Monthly
+        # a_x = 0.005, # Monthly
+        # a_y = 0.003, # Monthly
+        # a_z = 0.01, # Monthly
+        a_v = 0.7, # Yearly (same)
+        a_x = 0.05, # Yearly
+        a_y = 0.03, # Yearly
+        a_z = 0.1, # Yearly
         g_s = c(2,1.5),
         g_v = c(1.2,1.1),
         g_x = c(1.3,1.2),

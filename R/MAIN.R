@@ -6,11 +6,9 @@ cfg <- list(
   run_analysis = F,
   sim_level_set = "level_set_1",
   sim_run_or_update = "run",
-  # sim_num = 50, # 1000
-  sim_num = 1000, # 1000
+  sim_num = 350,
   sim_parallel = F,
-  sim_n_cores = 400,
-  # sim_n_cores = 500,
+  sim_n_cores = 350,
   sim_stop_at_error = F
 )
 

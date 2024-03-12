@@ -37,7 +37,7 @@ generate_data <- function(n, max_time, params) {
   w_1 <- sample(c(0,1), size=n, replace=T)
   w_2 <- sample(c(13:80), size=n, replace=T)
   
-  # !!!!! Temp: scale age variable
+  # Scale age variable
   w_2 <- w_2/100
   
   # Sample start time

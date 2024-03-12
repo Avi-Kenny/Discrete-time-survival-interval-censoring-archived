@@ -8,6 +8,16 @@
 
 one_simulation <- function() {
   
+  # Set this flag to TRUE to speed up code (but with worse optim performance)
+  speedy <- T
+  if (speedy) {
+    maxit <- 200
+    hess_r <- 2
+  } else {
+    maxit <- 500
+    hess_r <- 4
+  }
+  
   chk(0, "START")
   
   # Generate dataset
@@ -18,13 +28,14 @@ one_simulation <- function() {
   )
   chk(1, "Data generated")
   
-  # Add x_prev column
-  dat %<>% arrange(id, t_end)
-  dat$x_prev <- ifelse(
-    dat$id==c(0,dat$id[c(1:(length(dat$id)-1))]),
-    c(0,dat$x[c(1:(length(dat$x)-1))]),
-    0
-  )
+  # # Add x_prev column
+  # # !!!!! This might not be needed
+  # dat %<>% arrange(id, t_end)
+  # dat$x_prev <- ifelse(
+  #   dat$id==c(0,dat$id[c(1:(length(dat$id)-1))]),
+  #   c(0,dat$x[c(1:(length(dat$x)-1))]),
+  #   0
+  # )
   
   if (F) {
     
@@ -57,29 +68,29 @@ one_simulation <- function() {
   # Set initial parameter estimate - should roughly (but not exactly) equal the
   # true parameters
   par_init <- log(c(
-    a_x=0.003, g_x1=1.2, g_x2=1.1, a_y=0.002, g_y1=1.3, g_y2=1, beta_x=1.3,
-    beta_z=0.8, t_x=0.999, t_y=1.001, a_s=0.03, t_s=1.001, g_s1=1.8, g_s2=1.7
+    # a_x=0.003, g_x1=1.2, g_x2=1.1, a_y=0.002, g_y1=1.3, g_y2=1, beta_x=1.3, # Monthly
+    # beta_z=0.8, t_x=0.999, t_y=1.001, a_s=0.03, t_s=1.001, g_s1=1.8, g_s2=1.7 # Monthly
+    a_x=0.03, g_x1=1.2, g_x2=1.1, a_y=0.02, g_y1=1.3, g_y2=1, beta_x=1.3, # Yearly
+    beta_z=0.8, t_x=0.999, t_y=1.001, a_s=0.03, t_s=1.001, g_s1=1.8, g_s2=1.7 # Yearly
   ))
   
   chk(2, "construct_negloglik_miss: START")
   negloglik_miss <- construct_negloglik_miss(dat)
   chk(2, "construct_negloglik_miss: END")
   chk(2, "optim: START")
-  # opt_miss <- optim(par=par_init, fn=negloglik_miss)
   opt_miss <- stats::optim(
     par = par_init,
     fn = negloglik_miss,
-    method = "Nelder-Mead"
-    # control = list(maxit=200) # !!!!! New (to speed up code)
+    method = "Nelder-Mead",
+    control = list(maxit=maxit)
   )
   chk(2, "optim: END")
   chk(2, "hessian: START")
-  # hessian_miss <- hessian(func=negloglik_miss, x=opt_miss$par)
   hessian_miss <- numDeriv::hessian(
     func = negloglik_miss,
     x = opt_miss$par,
-    method = "Richardson"
-    # method.args = list(r=2) # !!!!! New; default is r=4, which takes roughly twice as long
+    method = "Richardson",
+    method.args = list(r=hess_r)
   )
   hessian_inv <- solve(hessian_miss)
   chk(2, "hessian: END")
