@@ -90,7 +90,7 @@ chk(0, "START")
 .t_start <- Sys.time()
 cfg2 <- list(
   process_data = T,
-  save_data = T,
+  save_data = F,
   run_dqa = F,
   run_analysis = T,
   parallelize = T,
@@ -199,7 +199,6 @@ if (cfg2$use_simulated_dataset) {
     # Rename columns
     dat_prc %<>% dplyr::rename(
       "w_1" = sex,
-      "w_2" = dob,
       "y" = died,
       "z" = onart,
       "t_start" = year_prev,
@@ -253,6 +252,9 @@ if (cfg2$use_simulated_dataset) {
     if (length(dupe_time_rows)>0) { dat_prc <- dat_prc[-dupe_time_rows,] }
     print(nrow(dat_prc))
     
+    # Drop rows with DOB > t_start
+    # !!!!! TO DO
+
     # Generate delta column
     delta <- rep(NA, nrow(dat_prc))
     for (id in c(1:attr(dat_prc, "n"))) {
@@ -274,12 +276,12 @@ if (cfg2$use_simulated_dataset) {
     # Create V (testing) and U (positive/known) indicators
     dat_prc %<>% dplyr::mutate(
       v = In(!is.na(dat_prc$yearoftest)),
-      u = In(!is.na(first_hiv_pos_dt) & t_end<=first_hiv_pos_dt)
+      u = In(!is.na(first_hiv_pos_dt) & t_end>=first_hiv_pos_dt)
     )
     
     # Rescale time variable to start at 1
     dat_prc %<>% dplyr::mutate(
-      w_2 = (w_2 - window_start) + 1,
+      dob = (dob - window_start) + 1,
       dod = (dod - window_start) + 1,
       t_start = (t_start - window_start) + 1,
       t_end = (t_end - window_start) + 1,
@@ -288,10 +290,15 @@ if (cfg2$use_simulated_dataset) {
       last_hiv_neg_dt = (last_hiv_neg_dt - window_start) + 1,
       earliestartinitdate = (earliestartinitdate - window_start) + 1
     )
+    attr(dat_prc, "s_i") <- (attr(dat_prc, "s_i") - window_start) + 1
+    attr(dat_prc, "t_i") <- (attr(dat_prc, "t_i") - window_start) + 1
     
-    # # Save for validation
-    # write.table(dat_prc, file="dat_prc.csv", sep=",", row.names=FALSE)
-    # write.table(dat_raw, file="dat_raw.csv", sep=",", row.names=FALSE)
+    # Create (scaled) baseline age variable
+    # !!!!! Check this later; some with age -1 = -.01
+    # Consider rounding w_2 as well (for memoising)
+    dat_prc %<>% dplyr::mutate(
+      w_2 = (t_start - dob) / 100
+    )
     
     # DQA
     if (F) {
@@ -325,12 +332,19 @@ if (cfg2$use_simulated_dataset) {
     if (!identical(id_1, id_2)) { stop("Issue with ID numbers.") }
     
     dat <- dat_prc
+    
+    # # Save datasets for validation
+    # write.table(dat, file="dat.csv", sep=",", row.names=FALSE)
+    # write.table(dat_prc, file="dat_prc.csv", sep=",", row.names=FALSE)
+    # write.table(dat_raw, file="dat_raw.csv", sep=",", row.names=FALSE)
+    
     cols_to_drop <- c(
-      "iintid", "dod", "age_start", "age_end", "yearoftest", "resultdate",
+      "iintid", "dob", "dod", "age_start", "age_end", "yearoftest", "resultdate",
       "hivresult", "first_hiv_pos_dt", "last_hiv_neg_dt", "hiv_result_fill",
       "earliestartinitdate"
     )
     for (col in cols_to_drop) { dat[[col]] <- NULL }
+    
     rm(dat_raw,dat_prc)
     
   } else {
@@ -392,8 +406,7 @@ if (cfg2$run_analysis) {
   # Construct log likelihood function
   chk(3, "construct_negloglik_miss: START")
   if (cfg2$parallelize) {
-    n_cores <- parallel::detectCores() - 1
-    n_cores <- 50 # !!!!!
+    n_cores <- cfg$sim_n_cores
     # assign("fn_calls", 0, envir=.GlobalEnv) # !!!!!
     print(paste0("Using ", n_cores, " cores."))
     cl <- parallel::makeCluster(n_cores)
@@ -410,20 +423,10 @@ if (cfg2$run_analysis) {
   #   t_x=1, t_y=1, a_s=0.01, t_s=1, g_s1=1, g_s2=1
   # ))
   par_init <- log(c(
-    a_x=0.005, g_x1=0.7, g_x2=2.3, a_y=0.003, g_y1=1.6, g_y2=1, beta_x=1, beta_z=1,
+    a_x=0.005, g_x1=1, g_x2=2, a_y=0.003, g_y1=1, g_y2=1, beta_x=1, beta_z=1,
     t_x=1, t_y=1, a_s=0.01, t_s=1, g_s1=1, g_s2=1
   ))
-  
-  # !!!!! This run failed:
-  # !!!!! Check coefficients for g_x2, g_y1, 
-  # a_x        g_x1        g_x2         a_y        g_y1        g_y2
-  # -5.32852474 -0.34193155  0.82024858 -5.95234858  0.48797883 -0.04553217
-  # beta_x      beta_z         t_x         t_y         a_s         t_s
-  # 0.54400070  0.64742092 -0.18296162  0.11885859 -4.68109315  0.05165397
-  # g_s1        g_s2
-  # 0.22352346  0.37743330
-  
-  
+
   # par_true <- c(
   #   par_true_full$a_x, par_true_full$g_x[1], par_true_full$g_x[2],
   #   par_true_full$a_y, par_true_full$g_y[1], par_true_full$g_y[2],
