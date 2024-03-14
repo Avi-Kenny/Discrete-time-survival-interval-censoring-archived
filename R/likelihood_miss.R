@@ -51,9 +51,10 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL) {
 
     # Convert parameter vector to a named list
     p <- as.numeric(par)
-    params <- list(a_x=p[1], g_x=c(p[2],p[3]), a_y=p[4], g_y=c(p[5],p[6]),
-                   beta_x=p[7], beta_z=p[8], t_x=p[9], t_y=p[10],
-                   a_s=p[11], t_s=p[12], g_s=c(p[13],p[14]))
+    # params <- list(a_x=p[1], g_x=c(p[2],p[3]), a_y=p[4], g_y=c(p[5],p[6]),
+    #                beta_x=p[7], beta_z=p[8], t_x=p[9], t_y=p[10],
+    #                a_s=p[11], t_s=p[12], g_s=c(p[13],p[14]))
+    params <- list(a_x=p[1], a_y=p[2], beta_x=p[3], beta_z=p[4], a_s=p[5])
     
     lik_fn <- function(i) {
       
@@ -166,8 +167,6 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL) {
         function(batch) { sum(log(unlist(lapply(batches[[batch]], lik_fn)))) })
       )))
       
-      # return(-1 * sum(log(unlist(parallel::parLapply(cl, c(1:n), lik_fn)))))
-      
     } else {
       
       return(-1 * sum(log(unlist(lapply(c(1:n), lik_fn)))))
@@ -195,21 +194,25 @@ f_x <- function(x, x_prev, w, j, s, params) {
       if (x_prev==1) {
         return(1)
       } else {
-        return(exp2(params$a_x + params$t_x*j + sum(params$g_x*w)))
+        # return(exp2(params$a_x + params$t_x*j + sum(params$g_x*w)))
+        return(exp2(params$a_x)) # !!!!! TEMP
       }
     } else {
       if (x_prev==1) {
         return(0)
       } else {
-        return(1 - exp2(params$a_x + params$t_x*j + sum(params$g_x*w)))
+        # return(1 - exp2(params$a_x + params$t_x*j + sum(params$g_x*w)))
+        return(1 - exp2(params$a_x)) # !!!!! TEMP
       }
     }
   } else {
-    expitlin <- expit(params$a_s + params$t_s*j + sum(params$g_s*w))
+    # prob <- expit(params$a_s + params$t_s*j + sum(params$g_s*w))
+    # prob <- exp2(params$a_s + params$t_s*j + sum(params$g_s*w))
+    prob <- exp2(params$a_s) # !!!!! TEMP
     if (x==1) {
-      return(expitlin)
+      return(prob)
     } else {
-      return(1-expitlin)
+      return(1-prob)
     }
   }
 }
@@ -225,7 +228,8 @@ f_x <- function(x, x_prev, w, j, s, params) {
 #' @param params Named list of parameters
 #' @return Numeric likelihood
 f_y <- function(y, x, w, z, j, params) {
-  explin <- exp2(params$a_y + params$t_y*j + sum(params$g_y*w) + params$beta_x*x +
-                  params$beta_z*z)
-  if (y==1) { return(explin) } else { return(1-explin) }
+  # prob <- exp2(params$a_y + params$t_y*j + sum(params$g_y*w) + params$beta_x*x +
+  #                params$beta_z*z)
+  prob <- exp2(params$a_y + params$beta_x*x + params$beta_z*z) # !!!!! TEMP
+  if (y==1) { return(prob) } else { return(1-prob) }
 }
