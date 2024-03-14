@@ -48,7 +48,6 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL) {
   negloglik_miss <- function(par) {
     
     print(paste("negloglik_miss() called:",Sys.time())) # !!!!!
-    # fn_calls <<- fn_calls+1 # !!!!!
 
     # Convert parameter vector to a named list
     p <- as.numeric(par)
@@ -196,14 +195,12 @@ f_x <- function(x, x_prev, w, j, s, params) {
       if (x_prev==1) {
         return(1)
       } else {
-        # return(exp(params$a_x + params$t_x*j + sum(params$g_x*w)))
         return(exp2(params$a_x + params$t_x*j + sum(params$g_x*w)))
       }
     } else {
       if (x_prev==1) {
         return(0)
       } else {
-        # return(1 - exp(params$a_x + params$t_x*j + sum(params$g_x*w)))
         return(1 - exp2(params$a_x + params$t_x*j + sum(params$g_x*w)))
       }
     }
@@ -228,8 +225,6 @@ f_x <- function(x, x_prev, w, j, s, params) {
 #' @param params Named list of parameters
 #' @return Numeric likelihood
 f_y <- function(y, x, w, z, j, params) {
-  # explin <- exp(params$a_y + params$t_y*j + sum(params$g_y*w) + params$beta_x*x +
-  #                 params$beta_z*z)
   explin <- exp2(params$a_y + params$t_y*j + sum(params$g_y*w) + params$beta_x*x +
                   params$beta_z*z)
   if (y==1) { return(explin) } else { return(1-explin) }

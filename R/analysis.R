@@ -416,7 +416,6 @@ if (cfg2$run_analysis) {
   chk(3, "construct_negloglik_miss: START")
   if (cfg2$parallelize) {
     n_cores <- cfg$sim_n_cores
-    # assign("fn_calls", 0, envir=.GlobalEnv) # !!!!!
     print(paste0("Using ", n_cores, " cores."))
     cl <- parallel::makeCluster(n_cores)
     parallel::clusterExport(cl, ls(.GlobalEnv))
@@ -468,7 +467,6 @@ if (cfg2$run_analysis) {
   print("optim() finished.")
   print(opt_miss)
 
-  # print(paste0("objective function calls (optim): ", fn_calls)) # !!!!!
   if (F) {
     stats::optim(par=par_init, fn=negloglik_miss, control=list(trace=6))
     library(optimParallel)
@@ -520,8 +518,7 @@ if (cfg2$run_analysis) {
     )
   }
   print(res)
-  # print(paste0("objective function calls (total): ", fn_calls)) # !!!!!
-  
+
   # !!!!! temp
   .t_end <- Sys.time()
   print("Total Runtime:")
