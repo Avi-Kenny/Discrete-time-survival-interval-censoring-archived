@@ -99,17 +99,18 @@ cfg2 <- list(
 
 # !!!!! TEMPORARY: testing different optim config options
 if (T) {
-  # avi_maxit <- as.integer(Sys.getenv("avi_maxit"))
-  # avi_reltol <- as.numeric(Sys.getenv("avi_reltol"))
-  # avi_r <- as.numeric(Sys.getenv("avi_r"))
-  avi_maxit <- 200
-  avi_reltol <- 1e-5
-  avi_r <- 2
-  print("OPTIM CONFIG")
+  avi_maxit <- as.integer(Sys.getenv("avi_maxit"))
+  avi_reltol <- as.numeric(Sys.getenv("avi_reltol"))
+  avi_r <- as.numeric(Sys.getenv("avi_r"))
+  # avi_maxit <- 200
+  # avi_reltol <- 1e-5
+  # avi_r <- 2
+  print("CONFIG")
   print("------------")
   print(paste("maxit:", avi_maxit))
   print(paste("reltol:", avi_reltol))
   print(paste("r:", avi_r))
+  print(paste("sample size:", as.integer(Sys.getenv("avi_samp_size"))))
   print("------------")
 }
 
@@ -153,7 +154,15 @@ if (cfg2$use_simulated_dataset) {
     # dat_prc <- dat_raw <- read.csv("../../Data/data_raw_1000.csv")
     # dat_prc <- dat_raw <- read.csv("../Data/data_raw_1000_v2.csv")
     # dat_prc <- dat_raw <- read.csv("../Data/data_raw_1000_v3.csv")
-    dat_prc <- dat_raw <- read.csv("../Data/data_raw_10000.csv")
+    # dat_prc <- dat_raw <- read.csv("../Data/data_raw_10000.csv")
+    
+    set.seed(1)
+    dat_prc <- dat_raw <- read.csv("../Data/data_raw_full.csv")
+    iintids <- unique(dat_prc$iintid)
+    # samp_size <- 10000
+    samp_size <- as.integer(Sys.getenv("avi_samp_size")) # !!!!!
+    iintids_sample <- sample(iintids, size=samp_size)
+    dat_prc %<>% dplyr::filter(iintid %in% iintids_sample)
     
     # Drop unnecessary columns
     # dat_prc %<>% subset(select=-c(enter, exit, X_t, X_t0))
@@ -418,15 +427,28 @@ if (cfg2$run_analysis) {
   chk(3, "construct_negloglik_miss: END")
   
   # Set initial parameter estimates
+  # These were set based on a "test run" using a 10% sample
   # par_init <- log(c(
-  #   a_x=0.005, g_x1=1, g_x2=1, a_y=0.01, g_y1=1, g_y2=1, beta_x=1, beta_z=1,
+  #   a_x=0.005, g_x1=1, g_x2=2, a_y=0.003, g_y1=1, g_y2=1, beta_x=1, beta_z=1,
   #   t_x=1, t_y=1, a_s=0.01, t_s=1, g_s1=1, g_s2=1
   # ))
-  par_init <- log(c(
-    a_x=0.005, g_x1=1, g_x2=2, a_y=0.003, g_y1=1, g_y2=1, beta_x=1, beta_z=1,
-    t_x=1, t_y=1, a_s=0.01, t_s=1, g_s1=1, g_s2=1
-  ))
-
+  par_init <- c(
+    a_x = -5.6029,
+    g_x1 = -0.5491,
+    g_x2 = -0.3655,
+    a_y = -6.0201,
+    g_y1 = 0.3636,
+    g_y2 = 4.282,
+    beta_x = 1.4006,
+    beta_z = 0.0004,
+    t_x = 0.9609,
+    t_y = -3.9064,
+    a_s = -1.7398,
+    t_s = -2.1004,
+    g_s1 = -0.6637,
+    g_s2 = 1.2711
+  )
+  
   # par_true <- c(
   #   par_true_full$a_x, par_true_full$g_x[1], par_true_full$g_x[2],
   #   par_true_full$a_y, par_true_full$g_y[1], par_true_full$g_y[2],
@@ -443,8 +465,9 @@ if (cfg2$run_analysis) {
     method = "Nelder-Mead",
     control = list(maxit=avi_maxit,
                    reltol=avi_reltol)) # !!!!!
-  print(opt_miss$par)
-  
+  print("optim() finished.")
+  print(opt_miss)
+
   # print(paste0("objective function calls (optim): ", fn_calls)) # !!!!!
   if (F) {
     stats::optim(par=par_init, fn=negloglik_miss, control=list(trace=6))
@@ -501,18 +524,19 @@ if (cfg2$run_analysis) {
   
   # !!!!! temp
   .t_end <- Sys.time()
-  .runtime <- round(as.numeric(.t_end-.t_start))
-  print(paste0("Runtime: ", .runtime))
+  print("Total Runtime:")
+  print(.t_end-.t_start)
   saveRDS(
     list(
-      runtime = .runtime,
+      runtime = .t_end - .t_start,
       n_cores = n_cores,
       avi_maxit = avi_maxit,
       avi_reltol = avi_reltol,
+      avi_samp_size = samp_size,
       avi_r = avi_r,
       res = res
     ),
-    file = paste0("res_", runif(1))
+    file = paste0("res_", runif(1), ".rds")
   )
   
 }
