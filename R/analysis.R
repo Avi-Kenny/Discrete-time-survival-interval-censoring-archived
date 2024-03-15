@@ -419,34 +419,25 @@ if (cfg2$run_analysis) {
     print(paste0("Using ", n_cores, " cores."))
     cl <- parallel::makeCluster(n_cores)
     parallel::clusterExport(cl, ls(.GlobalEnv))
-    negloglik_miss <- construct_negloglik_miss(dat, parallelize=T, cl=cl)
+    negloglik_miss <- construct_negloglik_miss(dat, parallelize=T, cl=cl,
+                                               cfg$model_version)
   } else {
-    negloglik_miss <- construct_negloglik_miss(dat, parallelize=F, cl=NULL)
+    negloglik_miss <- construct_negloglik_miss(dat, parallelize=F, cl=NULL,
+                                               cfg$model_version)
   }
   chk(3, "construct_negloglik_miss: END")
   
   # Set initial parameter estimates
-  # These were set based on a "test run" using a 10% sample
-  # par_init <- log(c(
-  #   a_x=0.005, g_x1=1, g_x2=2, a_y=0.003, g_y1=1, g_y2=1, beta_x=1, beta_z=1,
-  #   t_x=1, t_y=1, a_s=0.01, t_s=1, g_s1=1, g_s2=1
-  # ))
-  par_init <- c(
-    a_x = -5.6029,
-    # g_x1 = -0.5491,
-    # g_x2 = -0.3655,
-    a_y = -6.0201,
-    # g_y1 = 0.3636,
-    # g_y2 = 4.282,
-    beta_x = 1.4006,
-    beta_z = 0.0004,
-    # t_x = 0.9609,
-    # t_y = -3.9064,
-    a_s = -1.7398
-    # t_s = -2.1004,
-    # g_s1 = -0.6637,
-    # g_s2 = 1.2711
-  )
+  if (cfg$model_version==0) {
+    # This version not yet working
+    par_init <- c(a_x=-5.603, g_x1=0, g_x2=-0.3655, a_y=-6.020, g_y1=0, g_y2=4.282, beta_x=1.401, beta_z=0.0004, t_x=0.9609, t_y=-3.906, a_s=-1.740, t_s=-2.100, g_s1=0, g_s2=1.271) # Model iteration 0
+  } else if (cfg$model_version==1) {
+    par_init <- c(a_x=-5.651, a_y=-4.942, beta_x=1.423, beta_z=0.2235, a_s=-2.007)
+  } else if (cfg$model_version==2) {
+    par_init <- c(a_x=-5.651, a_y=-4.942, beta_x=1.423, beta_z=0.2235, a_s=-2.007, g_x1=0, g_y1=0, g_s1=0)
+  } else if (cfg$model_version==3) {
+    par_init <- c(a_x=-5.315, g_x1=-0.5711, g_x2=0, a_y=-4.919, g_y1=0.1089, g_y2=0, beta_x=1.302, beta_z=0.4025, a_s=-1.932, g_s1=-0.3049, g_s2=0)
+  }
   
   # par_true <- c(
   #   par_true_full$a_x, par_true_full$g_x[1], par_true_full$g_x[2],

@@ -3,7 +3,8 @@
 #' @param par Vector of parameters governing the distribution.
 #' @return Numeric likelihood
 #' @notes This corresponds to the missing data structure
-construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL) {
+construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL,
+                                     model_version=0) {
   
   # Construct a data object specific to each individual
   n <- attr(dat, "n")
@@ -45,16 +46,29 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL) {
     
   })
   
+  if (parallelize) {
+    n_batches <- length(cl)
+    folds <- cut(c(1:n), breaks=n_batches, labels=FALSE)
+    batches <- lapply(c(1:n_batches), function(batch) {
+      c(1:n)[folds==batch]
+    })
+  }
+  
   negloglik_miss <- function(par) {
     
     print(paste("negloglik_miss() called:",Sys.time())) # !!!!!
 
     # Convert parameter vector to a named list
     p <- as.numeric(par)
-    # params <- list(a_x=p[1], g_x=c(p[2],p[3]), a_y=p[4], g_y=c(p[5],p[6]),
-    #                beta_x=p[7], beta_z=p[8], t_x=p[9], t_y=p[10],
-    #                a_s=p[11], t_s=p[12], g_s=c(p[13],p[14]))
-    params <- list(a_x=p[1], a_y=p[2], beta_x=p[3], beta_z=p[4], a_s=p[5])
+    if (model_version==0) {
+      params <- list(a_x=p[1], g_x=c(p[2],p[3]), a_y=p[4], g_y=c(p[5],p[6]), beta_x=p[7], beta_z=p[8], t_x=p[9], t_y=p[10], a_s=p[11], t_s=p[12], g_s=c(p[13],p[14]))
+    } else if (model_version==1) {
+      params <- list(a_x=p[1], a_y=p[2], beta_x=p[3], beta_z=p[4], a_s=p[5])
+    } else if (model_version==2) {
+      params <- list(a_x=p[1], a_y=p[2], beta_x=p[3], beta_z=p[4], a_s=p[5], g_x1=p[6], g_y1=p[7], g_s1=p[8])
+    } else if (model_version==3) {
+      params <- list(a_x=p[1], g_x=c(p[2],p[3]), a_y=p[4], g_y=c(p[5],p[6]), beta_x=p[7], beta_z=p[8], a_s=p[9], g_s=c(p[10],p[11]))
+    }
     
     lik_fn <- function(i) {
       
@@ -69,6 +83,7 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL) {
           # Note: here, j is the index of time within an individual rather than
           #       a calendar time index
           w_ij <- as.numeric(w[,j])
+          if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
           return(
             f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
                 s=In(d$cal_time[j]==d$s_i), params=params) * # Maybe create this indicator variable (vector) earlier
@@ -155,11 +170,6 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL) {
     # Compute the negative likelihood across individuals
     if (parallelize) {
       
-      n_batches <- length(cl)
-      folds <- cut(c(1:n), breaks=n_batches, labels=FALSE)
-      batches <- lapply(c(1:n_batches), function(batch) {
-        c(1:n)[folds==batch]
-      })
       parallel::clusterExport(cl, c("batches"), envir=environment())
       return(-1 * sum(unlist(parallel::parLapply(
         cl,
@@ -188,33 +198,70 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL) {
 #' @param w Vector of covariates (time j)
 #' @param params Named list of parameters
 #' @return Numeric likelihood
-f_x <- function(x, x_prev, w, j, s, params) {
-  if (s==0) {
-    if (x==1) {
-      if (x_prev==1) {
+if (cfg$model_version==0) {
+  
+  f_x <- function(x, x_prev, w, j, s, params) {
+    if (s==0) {
+      if (x==1 && x_prev==1) {
         return(1)
       } else {
-        # return(exp2(params$a_x + params$t_x*j + sum(params$g_x*w)))
-        return(exp2(params$a_x)) # !!!!! TEMP
+        prob <- exp2(params$a_x + params$t_x*j + sum(params$g_x*w))
+        if (x==1) { return(prob) } else { return(1-prob) }
       }
     } else {
-      if (x_prev==1) {
-        return(0)
-      } else {
-        # return(1 - exp2(params$a_x + params$t_x*j + sum(params$g_x*w)))
-        return(1 - exp2(params$a_x)) # !!!!! TEMP
-      }
-    }
-  } else {
-    # prob <- expit(params$a_s + params$t_s*j + sum(params$g_s*w))
-    # prob <- exp2(params$a_s + params$t_s*j + sum(params$g_s*w))
-    prob <- exp2(params$a_s) # !!!!! TEMP
-    if (x==1) {
-      return(prob)
-    } else {
-      return(1-prob)
+      prob <- exp2(params$a_s + params$t_s*j + sum(params$g_s*w))
+      if (x==1) { return(prob) } else { return(1-prob) }
     }
   }
+  
+} else if (cfg$model_version==1) {
+  
+  f_x <- function(x, x_prev, w, j, s, params) {
+    if (s==0) {
+      if (x==1 && x_prev==1) {
+        return(1)
+      } else {
+        prob <- exp2(params$a_x)
+        if (x==1) { return(prob) } else { return(1-prob) }
+      }
+    } else {
+      prob <- exp2(params$a_s)
+      if (x==1) { return(prob) } else { return(1-prob) }
+    }
+  }
+  
+} else if (cfg$model_version==2) {
+  
+  f_x <- function(x, x_prev, w, j, s, params) {
+    if (s==0) {
+      if (x==1 && x_prev==1) {
+        return(1)
+      } else {
+        prob <- exp2(params$a_x + params$g_x1*w[1])
+        if (x==1) { return(prob) } else { return(1-prob) }
+      }
+    } else {
+      prob <- exp2(params$a_s + params$g_s1*w[1])
+      if (x==1) { return(prob) } else { return(1-prob) }
+    }
+  }
+  
+} else if (cfg$model_version==3) {
+  
+  f_x <- function(x, x_prev, w, j, s, params) {
+    if (s==0) {
+      if (x==1 && x_prev==1) {
+        return(1)
+      } else {
+        prob <- exp2(params$a_x + sum(params$g_x*w))
+        if (x==1) { return(prob) } else { return(1-prob) }
+      }
+    } else {
+      prob <- exp2(params$a_s + sum(params$g_s*w))
+      if (x==1) { return(prob) } else { return(1-prob) }
+    }
+  }
+  
 }
 
 
@@ -227,9 +274,32 @@ f_x <- function(x, x_prev, w, j, s, params) {
 #' @param z ART indicator (time j)
 #' @param params Named list of parameters
 #' @return Numeric likelihood
-f_y <- function(y, x, w, z, j, params) {
-  # prob <- exp2(params$a_y + params$t_y*j + sum(params$g_y*w) + params$beta_x*x +
-  #                params$beta_z*z)
-  prob <- exp2(params$a_y + params$beta_x*x + params$beta_z*z) # !!!!! TEMP
-  if (y==1) { return(prob) } else { return(1-prob) }
+if (cfg$model_version==0) {
+  
+  f_y <- function(y, x, w, z, j, params) {
+    prob <- exp2(params$a_y + params$t_y*j + sum(params$g_y*w) + params$beta_x*x + params$beta_z*z)
+    if (y==1) { return(prob) } else { return(1-prob) }
+  }
+  
+} else if (cfg$model_version==1) {
+  
+  f_y <- function(y, x, w, z, j, params) {
+    prob <- exp2(params$a_y + params$beta_x*x + params$beta_z*z)
+    if (y==1) { return(prob) } else { return(1-prob) }
+  }
+  
+} else if (cfg$model_version==2) {
+  
+  f_y <- function(y, x, w, z, j, params) {
+    prob <- exp2(params$a_y + params$g_y1*w[1] + params$beta_x*x + params$beta_z*z)
+    if (y==1) { return(prob) } else { return(1-prob) }
+  }
+  
+} else if (cfg$model_version==3) {
+  
+  f_y <- function(y, x, w, z, j, params) {
+    prob <- exp2(params$a_y + sum(params$g_y*w) + params$beta_x*x + params$beta_z*z)
+    if (y==1) { return(prob) } else { return(1-prob) }
+  }
+  
 }

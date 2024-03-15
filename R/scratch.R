@@ -21,7 +21,7 @@ if (F) {
 if (F) {
   
   negloglik_miss <- function(x) {
-    Sys.sleep(0.1)
+    Sys.sleep(0.01)
     (x[1]-1)^2 + (x[2]-2)^2 + (x[3]-3)^2
   }
   
@@ -32,7 +32,8 @@ if (F) {
       fn = negloglik_miss,
       method = "Nelder-Mead",
       control = list(maxit=500,
-                     reltol=1e-8)
+                     reltol=1e-8,
+                     trace=1)
     )
     print(opt_miss)
   })

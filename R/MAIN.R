@@ -9,7 +9,8 @@ cfg <- list(
   sim_parallel = F,
   # sim_n_cores = 50,
   sim_n_cores = as.integer(Sys.getenv("SLURM_CPUS_PER_TASK")),
-  sim_stop_at_error = F
+  sim_stop_at_error = F,
+  model_version = 3
 )
 
 # Secondary config
