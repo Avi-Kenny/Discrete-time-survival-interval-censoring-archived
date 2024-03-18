@@ -194,6 +194,19 @@ if (cfg2$use_simulated_dataset) {
       year_prev = year - 1
     )
     
+    # Filter out children with tests before age 13
+    nrow(dat_prc)
+    children_with_tests <- dplyr::filter(
+      dat_prc, age_end<=13 & resultdate!=""
+    )$iintid
+    dat_prc %<>% dplyr::filter(!(iintid %in% children_with_tests))
+    nrow(dat_prc)
+    
+    # Remove all data before 13th birthday
+    nrow(dat_prc)
+    dat_prc %<>% dplyr::filter(age_end>=13)
+    nrow(dat_prc)
+    
     # Filter out records with a negative test after a positive test
     print(nrow(dat_prc))
     dat_prc %<>% dplyr::filter(
@@ -213,8 +226,6 @@ if (cfg2$use_simulated_dataset) {
       "t_start" = year_prev,
       "t_end" = year
     )
-    
-    # !!!!! Standardize all variables to have [0,1] range before adding to model
     
     # Sort dataframe
     dat_prc %<>% dplyr::arrange(id,t_start)
@@ -238,7 +249,6 @@ if (cfg2$use_simulated_dataset) {
       )
     )
     
-    # !!!!! Remove all data before 13th birthday; check for any testing before this
     # !!!!! Check that `first_hiv_pos_dt` and `last_hiv_neg_dt` lie within `t_start` and `t_end`
     
     # Make sure this step is done after dropping rows
@@ -435,8 +445,14 @@ if (cfg2$run_analysis) {
     par_init <- c(a_x=-5.651, a_y=-4.942, beta_x=1.423, beta_z=0.2235, a_s=-2.007)
   } else if (cfg$model_version==2) {
     par_init <- c(a_x=-5.651, a_y=-4.942, beta_x=1.423, beta_z=0.2235, a_s=-2.007, g_x1=0, g_y1=0, g_s1=0)
-  } else if (cfg$model_version==3) {
-    par_init <- c(a_x=-5.315, g_x1=-0.5711, g_x2=0, a_y=-4.919, g_y1=0.1089, g_y2=0, beta_x=1.302, beta_z=0.4025, a_s=-1.932, g_s1=-0.3049, g_s2=0)
+  } else if (cfg$model_version %in% c(3,4)) {
+    par_init <- c(a_x=-5.8039, g_x1=-0.5518, g_x2=0.6733, a_y=-6.4375, g_y1=0.3011, g_y2=4.0686, beta_x=1.6762, beta_z=0.8045, a_s=-2.116, g_s1=-0.3937, g_s2=1.1987)
+  } else if (cfg$model_version==5) {
+    par_init <- c(a_x=-5.8039, g_x1=-0.5518, g_x2=0.6733, a_y=-6.4375, g_y1=0.3011, g_y2=4.0686, beta_x=1.6762, beta_z=0.8045, t_y=0, a_s=-2.116, g_s1=-0.3937, g_s2=1.1987)
+  } else if (cfg$model_version==6) {
+    par_init <- c(a_x=-4.6185, g_x1=-1.3117, g_x2=-0.3883, a_y=-6.1581, g_y1=0.3794, g_y2=4.4762, beta_x=1.8497, beta_z=1.708, t_x=0, t_y=-0.45141, a_s=-2.495, g_s1=-0.0177, g_s2=1.684)
+  } else if (cfg$model_version==7) {
+    par_init <- c(a_x=-5.6023, g_x1=-0.5404, g_x2=0.6959, a_y=-5.6608, g_y1=0.3187, g_y2=4.2651, beta_x=1.4113, beta_z=1.4892, t_x=0.059, t_y=-0.6812, a_s=-2.1738, t_s=0.2964, g_s1=-0.5045, g_s2=0.7236)
   }
   
   # par_true <- c(

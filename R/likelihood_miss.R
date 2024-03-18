@@ -25,7 +25,7 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL,
     d$d <- dat_i$d
     d$u <- dat_i$u
     d$cal_time <- dat_i$t_end
-    d$cal_time_sc <- d$cal_time / 100 # Rescaling is done to prevent optimization issues
+    d$cal_time_sc <- d$cal_time / 10 # Rescaling is done to prevent optimization issues; model verion 6; changed from 100 to 10
     
     # Calculate the set X_i to sum over
     d$X_i_set <- list()
@@ -66,8 +66,14 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL,
       params <- list(a_x=p[1], a_y=p[2], beta_x=p[3], beta_z=p[4], a_s=p[5])
     } else if (model_version==2) {
       params <- list(a_x=p[1], a_y=p[2], beta_x=p[3], beta_z=p[4], a_s=p[5], g_x1=p[6], g_y1=p[7], g_s1=p[8])
-    } else if (model_version==3) {
+    } else if (model_version %in% c(3,4)) {
       params <- list(a_x=p[1], g_x=c(p[2],p[3]), a_y=p[4], g_y=c(p[5],p[6]), beta_x=p[7], beta_z=p[8], a_s=p[9], g_s=c(p[10],p[11]))
+    } else if (model_version==5) {
+      params <- list(a_x=p[1], g_x=c(p[2],p[3]), a_y=p[4], g_y=c(p[5],p[6]), beta_x=p[7], beta_z=p[8], t_y=p[9], a_s=p[10], g_s=c(p[11],p[12]))
+    } else if (model_version==6) {
+      params <- list(a_x=p[1], g_x=c(p[2],p[3]), a_y=p[4], g_y=c(p[5],p[6]), beta_x=p[7], beta_z=p[8], t_x=p[9], t_y=p[10], a_s=p[11], g_s=c(p[12],p[13]))
+    } else if (model_version==7) {
+      params <- list(a_x=p[1], g_x=c(p[2],p[3]), a_y=p[4], g_y=c(p[5],p[6]), beta_x=p[7], beta_z=p[8], t_x=p[9], t_y=p[10], a_s=p[11], t_s=p[12], g_s=c(p[13],p[14]))
     }
     
     lik_fn <- function(i) {
@@ -83,7 +89,7 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL,
           # Note: here, j is the index of time within an individual rather than
           #       a calendar time index
           w_ij <- as.numeric(w[,j])
-          if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
+          # if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
           return(
             f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
                 s=In(d$cal_time[j]==d$s_i), params=params) * # Maybe create this indicator variable (vector) earlier
@@ -246,7 +252,7 @@ if (cfg$model_version==0) {
     }
   }
   
-} else if (cfg$model_version==3) {
+} else if (cfg$model_version %in% c(3,4,5)) {
   
   f_x <- function(x, x_prev, w, j, s, params) {
     if (s==0) {
@@ -258,6 +264,38 @@ if (cfg$model_version==0) {
       }
     } else {
       prob <- exp2(params$a_s + sum(params$g_s*w))
+      if (x==1) { return(prob) } else { return(1-prob) }
+    }
+  }
+  
+} else if (cfg$model_version==6) {
+  
+  f_x <- function(x, x_prev, w, j, s, params) {
+    if (s==0) {
+      if (x==1 && x_prev==1) {
+        return(1)
+      } else {
+        prob <- exp2(params$a_x + params$t_x*j + sum(params$g_x*w))
+        if (x==1) { return(prob) } else { return(1-prob) }
+      }
+    } else {
+      prob <- exp2(params$a_s + sum(params$g_s*w))
+      if (x==1) { return(prob) } else { return(1-prob) }
+    }
+  }
+  
+} else if (cfg$model_version==7) {
+  
+  f_x <- function(x, x_prev, w, j, s, params) {
+    if (s==0) {
+      if (x==1 && x_prev==1) {
+        return(1)
+      } else {
+        prob <- exp2(params$a_x + params$t_x*j + sum(params$g_x*w))
+        if (x==1) { return(prob) } else { return(1-prob) }
+      }
+    } else {
+      prob <- exp2(params$a_s + params$t_s*j + sum(params$g_s*w))
       if (x==1) { return(prob) } else { return(1-prob) }
     }
   }
@@ -299,6 +337,20 @@ if (cfg$model_version==0) {
   
   f_y <- function(y, x, w, z, j, params) {
     prob <- exp2(params$a_y + sum(params$g_y*w) + params$beta_x*x + params$beta_z*z)
+    if (y==1) { return(prob) } else { return(1-prob) }
+  }
+  
+} else if (cfg$model_version==4) {
+  
+  f_y <- function(y, x, w, z, j, params) {
+    prob <- exp2(params$a_y + sum(params$g_y*w) + params$beta_x*x*(1-z) + params$beta_z*x*z)
+    if (y==1) { return(prob) } else { return(1-prob) }
+  }
+  
+} else if (cfg$model_version %in% c(5,6,7)) {
+  
+  f_y <- function(y, x, w, z, j, params) {
+    prob <- exp2(params$a_y + params$t_y*j + sum(params$g_y*w) + params$beta_x*x*(1-z) + params$beta_z*x*z)
     if (y==1) { return(prob) } else { return(1-prob) }
   }
   
