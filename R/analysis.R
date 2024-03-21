@@ -224,12 +224,12 @@ if (cfg2$use_simulated_dataset) {
     nrow(dat_prc)
     
     # Filter out records with a negative test after a positive test
-    print(nrow(dat_prc))
+    nrow(dat_prc)
     dat_prc %<>% dplyr::filter(
       is.na(first_hiv_pos_dt) | is.na(last_hiv_neg_dt) |
         first_hiv_pos_dt>last_hiv_neg_dt
     )
-    print(nrow(dat_prc))
+    nrow(dat_prc)
     
     # Rearrange columns
     dat_prc %<>% dplyr::relocate(year_prev, .before=year)
@@ -280,13 +280,13 @@ if (cfg2$use_simulated_dataset) {
     
     # Drop rows with duplicate time
     # !!!!! Maybe move this above
-    print(nrow(dat_prc))
+    nrow(dat_prc)
     dupe_time_rows <- which(
       dat_prc$id==c(NA,dat_prc$id[1:length(dat_prc$id)-1]) &
         dat_prc$t_end==c(NA,dat_prc$t_end[1:length(dat_prc$t_end)-1])
     )
     if (length(dupe_time_rows)>0) { dat_prc <- dat_prc[-dupe_time_rows,] }
-    print(nrow(dat_prc))
+    nrow(dat_prc)
     
     # Drop rows with DOB > t_start
     # !!!!! TO DO
@@ -333,9 +333,7 @@ if (cfg2$use_simulated_dataset) {
     # Create (scaled) baseline age variable
     # !!!!! Check this later; some with age -1 = -.01
     # Consider rounding w_2 as well (for memoising)
-    dat_prc %<>% dplyr::mutate(
-      w_2 = (t_start - dob) / 100
-    )
+    dat_prc %<>% dplyr::mutate(w_2 = (t_start-dob)/100)
     
     # DQA
     if (F) {
@@ -397,6 +395,7 @@ if (cfg2$use_simulated_dataset) {
         data = dat
       )
       summary(model)
+      
       # BEFORE REMOVING 90+ YEAR OLDS
       # n= 141817, number of events= 1721 
       # 
@@ -429,27 +428,27 @@ if (cfg2$use_simulated_dataset) {
       
       # > as.data.frame(dat2)[(nrow(dat2)-20):nrow(dat2),]
       # w_2 num_persontime num_deaths death_rate
-      # 80  0.90             60          7      0.117
-      # 81  0.91             40          7      0.175
-      # 82  0.92             31          6      0.194
-      # 83  0.93             27          3      0.111
-      # 84  0.94             19          3      0.158
-      # 85  0.95             15          2      0.133
-      # 86  0.96             12          1      0.083
-      # 87  0.97              9          2      0.222
-      # 88  0.98              7          3      0.429
-      # 89  0.99              6          1      0.167
-      # 90  1.00              4          1      0.250
-      # 91  1.01              3          0      0.000
-      # 92  1.02              4          0      0.000
-      # 93  1.03              3          0      0.000
-      # 94  1.04              2          0      0.000
-      # 95  1.05              2          0      0.000
-      # 96  1.06              2          1      0.500
-      # 97  1.07              1          0      0.000
-      # 98  1.08              1          0      0.000
-      # 99  1.09              1          0      0.000
-      # 100 1.10              1          0      0.000
+      # 59 0.69            485         18      0.037
+      # 60 0.70            455          9      0.020
+      # 61 0.71            443         17      0.038
+      # 62 0.72            416         20      0.048
+      # 63 0.73            387         20      0.052
+      # 64 0.74            370         26      0.070
+      # 65 0.75            329         15      0.046
+      # 66 0.76            317         20      0.063
+      # 67 0.77            291         22      0.076
+      # 68 0.78            269         16      0.059
+      # 69 0.79            248         12      0.048
+      # 70 0.80            218         15      0.069
+      # 71 0.81            180         13      0.072
+      # 72 0.82            159         12      0.075
+      # 73 0.83            138         19      0.138
+      # 74 0.84            116         11      0.095
+      # 75 0.85             98         10      0.102
+      # 76 0.86             87         14      0.161
+      # 77 0.87             65          4      0.062
+      # 78 0.88             60         12      0.200
+      # 79 0.89              6          3      0.500
       
     }
     
