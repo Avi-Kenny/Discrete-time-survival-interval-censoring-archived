@@ -138,3 +138,35 @@ chk <- function(num, msg="") {
   }
   print(str)
 }
+
+
+
+#' Create a natural cubic spline basis
+#' 
+#' @param x Numeric input
+#' @param i Index of spline column
+#' @param m Model version number; corresponds to cfg$model_version
+#' @param s Spline number; for cases in which models use multiple splines
+construct_basis <- function(m, s) {
+  
+  if ((m %in% c(9,10)) && s==1) {
+    
+    grid <- seq(0,1,0.001)
+    b <- Vectorize(function(x, i) {
+      splines::ns(x=x, knots=c(0.25,0.5,0.75), Boundary.knots=c(0,1))[i]
+    }, vectorize.args="x")
+    y <- matrix(NA, nrow=length(grid), ncol=4)
+    for (i in c(1:4)) { y[,i] <- sapply(grid, function(x) { b(x, i=i) }) }
+    rm(b)
+
+    return(function(x, i) {
+      rows <- unlist(lapply(x, function(x) { which.min(abs(x-grid)) } ))
+      return(y[rows,i])
+    })
+    
+  } else {
+    
+    stop("Invalid choices for m and/or s.")
+    
+  }
+}

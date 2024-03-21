@@ -61,19 +61,25 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL,
     # Convert parameter vector to a named list
     p <- as.numeric(par)
     if (model_version==0) {
-      params <- list(a_x=p[1], g_x=c(p[2],p[3]), a_y=p[4], g_y=c(p[5],p[6]), beta_x=p[7], beta_z=p[8], t_x=p[9], t_y=p[10], a_s=p[11], t_s=p[12], g_s=c(p[13],p[14]))
+      params <- list(a_x=p[1], g_x=p[2:3], a_y=p[4], g_y=p[5:6], beta_x=p[7], beta_z=p[8], t_x=p[9], t_y=p[10], a_s=p[11], t_s=p[12], g_s=p[13:14])
     } else if (model_version==1) {
       params <- list(a_x=p[1], a_y=p[2], beta_x=p[3], beta_z=p[4], a_s=p[5])
     } else if (model_version==2) {
       params <- list(a_x=p[1], a_y=p[2], beta_x=p[3], beta_z=p[4], a_s=p[5], g_x1=p[6], g_y1=p[7], g_s1=p[8])
     } else if (model_version %in% c(3,4)) {
-      params <- list(a_x=p[1], g_x=c(p[2],p[3]), a_y=p[4], g_y=c(p[5],p[6]), beta_x=p[7], beta_z=p[8], a_s=p[9], g_s=c(p[10],p[11]))
+      params <- list(a_x=p[1], g_x=p[2:3], a_y=p[4], g_y=p[5:6], beta_x=p[7], beta_z=p[8], a_s=p[9], g_s=p[10:11])
     } else if (model_version==5) {
-      params <- list(a_x=p[1], g_x=c(p[2],p[3]), a_y=p[4], g_y=c(p[5],p[6]), beta_x=p[7], beta_z=p[8], t_y=p[9], a_s=p[10], g_s=c(p[11],p[12]))
+      params <- list(a_x=p[1], g_x=p[2:3], a_y=p[4], g_y=p[5:6], beta_x=p[7], beta_z=p[8], t_y=p[9], a_s=p[10], g_s=p[11:12])
     } else if (model_version==6) {
-      params <- list(a_x=p[1], g_x=c(p[2],p[3]), a_y=p[4], g_y=c(p[5],p[6]), beta_x=p[7], beta_z=p[8], t_x=p[9], t_y=p[10], a_s=p[11], g_s=c(p[12],p[13]))
+      params <- list(a_x=p[1], g_x=p[2:3], a_y=p[4], g_y=p[5:6], beta_x=p[7], beta_z=p[8], t_x=p[9], t_y=p[10], a_s=p[11], g_s=p[12:13])
     } else if (model_version==7) {
-      params <- list(a_x=p[1], g_x=c(p[2],p[3]), a_y=p[4], g_y=c(p[5],p[6]), beta_x=p[7], beta_z=p[8], t_x=p[9], t_y=p[10], a_s=p[11], t_s=p[12], g_s=c(p[13],p[14]))
+      params <- list(a_x=p[1], g_x=p[2:3], a_y=p[4], g_y=p[5:6], beta_x=p[7], beta_z=p[8], t_x=p[9], t_y=p[10], a_s=p[11], t_s=p[12], g_s=p[13:14])
+    } else if (model_version==8) {
+      params <- list(a_x=p[1], g_x=p[2:3], a_y=p[4], g_y=p[5:8], beta_x=p[9], beta_z=p[10], t_x=p[11], t_y=p[12], a_s=p[13], t_s=p[14], g_s=p[15:16])
+    } else if (model_version==9) {
+      params <- list(a_x=p[1], g_x=p[2:3], a_y=p[4], g_y=p[5:9], beta_x=p[10], beta_z=p[11], t_x=p[12], t_y=p[13], a_s=p[14], t_s=p[15], g_s=p[16:17])
+    } else if (model_version==10) {
+      params <- list(beta_z=p[1], a_y=p[2], g_y=p[3:7], t_y=p[8])
     }
     
     lik_fn <- function(i) {
@@ -284,7 +290,7 @@ if (cfg$model_version==0) {
     }
   }
   
-} else if (cfg$model_version==7) {
+} else if (cfg$model_version %in% c(7,8,9)) {
   
   f_x <- function(x, x_prev, w, j, s, params) {
     if (s==0) {
@@ -299,6 +305,10 @@ if (cfg$model_version==0) {
       if (x==1) { return(prob) } else { return(1-prob) }
     }
   }
+  
+} else if (cfg$model_version==10) {
+  
+  f_x <- function(x, x_prev, w, j, s, params) { 1 }
   
 }
 
@@ -354,4 +364,39 @@ if (cfg$model_version==0) {
     if (y==1) { return(prob) } else { return(1-prob) }
   }
   
+} else if (cfg$model_version==8) {
+  
+  f_y <- function(y, x, w, z, j, params) {
+    prob <- exp2(
+      params$a_y + params$t_y*j + params$g_y[1]*w[1] + params$g_y[2]*w[2] +
+        params$g_y[3]*(w[2]^2) + params$g_y[4]*(w[2]^3) +
+        params$beta_x*x*(1-z) + params$beta_z*x*z
+    )
+    if (y==1) { return(prob) } else { return(1-prob) }
+  }
+  
+} else if (cfg$model_version==9) {
+  
+  b <- construct_basis(m=9, s=1)
+  f_y <- function(y, x, w, z, j, params) {
+    prob <- exp2(
+      params$a_y + params$t_y*j + params$g_y[1]*w[1] +
+        params$g_y[2]*b(w[2],1) + params$g_y[3]*b(w[2],2) + params$g_y[4]*b(w[2],3) +
+        params$g_y[5]*b(w[2],4) + params$beta_x*x*(1-z) + params$beta_z*x*z
+    )
+    if (y==1) { return(prob) } else { return(1-prob) }
+  }
+  
+} else if (cfg$model_version==10) {
+  
+  b <- construct_basis(m=10, s=1)
+  f_y <- function(y, x, w, z, j, params) {
+    prob <- exp2(
+      params$beta_z*z + params$a_y + params$g_y[1]*w[1] +
+        params$g_y[2]*b(w[2],1) + params$g_y[3]*b(w[2],2) +
+        params$g_y[4]*b(w[2],3) + params$g_y[5]*b(w[2],4) + params$t_y*j
+    )
+    if (y==1) { return(prob) } else { return(1-prob) }
+  }
+
 }

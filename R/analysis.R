@@ -159,7 +159,7 @@ if (cfg2$use_simulated_dataset) {
     set.seed(1)
     dat_prc <- dat_raw <- read.csv("../Data/data_raw_full.csv")
     iintids <- unique(dat_prc$iintid)
-    # samp_size <- 10000
+    # samp_size <- 20000
     samp_size <- as.integer(Sys.getenv("avi_samp_size")) # !!!!!
     iintids_sample <- sample(iintids, size=samp_size)
     dat_prc %<>% dplyr::filter(iintid %in% iintids_sample)
@@ -366,6 +366,32 @@ if (cfg2$use_simulated_dataset) {
     
     rm(dat_raw,dat_prc)
     
+    # Check estimates for model 10 against Cox model estimates
+    # !!!!! Move this code elsewhere
+    if (F) {
+      
+      dat$j <- dat$t_end/10 # Create calendar time variable
+      dat$j2 <- dat$t_end # Create calendar time variable
+      dat$w_2b <- dat$w_2+0.01 # Create time variable
+
+      library(survival)
+      model <- coxph(
+        formula = Surv(w_2, w_2b, y)~z+j2+w_1,
+        data = dat
+      )
+      summary(model)
+      bh <- survival::basehaz(model, centered=FALSE)
+      
+      ggplot(bh, aes(x=time, y=hazard)) + geom_line()
+      
+      # Death rates by age
+      dat2 <- dat %>% dplyr::group_by(w_2) %>% dplyr::summarize(
+        num_deaths = sum(y),
+        death_rate = mean(y)
+      )
+      
+    }
+    
   } else {
     
     dat <- readRDS("dat.rds")
@@ -452,7 +478,14 @@ if (cfg2$run_analysis) {
   } else if (cfg$model_version==6) {
     par_init <- c(a_x=-4.6185, g_x1=-1.3117, g_x2=-0.3883, a_y=-6.1581, g_y1=0.3794, g_y2=4.4762, beta_x=1.8497, beta_z=1.708, t_x=0, t_y=-0.45141, a_s=-2.495, g_s1=-0.0177, g_s2=1.684)
   } else if (cfg$model_version==7) {
-    par_init <- c(a_x=-5.6023, g_x1=-0.5404, g_x2=0.6959, a_y=-5.6608, g_y1=0.3187, g_y2=4.2651, beta_x=1.4113, beta_z=1.4892, t_x=0.059, t_y=-0.6812, a_s=-2.1738, t_s=0.2964, g_s1=-0.5045, g_s2=0.7236)
+    par_init <- c(a_x=-6.2967, g_x1=-0.1535, g_x2=0.9796, a_y=-5.5786, g_y1=0.3278, g_y2=4.2046, beta_x=1.401, beta_z=1.3177, t_x=0.5343, t_y=-0.7198, a_s=-2.3111, t_s=0.4245, g_s1=-0.5649, g_s2=0.6198)
+  } else if (cfg$model_version==8) {
+    par_init <- c(a_x=-3.5607, g_x1=-0.3244, g_x2=-0.2809, a_y=-5.7446, g_y1=0.3544, g_y2=4.4057, g_y3=0, g_y4=0, beta_x=1.8096, beta_z=1.8153, t_x=-0.786, t_y=-0.7826, a_s=-2.87, t_s=0.6349, g_s1=-0.3768, g_s2=0.6409)
+  } else if (cfg$model_version==9) {
+    par_init <- c(a_x=-3.5607, g_x1=-0.3244, g_x2=-0.2809, a_y=-5.7446, g_y1=0.3544, g_y2=0, g_y3=0, g_y4=0, g_y5=0, beta_x=1.8096, beta_z=1.8153, t_x=-0.786, t_y=-0.7826, a_s=-2.87, t_s=0.6349, g_s1=-0.3768, g_s2=0.6409)
+  } else if (cfg$model_version==10) {
+    # par_init <- c(beta_z=0.8172, a_y=-3.3497, g_y1=0.2217, g_y2=0.6883, g_y3=0.7507, g_y4=0.0045, g_y5=3.8865, t_y=-0.6786)
+    par_init <- c(beta_z=0.3, a_y=-9.4955, g_y1=0.3209, g_y2=5.7549, g_y3=5.2759, g_y4=13.7284, g_y5=5.2979, t_y=-0.6637)
   }
   
   # par_true <- c(
@@ -530,18 +563,18 @@ if (cfg2$run_analysis) {
   .t_end <- Sys.time()
   print("Total Runtime:")
   print(.t_end-.t_start)
-  saveRDS(
-    list(
-      runtime = .t_end - .t_start,
-      n_cores = n_cores,
-      avi_maxit = avi_maxit,
-      avi_reltol = avi_reltol,
-      avi_samp_size = samp_size,
-      avi_r = avi_r,
-      res = res
-    ),
-    file = paste0("res_", runif(1), ".rds")
-  )
+  # saveRDS(
+  #   list(
+  #     runtime = .t_end - .t_start,
+  #     n_cores = n_cores,
+  #     avi_maxit = avi_maxit,
+  #     avi_reltol = avi_reltol,
+  #     avi_samp_size = samp_size,
+  #     avi_r = avi_r,
+  #     res = res
+  #   ),
+  #   file = paste0("res_", runif(1), ".rds")
+  # )
   
 }
 

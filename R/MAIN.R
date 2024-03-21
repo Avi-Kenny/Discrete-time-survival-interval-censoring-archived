@@ -10,7 +10,7 @@ cfg <- list(
   # sim_n_cores = 50,
   sim_n_cores = as.integer(Sys.getenv("SLURM_CPUS_PER_TASK")),
   sim_stop_at_error = F,
-  model_version = 7
+  model_version = 10
 )
 
 # Secondary config
@@ -19,10 +19,10 @@ source("R/config.R", local=T)
 # Load SimEngine + functions
 {
   library(SimEngine)
+  source("R/helpers.R", local=T)
   source("R/one_simulation.R", local=T)
   source("R/generate_data.R", local=T)
   source("R/likelihood_miss.R", local=T)
-  source("R/helpers.R", local=T)
 }
 
 if (cfg$run_analysis) {
