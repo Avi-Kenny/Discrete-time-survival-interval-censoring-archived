@@ -207,6 +207,22 @@ if (cfg2$use_simulated_dataset) {
     dat_prc %<>% dplyr::filter(age_end>=13)
     nrow(dat_prc)
     
+    # Filter out adults with tests after age 90
+    # !!!!! Temporary
+    nrow(dat_prc)
+    adults90_with_tests <- dplyr::filter(
+      dat_prc, age_end>90 & resultdate!=""
+    )$iintid
+    if (length(adults90_with_tests)>0) {
+      dat_prc %<>% dplyr::filter(!(iintid %in% adults90_with_tests))
+    }
+    nrow(dat_prc)
+    
+    # Remove all data after 90th birthday
+    nrow(dat_prc)
+    dat_prc %<>% dplyr::filter(age_end<=90)
+    nrow(dat_prc)
+    
     # Filter out records with a negative test after a positive test
     print(nrow(dat_prc))
     dat_prc %<>% dplyr::filter(
@@ -263,6 +279,7 @@ if (cfg2$use_simulated_dataset) {
     # attr(dat_prc, "case") <- dat_grp$case
     
     # Drop rows with duplicate time
+    # !!!!! Maybe move this above
     print(nrow(dat_prc))
     dupe_time_rows <- which(
       dat_prc$id==c(NA,dat_prc$id[1:length(dat_prc$id)-1]) &
@@ -278,6 +295,7 @@ if (cfg2$use_simulated_dataset) {
     delta <- rep(NA, nrow(dat_prc))
     for (id in c(1:attr(dat_prc, "n"))) {
       rows_i <- which(dat_prc$id==id)
+      # print(paste("id:", id)) # For debugging
       delta_i <- g_delta(
         case = dat_grp$case[id],
         s_i = dat_grp$s_i[id],
@@ -371,24 +389,67 @@ if (cfg2$use_simulated_dataset) {
     if (F) {
       
       dat$j <- dat$t_end/10 # Create calendar time variable
-      dat$j2 <- dat$t_end # Create calendar time variable
       dat$w_2b <- dat$w_2+0.01 # Create time variable
 
       library(survival)
       model <- coxph(
-        formula = Surv(w_2, w_2b, y)~z+j2+w_1,
+        formula = Surv(w_2, w_2b, y)~z+j+w_1,
         data = dat
       )
       summary(model)
+      # BEFORE REMOVING 90+ YEAR OLDS
+      # n= 141817, number of events= 1721 
+      # 
+      # coef exp(coef) se(coef)       z Pr(>|z|)    
+      # z    0.45797   1.58086  0.09468   4.837 1.32e-06 ***
+      # j   -0.61830   0.53886  0.03810 -16.228  < 2e-16 ***
+      # w_1  0.34421   1.41088  0.04923   6.992 2.72e-12 ***
+      # ---
+      # 
+      # AFTER REMOVING 90+ YEAR OLDS
+      # n= 141134, number of events= 1681 
+      # 
+      # coef exp(coef) se(coef)       z Pr(>|z|)    
+      # z    0.47341   1.60546  0.09483   4.992 5.97e-07 ***
+      # j   -0.64619   0.52404  0.03859 -16.746  < 2e-16 ***
+      # w_1  0.34264   1.40866  0.04971   6.893 5.46e-12 ***
+      # ---
+
       bh <- survival::basehaz(model, centered=FALSE)
       
       ggplot(bh, aes(x=time, y=hazard)) + geom_line()
       
       # Death rates by age
       dat2 <- dat %>% dplyr::group_by(w_2) %>% dplyr::summarize(
+        num_persontime = n(),
         num_deaths = sum(y),
-        death_rate = mean(y)
+        death_rate = round(mean(y),3)
       )
+      ggplot(dat2, aes(x=w_2, y=death_rate)) + geom_point()
+      
+      # > as.data.frame(dat2)[(nrow(dat2)-20):nrow(dat2),]
+      # w_2 num_persontime num_deaths death_rate
+      # 80  0.90             60          7      0.117
+      # 81  0.91             40          7      0.175
+      # 82  0.92             31          6      0.194
+      # 83  0.93             27          3      0.111
+      # 84  0.94             19          3      0.158
+      # 85  0.95             15          2      0.133
+      # 86  0.96             12          1      0.083
+      # 87  0.97              9          2      0.222
+      # 88  0.98              7          3      0.429
+      # 89  0.99              6          1      0.167
+      # 90  1.00              4          1      0.250
+      # 91  1.01              3          0      0.000
+      # 92  1.02              4          0      0.000
+      # 93  1.03              3          0      0.000
+      # 94  1.04              2          0      0.000
+      # 95  1.05              2          0      0.000
+      # 96  1.06              2          1      0.500
+      # 97  1.07              1          0      0.000
+      # 98  1.08              1          0      0.000
+      # 99  1.09              1          0      0.000
+      # 100 1.10              1          0      0.000
       
     }
     
