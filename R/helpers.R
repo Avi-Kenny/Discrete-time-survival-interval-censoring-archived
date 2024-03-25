@@ -34,57 +34,47 @@ exp2 <- (function() {
 
 #' Compute "case" indicator variables
 #' 
-#' @param x Vector of seroconversion indicators for one individual
-#' @param v Vector of testing indicators for one individual
+#' @param T_minus Calendar time of first negative test (0 = no NEG tests)
+#' @param T_plus Calendar time of first positive test (0 = no POS tests)
 #' @return An integer (1-4) representing the case, as follows:
 #'     - Case 1: No testing data
 #'     - Case 2: Only NEG tests
 #'     - Case 3: NEG test then POS test
 #'     - Case 4: first test POS
-case <- function(x,v, warn=F) {
-  
-  case_i <- rep(NA, 4)
-  sum_v <- sum(v)
-  sum_vx <- sum(v*x)
-  sum_v1x <- sum(v*(1-x))
-  case_i[1] <- In(sum_v==0)
-  case_i[2] <- In(sum_v>0 & sum_vx==0)
-  case_i[3] <- In(sum_v>0 & sum_v1x>0 & sum_vx==1)
-  case_i[4] <- In(sum_v==1 & sum_vx==1)
-  if (sum(case_i)==0) {
-    if (warn) { warning("No applicable case") }
-    return(9)
-  }
-  if (sum(case_i)>1) {
-    if (warn) { warning("Multiple cases matched") }
-    return(9)
-  }
-  return(which(case_i==1))
-  
+case <- function(T_minus, T_plus) {
+  return(dplyr::case_when(
+    T_minus==0 & T_plus==0 ~ 1,
+    T_minus!=0 & T_plus==0 ~ 2,
+    T_minus!=0 & T_plus!=0 ~ 3,
+    T_minus==0 & T_plus!=0 ~ 4,
+    TRUE ~ 999
+  ))
 }
 
 
 
 #' Calculate time(s) of most recent negative test and/or positive test
 #' 
-#' @param case Case 
 #' @param J Maximum time
 #' @param x Vector of seroconversion indicators for one individual
 #' @param v Vector of testing indicators for one individual
-#' @return A list containing T_minus and T_plus
-T_plusminus <- function(case, s_i, t_i, x, v) {
+#' @return A list containing T_minus and T_plus (0 = no NEG/POS tests)
+T_plusminus <- function(s_i, t_i, x, v) {
   
   len <- t_i-s_i+1
   if (!length(v)==len || !length(x)==len) { stop("Incorrect vector lengths.") }
-
-  if (case %in% c(2,3)) {
+  
+  some_tests_neg <- In(sum(v*(1-x))>0)
+  some_tests_pos <- In(sum(v*x)>0)
+  
+  if (some_tests_neg) {
     # Time of most recent negative test
     T_minus_index <- which.max(c(s_i:t_i)*v*(1-x))
     T_minus <- c(s_i:t_i)[T_minus_index]
   } else {
     T_minus <- 0
   }
-  if (case %in% c(3,4)) {
+  if (some_tests_pos) {
     # Time of positive test
     T_plus_index <- which.max(v*x)
     T_plus <- c(s_i:t_i)[T_plus_index]

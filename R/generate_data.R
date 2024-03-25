@@ -114,11 +114,11 @@ generate_data <- function(n, max_time, params) {
     # Need to subtract one from j since it is incremented at the end of the loop
     j <- j-1
 
-    # Calculate case indicators
-    case_i <- case(x,v)
-    
     # Calculate time(s) of most recent negative test and/or positive test
-    T_pm <- T_plusminus(case=case_i, s_i=s_i_, t_i=j+s_i_-1, x=x, v=v)
+    T_pm <- T_plusminus(s_i=s_i_, t_i=j+s_i_-1, x=x, v=v)
+    
+    # # Calculate case indicators
+    case_i <- case(T_pm$T_minus, T_pm$T_plus)
 
     # Calculate Delta
     d <- g_delta(case=case_i, s_i=s_i_, t_i=s_i_+j-1, T_minus=T_pm$T_minus,

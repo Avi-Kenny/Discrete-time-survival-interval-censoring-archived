@@ -31,8 +31,8 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL,
     d$X_i_set <- list()
     for (j in c(1:(d$t_i-d$s_i+2))) {
       x_ <- c(rep(0,d$t_i-d$s_i-j+2), rep(1,j-1))
-      case_i_ <- case(x_,d$v)
-      T_pm <- T_plusminus(case=case_i_, s_i=d$s_i, t_i=d$t_i, x=x_, v=d$v)
+      T_pm <- T_plusminus(s_i=d$s_i, t_i=d$t_i, x=x_, v=d$v)
+      case_i_ <- case(T_pm$T_minus, T_pm$T_plus)
       if (case_i_!=9 &&
           all(d$u==x_*d$d) &&
           all(d$d==g_delta(case=case_i_, s_i=d$s_i, t_i=d$t_i,
@@ -89,7 +89,27 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL,
       
       # Compute the likelihood for individual i
       w <- t(d$w)
-      f2 <- sum(unlist(lapply(d$X_i_set, function(x) {
+      
+      # Original code
+      # f2 <- sum(unlist(lapply(d$X_i_set, function(x) {
+      #   x_prev <- c(0,x[1:(length(x)-1)])
+      #   prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
+      #     # Note: here, j is the index of time within an individual rather than
+      #     #       a calendar time index
+      #     w_ij <- as.numeric(w[,j])
+      #     # if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
+      #     return(
+      #       f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
+      #           s=In(d$cal_time[j]==d$s_i), params=params) * # Maybe create this indicator variable (vector) earlier
+      #         f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], j=d$cal_time_sc[j],
+      #             params=params)
+      #     )
+      #   })))
+      # })))
+      
+      # Code modified for model 10
+      # Doesn't work; beta_z estimate 0.638
+      f2 <- mean(unlist(lapply(d$X_i_set, function(x) {
         x_prev <- c(0,x[1:(length(x)-1)])
         prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
           # Note: here, j is the index of time within an individual rather than
@@ -104,7 +124,59 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL,
           )
         })))
       })))
-      if (is.nan(f2) || is.nan(f2)) {
+      
+      # !!!!!
+      if (F) {
+        
+        # Doesn't work; beta_z estimate 0.638
+        mean(unlist(lapply(d$X_i_set, function(x) {
+          x_prev <- c(0,x[1:(length(x)-1)])
+          prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
+            # Note: here, j is the index of time within an individual rather than
+            #       a calendar time index
+            w_ij <- as.numeric(w[,j])
+            # if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
+            return(
+              f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
+                  s=In(d$cal_time[j]==d$s_i), params=params) * # Maybe create this indicator variable (vector) earlier
+                f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], j=d$cal_time_sc[j],
+                    params=params)
+            )
+          })))
+        })))
+        
+        # Works
+        prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
+          # Note: here, j is the index of time within an individual rather than
+          #       a calendar time index
+          w_ij <- as.numeric(w[,j])
+          # if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
+          return(
+            f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
+                s=In(d$cal_time[j]==d$s_i), params=params) * # Maybe create this indicator variable (vector) earlier
+              f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], j=d$cal_time_sc[j],
+                  params=params)
+          )
+        })))
+        
+      }
+      
+      # # Code modified for model 10; alternate (working?)
+      # f2 <- prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
+      #   # Note: here, j is the index of time within an individual rather than
+      #   #       a calendar time index
+      #   w_ij <- as.numeric(w[,j])
+      #   # if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
+      #   return(
+      #     f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
+      #         s=In(d$cal_time[j]==d$s_i), params=params) * # Maybe create this indicator variable (vector) earlier
+      #       f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], j=d$cal_time_sc[j],
+      #           params=params)
+      #   )
+      # })))
+      
+      if (is.na(f2) || is.nan(f2)) {
+        f2 <- 1e-10 # !!!!! TEMPORARY
         # browser()
       } # Debugging
       if (f2<=0) {
