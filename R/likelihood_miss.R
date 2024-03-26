@@ -91,25 +91,7 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL,
       w <- t(d$w)
       
       # Original code
-      # f2 <- sum(unlist(lapply(d$X_i_set, function(x) {
-      #   x_prev <- c(0,x[1:(length(x)-1)])
-      #   prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
-      #     # Note: here, j is the index of time within an individual rather than
-      #     #       a calendar time index
-      #     w_ij <- as.numeric(w[,j])
-      #     # if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
-      #     return(
-      #       f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
-      #           s=In(d$cal_time[j]==d$s_i), params=params) * # Maybe create this indicator variable (vector) earlier
-      #         f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], j=d$cal_time_sc[j],
-      #             params=params)
-      #     )
-      #   })))
-      # })))
-      
-      # Code modified for model 10
-      # Doesn't work; beta_z estimate 0.638
-      f2 <- mean(unlist(lapply(d$X_i_set, function(x) {
+      f2 <- sum(unlist(lapply(d$X_i_set, function(x) {
         x_prev <- c(0,x[1:(length(x)-1)])
         prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
           # Note: here, j is the index of time within an individual rather than
@@ -124,6 +106,24 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL,
           )
         })))
       })))
+      
+      # # Code modified for model 10
+      # # Doesn't work; beta_z estimate 0.638
+      # f2 <- mean(unlist(lapply(d$X_i_set, function(x) {
+      #   x_prev <- c(0,x[1:(length(x)-1)])
+      #   prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
+      #     # Note: here, j is the index of time within an individual rather than
+      #     #       a calendar time index
+      #     w_ij <- as.numeric(w[,j])
+      #     # if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
+      #     return(
+      #       f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
+      #           s=In(d$cal_time[j]==d$s_i), params=params) * # Maybe create this indicator variable (vector) earlier
+      #         f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], j=d$cal_time_sc[j],
+      #             params=params)
+      #     )
+      #   })))
+      # })))
       
       # !!!!!
       if (F) {
@@ -176,7 +176,6 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL,
       # })))
       
       if (is.na(f2) || is.nan(f2)) {
-        f2 <- 1e-10 # !!!!! TEMPORARY
         # browser()
       } # Debugging
       if (f2<=0) {

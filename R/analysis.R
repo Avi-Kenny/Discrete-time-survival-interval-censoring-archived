@@ -399,7 +399,7 @@ if (cfg2$use_simulated_dataset) {
       # BEFORE REMOVING 90+ YEAR OLDS
       # n= 141817, number of events= 1721 
       # 
-      # coef exp(coef) se(coef)       z Pr(>|z|)    
+      #         coef exp(coef) se(coef)       z Pr(>|z|)    
       # z    0.45797   1.58086  0.09468   4.837 1.32e-06 ***
       # j   -0.61830   0.53886  0.03810 -16.228  < 2e-16 ***
       # w_1  0.34421   1.41088  0.04923   6.992 2.72e-12 ***
@@ -408,7 +408,7 @@ if (cfg2$use_simulated_dataset) {
       # AFTER REMOVING 90+ YEAR OLDS
       # n= 141134, number of events= 1681 
       # 
-      # coef exp(coef) se(coef)       z Pr(>|z|)    
+      #         coef exp(coef) se(coef)       z Pr(>|z|)    
       # z    0.47341   1.60546  0.09483   4.992 5.97e-07 ***
       # j   -0.64619   0.52404  0.03859 -16.746  < 2e-16 ***
       # w_1  0.34264   1.40866  0.04971   6.893 5.46e-12 ***
@@ -542,9 +542,8 @@ if (cfg2$run_analysis) {
   } else if (cfg$model_version==8) {
     par_init <- c(a_x=-3.5607, g_x1=-0.3244, g_x2=-0.2809, a_y=-5.7446, g_y1=0.3544, g_y2=4.4057, g_y3=0, g_y4=0, beta_x=1.8096, beta_z=1.8153, t_x=-0.786, t_y=-0.7826, a_s=-2.87, t_s=0.6349, g_s1=-0.3768, g_s2=0.6409)
   } else if (cfg$model_version==9) {
-    par_init <- c(a_x=-3.5607, g_x1=-0.3244, g_x2=-0.2809, a_y=-5.7446, g_y1=0.3544, g_y2=0, g_y3=0, g_y4=0, g_y5=0, beta_x=1.8096, beta_z=1.8153, t_x=-0.786, t_y=-0.7826, a_s=-2.87, t_s=0.6349, g_s1=-0.3768, g_s2=0.6409)
+    par_init <- c(a_x=-2.2726, g_x1=-1.1307, g_x2=-2.875, a_y=-3.3497, g_y1=0.2217, g_y2=0.6883, g_y3=0.7507, g_y4=0.0045, g_y5=3.8865, beta_x=1.376, beta_z=0.8172, t_x=-1.3318, t_y=-0.6786, a_s=-3.273, t_s=0.7709, g_s1=-0.4208, g_s2=0.9081)
   } else if (cfg$model_version==10) {
-    # par_init <- c(beta_z=0.8172, a_y=-3.3497, g_y1=0.2217, g_y2=0.6883, g_y3=0.7507, g_y4=0.0045, g_y5=3.8865, t_y=-0.6786)
     par_init <- c(beta_z=0.3, a_y=-9.4955, g_y1=0.3209, g_y2=5.7549, g_y3=5.2759, g_y4=13.7284, g_y5=5.2979, t_y=-0.6637)
   }
   
