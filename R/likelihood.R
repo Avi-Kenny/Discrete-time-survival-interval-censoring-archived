@@ -89,13 +89,11 @@ construct_negloglik <- function(
       
       # Extract data for individual i
       d <- dat_objs[[i]]
-      
-      # Compute the likelihood for individual i
       w <- t(d$w)
       
-      # Original code
+      # Compute the likelihood for individual i
       f2 <- sum(unlist(lapply(d$X_i_set, function(x) {
-        x_prev <- c(0,x[1:(length(x)-1)])
+        x_prev <- c(0,x[1:(length(x)-1)]) # !!!!! This can be precomputed
         prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
           # Note: here, j is the index of time within an individual rather than
           #       a calendar time index
@@ -110,8 +108,7 @@ construct_negloglik <- function(
         })))
       })))
       
-      # # Code modified for model 10
-      # # Doesn't work; beta_z estimate 0.638
+      # # Uncomment this code to run model 10 (and comment out above)
       # f2 <- mean(unlist(lapply(d$X_i_set, function(x) {
       #   x_prev <- c(0,x[1:(length(x)-1)])
       #   prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
@@ -128,59 +125,9 @@ construct_negloglik <- function(
       #   })))
       # })))
       
-      # !!!!!
-      if (F) {
-        
-        # Doesn't work; beta_z estimate 0.638
-        mean(unlist(lapply(d$X_i_set, function(x) {
-          x_prev <- c(0,x[1:(length(x)-1)])
-          prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
-            # Note: here, j is the index of time within an individual rather than
-            #       a calendar time index
-            w_ij <- as.numeric(w[,j])
-            # if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
-            return(
-              f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
-                  s=In(d$cal_time[j]==d$s_i), params=params) * # Maybe create this indicator variable (vector) earlier
-                f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], j=d$cal_time_sc[j],
-                    params=params)
-            )
-          })))
-        })))
-        
-        # Works
-        prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
-          # Note: here, j is the index of time within an individual rather than
-          #       a calendar time index
-          w_ij <- as.numeric(w[,j])
-          # if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
-          return(
-            f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
-                s=In(d$cal_time[j]==d$s_i), params=params) * # Maybe create this indicator variable (vector) earlier
-              f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], j=d$cal_time_sc[j],
-                  params=params)
-          )
-        })))
-        
-      }
-      
-      # # Code modified for model 10; alternate (working?)
-      # f2 <- prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
-      #   # Note: here, j is the index of time within an individual rather than
-      #   #       a calendar time index
-      #   w_ij <- as.numeric(w[,j])
-      #   # if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
-      #   return(
-      #     f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
-      #         s=In(d$cal_time[j]==d$s_i), params=params) * # Maybe create this indicator variable (vector) earlier
-      #       f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], j=d$cal_time_sc[j],
-      #           params=params)
-      #   )
-      # })))
-      
-      if (is.na(f2) || is.nan(f2)) {
-        # browser()
-      } # Debugging
+      # if (is.na(f2) || is.nan(f2)) {
+      #   browser()
+      # } # Debugging
       if (f2<=0) {
         f2 <- 1e-10
         # warning("Likelihood of zero")
