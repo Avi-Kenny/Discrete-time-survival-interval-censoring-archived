@@ -137,26 +137,40 @@ chk <- function(num, msg="") {
 #' @param i Index of spline column
 #' @param m Model version number; corresponds to cfg$model_version
 #' @param s Spline number; for cases in which models use multiple splines
-construct_basis <- function(m, s) {
+construct_basis <- function(which) {
   
-  if ((m %in% c(9,10)) && s==1) {
+  if (which=="age (0-100), 4DF") {
     
     grid <- seq(0,1,0.001)
+    k <- c(0,0.25,0.5,0.75,1)
     b <- Vectorize(function(x, i) {
-      splines::ns(x=x, knots=c(0.25,0.5,0.75), Boundary.knots=c(0,1))[i]
+      splines::ns(x=x, knots=k[2:4], Boundary.knots=k[c(1,5)])[i]
     }, vectorize.args="x")
     y <- matrix(NA, nrow=length(grid), ncol=4)
     for (i in c(1:4)) { y[,i] <- sapply(grid, function(x) { b(x, i=i) }) }
     rm(b)
-
+    
     return(function(x, i) {
       rows <- unlist(lapply(x, function(x) { which.min(abs(x-grid)) } ))
       return(y[rows,i])
     })
     
-  } else {
+  } else if (which=="age (13-90), 4DF") {
     
-    stop("Invalid choices for m and/or s.")
+    grid <- seq(0.13,0.90,0.001)
+    k <- seq(0.13,0.90, length.out=5)
+    b <- Vectorize(function(x, i) {
+      splines::ns(x=x, knots=k[2:4], Boundary.knots=k[c(1,5)])[i]
+    }, vectorize.args="x")
+    y <- matrix(NA, nrow=length(grid), ncol=4)
+    for (i in c(1:4)) { y[,i] <- sapply(grid, function(x) { b(x, i=i) }) }
+    rm(b)
+    
+    return(function(x, i) {
+      rows <- unlist(lapply(x, function(x) { which.min(abs(x-grid)) } ))
+      return(y[rows,i])
+    })
     
   }
+  
 }

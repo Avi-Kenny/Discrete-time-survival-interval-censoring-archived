@@ -81,7 +81,7 @@ construct_negloglik <- function(
       params <- list(a_x=p[1], g_x=p[2:3], a_y=p[4], g_y=p[5:9], beta_x=p[10], beta_z=p[11], t_x=p[12], t_y=p[13], a_s=p[14], t_s=p[15], g_s=p[16:17])
     } else if (model_version==10) {
       params <- list(beta_z=p[1], a_y=p[2], g_y=p[3:7], t_y=p[8])
-    } else if (model_version==11) {
+    } else if (model_version %in% c(11,12)) {
       params <- list(a_x=p[1], g_x=p[2:6], t_x=p[7], a_s=p[8], g_s=p[9:10], t_s=p[11], beta_x=p[12], beta_z=p[13], a_y=p[14], g_y=p[15:19], t_y=p[20])
     }
     
@@ -386,7 +386,7 @@ if (cfg$model_version==0) {
   
 } else if (cfg$model_version==11) {
   
-  b <- construct_basis(m=9, s=1)
+  b <- construct_basis("age (0-100), 4DF")
   f_x <- function(x, x_prev, w, j, s, params) {
     if (s==0) {
       if (x==1 && x_prev==1) {
@@ -405,14 +405,25 @@ if (cfg$model_version==0) {
     }
   }
   
-  f_y <- function(y, x, w, z, j, params) {
-    prob <- exp2(
-      params$a_y + params$t_y*j + params$g_y[1]*w[1] +
-        params$g_y[2]*b(w[2],1) + params$g_y[3]*b(w[2],2) +
-        params$g_y[4]*b(w[2],3) + params$g_y[5]*b(w[2],4) +
-        params$beta_x*x*(1-z) + params$beta_z*x*z
-    )
-    if (y==1) { return(prob) } else { return(1-prob) }
+} else if (cfg$model_version==12) {
+  
+  b <- construct_basis("age (13-90), 4DF")
+  f_x <- function(x, x_prev, w, j, s, params) {
+    if (s==0) {
+      if (x==1 && x_prev==1) {
+        return(1)
+      } else {
+        prob <- exp2(
+          params$a_x + params$t_x*j + params$g_x[1]*w[1] +
+            params$g_x[2]*b(w[2],1) + params$g_x[3]*b(w[2],2) +
+            params$g_x[4]*b(w[2],3) + params$g_x[5]*b(w[2],4)
+        )
+        if (x==1) { return(prob) } else { return(1-prob) }
+      }
+    } else {
+      prob <- exp2(params$a_s + params$t_s*j + sum(params$g_s*w))
+      if (x==1) { return(prob) } else { return(1-prob) }
+    }
   }
   
 }
@@ -494,7 +505,7 @@ if (cfg$model_version==0) {
   
 } else if (cfg$model_version %in% c(9,11)) {
   
-  b <- construct_basis(m=9, s=1)
+  b <- construct_basis("age (0-100), 4DF")
   f_y <- function(y, x, w, z, j, params) {
     prob <- exp2(
       params$a_y + params$t_y*j + params$g_y[1]*w[1] +
@@ -507,7 +518,7 @@ if (cfg$model_version==0) {
   
 } else if (cfg$model_version==10) {
   
-  b <- construct_basis(m=10, s=1)
+  b <- construct_basis("age (0-100), 4DF")
   f_y <- function(y, x, w, z, j, params) {
     prob <- exp2(
       params$beta_z*z + params$a_y + params$g_y[1]*w[1] +
@@ -517,4 +528,16 @@ if (cfg$model_version==0) {
     if (y==1) { return(prob) } else { return(1-prob) }
   }
 
+} else if (cfg$model_version==12) {
+  
+  b <- construct_basis("age (13-90), 4DF")
+  f_y <- function(y, x, w, z, j, params) {
+    prob <- exp2(
+      params$beta_z*z + params$a_y + params$g_y[1]*w[1] +
+        params$g_y[2]*b(w[2],1) + params$g_y[3]*b(w[2],2) +
+        params$g_y[4]*b(w[2],3) + params$g_y[5]*b(w[2],4) + params$t_y*j
+    )
+    if (y==1) { return(prob) } else { return(1-prob) }
+  }
+  
 }

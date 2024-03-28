@@ -245,7 +245,7 @@ m <- 11
 
 # Construct spline basis
 if (m==9) {
-  b <- construct_basis(m=9, s=1)
+  b <- construct_basis("age (0-100), 4DF")
 }
 
 # Seroconversion prob as a function of age
