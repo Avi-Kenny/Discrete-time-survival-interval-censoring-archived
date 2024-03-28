@@ -159,8 +159,8 @@ if (cfg2$use_simulated_dataset) {
     set.seed(1)
     dat_prc <- dat_raw <- read.csv("../Data/data_raw_full.csv")
     iintids <- unique(dat_prc$iintid)
-    # samp_size <- 20000
-    samp_size <- as.integer(Sys.getenv("avi_samp_size")) # !!!!!
+    samp_size <- 20000
+    # samp_size <- as.integer(Sys.getenv("avi_samp_size")) # !!!!!
     iintids_sample <- sample(iintids, size=samp_size)
     dat_prc %<>% dplyr::filter(iintid %in% iintids_sample)
     
@@ -426,30 +426,6 @@ if (cfg2$use_simulated_dataset) {
       )
       ggplot(dat2, aes(x=w_2, y=death_rate)) + geom_point()
       
-      # > as.data.frame(dat2)[(nrow(dat2)-20):nrow(dat2),]
-      # w_2 num_persontime num_deaths death_rate
-      # 59 0.69            485         18      0.037
-      # 60 0.70            455          9      0.020
-      # 61 0.71            443         17      0.038
-      # 62 0.72            416         20      0.048
-      # 63 0.73            387         20      0.052
-      # 64 0.74            370         26      0.070
-      # 65 0.75            329         15      0.046
-      # 66 0.76            317         20      0.063
-      # 67 0.77            291         22      0.076
-      # 68 0.78            269         16      0.059
-      # 69 0.79            248         12      0.048
-      # 70 0.80            218         15      0.069
-      # 71 0.81            180         13      0.072
-      # 72 0.82            159         12      0.075
-      # 73 0.83            138         19      0.138
-      # 74 0.84            116         11      0.095
-      # 75 0.85             98         10      0.102
-      # 76 0.86             87         14      0.161
-      # 77 0.87             65          4      0.062
-      # 78 0.88             60         12      0.200
-      # 79 0.89              6          3      0.500
-      
     }
     
   } else {
@@ -542,9 +518,11 @@ if (cfg2$run_analysis) {
   } else if (cfg$model_version==8) {
     par_init <- c(a_x=-3.5607, g_x1=-0.3244, g_x2=-0.2809, a_y=-5.7446, g_y1=0.3544, g_y2=4.4057, g_y3=0, g_y4=0, beta_x=1.8096, beta_z=1.8153, t_x=-0.786, t_y=-0.7826, a_s=-2.87, t_s=0.6349, g_s1=-0.3768, g_s2=0.6409)
   } else if (cfg$model_version==9) {
-    par_init <- c(a_x=-2.2726, g_x1=-1.1307, g_x2=-2.875, a_y=-3.3497, g_y1=0.2217, g_y2=0.6883, g_y3=0.7507, g_y4=0.0045, g_y5=3.8865, beta_x=1.376, beta_z=0.8172, t_x=-1.3318, t_y=-0.6786, a_s=-3.273, t_s=0.7709, g_s1=-0.4208, g_s2=0.9081)
+    par_init <- c(a_x=-2.2308, g_x1=-0.4977, g_x2=-0.9101, a_y=-6.3404, g_y1=0.5996, g_y2=2.4098, g_y3=2.8139, g_y4=7.0955, g_y5=6.0127, beta_x=1.295, beta_z=1.2856, t_x=-1.366, t_y=-0.7141, a_s=-2.0978, t_s=0.3321, g_s1=-0.8771, g_s2=0.8316)
   } else if (cfg$model_version==10) {
     par_init <- c(beta_z=0.3, a_y=-9.4955, g_y1=0.3209, g_y2=5.7549, g_y3=5.2759, g_y4=13.7284, g_y5=5.2979, t_y=-0.6637)
+  } else if (cfg$model_version==11) {
+    par_init <- c(a_x=-2.2308, g_x1=-0.4977, g_x2=0, g_x3=0, g_x4=0, g_x5=0, t_x=-1.366, a_s=-2.0978, g_s1=-0.8771, g_s2=0.8316, t_s=0.3321, beta_x=1.295, beta_z=1.2856, a_y=-6.3404, g_y1=0.5996, g_y2=2.4098, g_y3=2.8139, g_y4=7.0955, g_y5=6.0127, t_y=-0.7141)
   }
   
   # par_true <- c(

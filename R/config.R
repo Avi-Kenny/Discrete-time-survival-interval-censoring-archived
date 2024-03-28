@@ -28,7 +28,7 @@ if (Sys.getenv("HOME")=="/home/akenny") {
 }
 
 # Load packages (if running locally or not running sims)
-if (Sys.getenv("USERDOMAIN")=="WIN" || !cfg$run_sims) {
+if (Sys.getenv("RSTUDIO")=="1" || !cfg$run_sims) {
   for (pkg in c(cfg$pkgs,cfg$pkgs_nocluster)) {
     suppressMessages({ do.call("library", list(pkg)) })
   }

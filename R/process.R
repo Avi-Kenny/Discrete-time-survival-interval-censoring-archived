@@ -108,10 +108,17 @@ prob <- function(type, m, j, w_1, w_2) {
     )
   } else if (m==9) {
     p <- list(
-      a_x=-2.273, g_x1=-1.131, g_x2=-2.875, a_y=-3.350, g_y1=0.2217,
-      g_y2=0.6883, g_y3=0.7507, g_y4=0.004464, g_y5=3.886,
-      beta_x=1.376, beta_z=0.8172, t_x=-1.332, t_y=-0.6786,
-      a_s=-3.273, t_s=0.7709, g_s1=-0.4208, g_s2=0.9081
+      a_x=-2.231, g_x1=-0.4977, g_x2=-0.9101, a_y=-6.340, g_y1=0.5996,
+      g_y2=2.410, g_y3=2.814, g_y4=7.096, g_y5=6.013,
+      beta_x=1.295, beta_z=1.286, t_x=-1.366, t_y=-0.7141,
+      a_s=-2.098, t_s=0.3321, g_s1=-0.8771, g_s2=0.8316
+    )
+  } else if (m==11) {
+    p <- list(
+      a_x=-8.0742, g_x1=-0.7309, g_x2=4.2919, g_x3=1.0879, g_x4=6.5164,
+      g_x5=-8.508, t_x=-1.3492, a_s=-3.7151, g_s1=-0.4807, g_s2=1.1155,
+      t_s=1.1718, beta_x=1.1894, beta_z=0.8276, a_y=-8.657, g_y1=0.4471,
+      g_y2=4.4427, g_y3=5.073, g_y4=11.3514, g_y5=5.022, t_y=-0.7018
     )
   }
   j <- j/10
@@ -119,7 +126,14 @@ prob <- function(type, m, j, w_1, w_2) {
   
   if (type=="sero") {
     
-    prob <- exp2(p$a_x + p$t_x*j + p$g_x1*w_1 + p$g_x2*w_2)
+    if (m<11) {
+      prob <- exp2(p$a_x + p$t_x*j + p$g_x1*w_1 + p$g_x2*w_2)
+    } else if (m==11) {
+      prob <- exp2(
+        p$a_x + p$t_x*j + p$g_x1*w_1 + p$g_x2*b(w_2,1) + p$g_x3*b(w_2,2) +
+          p$g_x4*b(w_2,3) + p$g_x5*b(w_2,4)
+      )
+    }
     
   } else if (type=="init") {
     
@@ -140,7 +154,7 @@ prob <- function(type, m, j, w_1, w_2) {
         p$a_y + p$t_y*j + p$g_y1*w_1 + p$g_y2*w_2 + p$g_y3*w_2^2 +
           p$g_y4*w_2^3 + p$beta_x*x + p$beta_z*z
       )
-    } else if (m==9) {
+    } else if (m %in% c(9,11)) {
       prob <- exp2(
         p$a_y + p$t_y*j + p$g_y1*w_1 + p$g_y2*b(w_2,1) + p$g_y3*b(w_2,2) +
           p$g_y4*b(w_2,3) + p$g_y5*b(w_2,4) + p$beta_x*x + p$beta_z*z
@@ -227,7 +241,7 @@ plot_mod <- function(x_axis, type, m) {
 ##### VIZ: Plotting modeled probabilities #####
 ###############################################.
 
-m <- 9
+m <- 11
 
 # Construct spline basis
 if (m==9) {
