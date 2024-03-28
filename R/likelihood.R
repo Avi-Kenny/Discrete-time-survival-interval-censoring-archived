@@ -3,8 +3,9 @@
 #' @param par Vector of parameters governing the distribution.
 #' @return Numeric likelihood
 #' @notes This corresponds to the missing data structure
-construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL,
-                                     model_version=0) {
+construct_negloglik <- function(
+  dat, parallelize=FALSE, cl=NULL, model_version=0
+) {
   
   # Construct a data object specific to each individual
   n <- attr(dat, "n")
@@ -54,9 +55,9 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL,
     })
   }
   
-  negloglik_miss <- function(par) {
+  negloglik <- function(par) {
     
-    print(paste("negloglik_miss() called:",Sys.time())) # !!!!!
+    print(paste("negloglik() called:",Sys.time())) # !!!!!
 
     # Convert parameter vector to a named list
     p <- as.numeric(par)
@@ -270,7 +271,7 @@ construct_negloglik_miss <- function(dat, parallelize=FALSE, cl=NULL,
     
   }
   
-  return(negloglik_miss)
+  return(negloglik)
   
 }
 

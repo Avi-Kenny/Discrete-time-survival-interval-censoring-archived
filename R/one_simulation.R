@@ -1,10 +1,6 @@
 #' Run a single simulation replicate
 #'
-#' @return A list containing the following:
-#'     est_complete: HR estimate from complete data
-#'     est_missing: HR estimate from MI procedure
-#'     se_complete: SE of HR estimate from complete data
-#'     se_missing: SE of HR estimate from MI procedure
+#' @return A list of simulation results
 
 one_simulation <- function() {
   
@@ -74,31 +70,31 @@ one_simulation <- function() {
     beta_z=0.8, t_x=0.999, t_y=1.001, a_s=0.03, t_s=1.001, g_s1=1.8, g_s2=1.7 # Yearly
   ))
   
-  chk(2, "construct_negloglik_miss: START")
-  negloglik_miss <- construct_negloglik_miss(dat)
-  chk(2, "construct_negloglik_miss: END")
+  chk(2, "construct_negloglik: START")
+  negloglik <- construct_negloglik(dat)
+  chk(2, "construct_negloglik: END")
   chk(2, "optim: START")
-  opt_miss <- stats::optim(
+  opt <- stats::optim(
     par = par_init,
-    fn = negloglik_miss,
+    fn = negloglik,
     method = "Nelder-Mead",
     control = list(maxit=maxit)
   )
   chk(2, "optim: END")
   chk(2, "hessian: START")
-  hessian_miss <- numDeriv::hessian(
-    func = negloglik_miss,
-    x = opt_miss$par,
+  hessian_est <- numDeriv::hessian(
+    func = negloglik,
+    x = opt$par,
     method = "Richardson",
     method.args = list(r=hess_r)
   )
-  hessian_inv <- solve(hessian_miss)
+  hessian_inv <- solve(hessian_est)
   chk(2, "hessian: END")
   
   res <- list()
   pn <- names(par_init)
   for (i in c(1:length(par_init))) {
-    res[[paste0("lik_M_",pn[i],"_est")]] <- as.numeric(opt_miss$par[i])
+    res[[paste0("lik_M_",pn[i],"_est")]] <- as.numeric(opt$par[i])
     res[[paste0("lik_M_",pn[i],"_se")]] <- sqrt(diag(hessian_inv))[i]
   }
   

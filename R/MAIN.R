@@ -22,7 +22,7 @@ source("R/config.R", local=T)
   source("R/helpers.R", local=T)
   source("R/one_simulation.R", local=T)
   source("R/generate_data.R", local=T)
-  source("R/likelihood_miss.R", local=T)
+  source("R/likelihood.R", local=T)
 }
 
 if (cfg$run_analysis) {

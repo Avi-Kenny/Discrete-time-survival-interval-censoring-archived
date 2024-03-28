@@ -485,19 +485,19 @@ if (cfg2$run_dqa) {
 if (cfg2$run_analysis) {
   
   # Construct log likelihood function
-  chk(3, "construct_negloglik_miss: START")
+  chk(3, "construct_negloglik: START")
   if (cfg2$parallelize) {
     n_cores <- cfg$sim_n_cores
     print(paste0("Using ", n_cores, " cores."))
     cl <- parallel::makeCluster(n_cores)
     parallel::clusterExport(cl, ls(.GlobalEnv))
-    negloglik_miss <- construct_negloglik_miss(dat, parallelize=T, cl=cl,
-                                               cfg$model_version)
+    negloglik <- construct_negloglik(dat, parallelize=T, cl=cl,
+                                     cfg$model_version)
   } else {
-    negloglik_miss <- construct_negloglik_miss(dat, parallelize=F, cl=NULL,
-                                               cfg$model_version)
+    negloglik <- construct_negloglik(dat, parallelize=F, cl=NULL,
+                                     cfg$model_version)
   }
-  chk(3, "construct_negloglik_miss: END")
+  chk(3, "construct_negloglik: END")
   
   # Set initial parameter estimates
   if (cfg$model_version==0) {
@@ -535,27 +535,27 @@ if (cfg2$run_analysis) {
   
   # Run optimizer
   chk(4, "optim: START")
-  opt_miss <- stats::optim(
+  opt <- stats::optim(
     par = par_init,
-    fn = negloglik_miss,
+    fn = negloglik,
     method = "Nelder-Mead",
     control = list(maxit=avi_maxit,
                    reltol=avi_reltol)) # !!!!!
   print("optim() finished.")
-  print(opt_miss)
+  print(opt)
 
   if (F) {
-    stats::optim(par=par_init, fn=negloglik_miss, control=list(trace=6))
+    stats::optim(par=par_init, fn=negloglik, control=list(trace=6))
     library(optimParallel)
-    opt_miss <- stats::optim(par=par_init, fn=negloglik_miss)
+    opt <- stats::optim(par=par_init, fn=negloglik)
   }
   chk(4, "optim: END")
   
   # Compute Hessian
   chk(5, "hessian: START")
-  hessian_miss <- numDeriv::hessian(
-    func = negloglik_miss,
-    x = opt_miss$par,
+  hessian_est <- numDeriv::hessian(
+    func = negloglik,
+    x = opt$par,
     method = "Richardson", # "Richardson" "complex"
     method.args = list(
       eps = 0.0001,
@@ -565,8 +565,8 @@ if (cfg2$run_analysis) {
       v = 2 # v gives the reduction factor
     )
   )
-  print(hessian_miss)
-  hessian_inv <- solve(hessian_miss)
+  print(hessian_est)
+  hessian_inv <- solve(hessian_est)
   chk(5, "hessian: END")
   
   # if (cfg2$parallelize) { stopCluster(cl) }
@@ -582,7 +582,7 @@ if (cfg2$run_analysis) {
     "ci_up" = double()
   )
   for (i in c(1:length(par_init))) {
-    est <- as.numeric(opt_miss$par[i])
+    est <- as.numeric(opt$par[i])
     se <- sqrt(diag(hessian_inv))[i]
     res[i,] <- c(
       param = names(par_init)[i],
