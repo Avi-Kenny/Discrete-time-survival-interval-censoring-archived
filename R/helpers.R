@@ -18,13 +18,16 @@ exp2 <- (function() {
   
   expit <- function(x) {1/(1+exp(-x))}
   logit <- function(x) { log(x/(1-x)) }
-  e <- -0.1
+  e <- -0.1 # This value configurable but hard-coded
   ell <- logit(exp(e))
   x_0 <- e - (ell*exp(ell))/(exp(e)*(1+exp(ell))^2)
   k_0 <- exp(e-ell)*(1+exp(ell))^2
   exp2 <- function(x) {
-    In(x<=e) * exp(x) +
-      In(x>e) * expit(k_0*(x-x_0))
+    if (x<=e) {
+      return(exp(x))
+    } else {
+      return(1/(1+exp(k_0*(x_0-x))))
+    }
   }
   return(exp2)
 })()
@@ -149,15 +152,15 @@ construct_basis <- function(which) {
     for (i in c(1:4)) { y[,i] <- sapply(grid, function(x) { b(x, i=i) }) }
     rm(b)
     
-    return(function(x, i) {
+    return(function(x=NA, i=NA) {
       rows <- unlist(lapply(x, function(x) { which.min(abs(x-grid)) } ))
       return(y[rows,i])
     })
     
-  } else if (which=="age (13-90), 4DF") {
+  } else if (which=="age (13,20,30,60,90)") {
     
     grid <- seq(0.13,0.90,0.001)
-    k <- seq(0.13,0.90, length.out=5)
+    k <- c(0.13, 0.2, 0.3, 0.6, 0.9)
     b <- Vectorize(function(x, i) {
       splines::ns(x=x, knots=k[2:4], Boundary.knots=k[c(1,5)])[i]
     }, vectorize.args="x")
@@ -165,7 +168,23 @@ construct_basis <- function(which) {
     for (i in c(1:4)) { y[,i] <- sapply(grid, function(x) { b(x, i=i) }) }
     rm(b)
     
-    return(function(x, i) {
+    return(function(x=NA, i=NA) {
+      rows <- unlist(lapply(x, function(x) { which.min(abs(x-grid)) } ))
+      return(y[rows,i])
+    })
+    
+  } else if (which=="age (13,30,60,75,90)") {
+    
+    grid <- seq(0.13,0.90,0.001)
+    k <- c(0.13, 0.3, 0.6, 0.75, 0.9)
+    b <- Vectorize(function(x, i) {
+      splines::ns(x=x, knots=k[2:4], Boundary.knots=k[c(1,5)])[i]
+    }, vectorize.args="x")
+    y <- matrix(NA, nrow=length(grid), ncol=4)
+    for (i in c(1:4)) { y[,i] <- sapply(grid, function(x) { b(x, i=i) }) }
+    rm(b)
+    
+    return(function(x=NA, i=NA) {
       rows <- unlist(lapply(x, function(x) { which.min(abs(x-grid)) } ))
       return(y[rows,i])
     })

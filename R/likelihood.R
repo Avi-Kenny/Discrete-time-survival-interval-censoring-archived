@@ -354,24 +354,27 @@ if (cfg$model_version==0) {
   
 } else if (cfg$model_version==12) {
   
-  b <- construct_basis("age (13-90), 4DF")
-  f_x <- function(x, x_prev, w, j, s, params) {
-    if (s==0) {
-      if (x==1 && x_prev==1) {
-        return(1)
+  f_x <- (function() {
+    b <- construct_basis("age (13,20,30,60,90)")
+    f_x <- function(x, x_prev, w, j, s, params) {
+      if (s==0) {
+        if (x==1 && x_prev==1) {
+          return(1)
+        } else {
+          prob <- exp2(
+            params$a_x + params$t_x*j + params$g_x[1]*w[1] +
+              params$g_x[2]*b(w[2],1) + params$g_x[3]*b(w[2],2) +
+              params$g_x[4]*b(w[2],3) + params$g_x[5]*b(w[2],4)
+          )
+          if (x==1) { return(prob) } else { return(1-prob) }
+        }
       } else {
-        prob <- exp2(
-          params$a_x + params$t_x*j + params$g_x[1]*w[1] +
-            params$g_x[2]*b(w[2],1) + params$g_x[3]*b(w[2],2) +
-            params$g_x[4]*b(w[2],3) + params$g_x[5]*b(w[2],4)
-        )
+        prob <- exp2(params$a_s + params$t_s*j + sum(params$g_s*w))
         if (x==1) { return(prob) } else { return(1-prob) }
       }
-    } else {
-      prob <- exp2(params$a_s + params$t_s*j + sum(params$g_s*w))
-      if (x==1) { return(prob) } else { return(1-prob) }
     }
-  }
+    return(f_x)
+  })()
   
 }
 
@@ -477,14 +480,17 @@ if (cfg$model_version==0) {
 
 } else if (cfg$model_version==12) {
   
-  b <- construct_basis("age (13-90), 4DF")
-  f_y <- function(y, x, w, z, j, params) {
-    prob <- exp2(
-      params$beta_z*z + params$a_y + params$g_y[1]*w[1] +
-        params$g_y[2]*b(w[2],1) + params$g_y[3]*b(w[2],2) +
-        params$g_y[4]*b(w[2],3) + params$g_y[5]*b(w[2],4) + params$t_y*j
-    )
-    if (y==1) { return(prob) } else { return(1-prob) }
-  }
+  f_y <- (function() {
+    b <- construct_basis("age (13,30,60,75,90)")
+    f_y <- function(y, x, w, z, j, params) {
+      prob <- exp2(
+        params$beta_z*z + params$a_y + params$g_y[1]*w[1] +
+          params$g_y[2]*b(w[2],1) + params$g_y[3]*b(w[2],2) +
+          params$g_y[4]*b(w[2],3) + params$g_y[5]*b(w[2],4) + params$t_y*j
+      )
+      if (y==1) { return(prob) } else { return(1-prob) }
+    }
+    return(f_y)
+  })()
   
 }

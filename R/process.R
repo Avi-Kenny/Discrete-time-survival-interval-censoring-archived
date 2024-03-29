@@ -120,6 +120,13 @@ prob <- function(type, m, j, w_1, w_2) {
       t_s=1.1718, beta_x=1.1894, beta_z=0.8276, a_y=-8.657, g_y1=0.4471,
       g_y2=4.4427, g_y3=5.073, g_y4=11.3514, g_y5=5.022, t_y=-0.7018
     )
+  } else if (m==12) {
+    p <- list(
+      # a_x=-6.6400764, g_x1=-0.5869769, g_x2=3.5484475, g_x3=-1.3060617, g_x4=8.8769417,
+      # g_x5=-2.5015508, t_x=-0.5328125, a_s=-2.2875883, g_s1=-0.7057172, g_s2=0.8217648,
+      # t_s=0.4269413, beta_x=4.8432714, beta_z=0.3088361, a_y=-6.6778393, g_y1=0.3488879,
+      # g_y2=2.5625870, g_y3=3.1129671, g_y4=8.2793919, g_y5=3.2446157, t_y=-0.5925183
+    )
   }
   j <- j/10
   w_2 <- w_2/100
@@ -130,8 +137,13 @@ prob <- function(type, m, j, w_1, w_2) {
       prob <- exp2(p$a_x + p$t_x*j + p$g_x1*w_1 + p$g_x2*w_2)
     } else if (m==11) {
       prob <- exp2(
-        p$a_x + p$t_x*j + p$g_x1*w_1 + p$g_x2*b(w_2,1) + p$g_x3*b(w_2,2) +
-          p$g_x4*b(w_2,3) + p$g_x5*b(w_2,4)
+        p$a_x + p$t_x*j + p$g_x1*w_1 + p$g_x2*b1(w_2,1) + p$g_x3*b1(w_2,2) +
+          p$g_x4*b1(w_2,3) + p$g_x5*b1(w_2,4)
+      )
+    } else if (m==12) {
+      prob <- exp2(
+        p$a_x + p$t_x*j + p$g_x1*w_1 + p$g_x2*b2(w_2,1) + p$g_x3*b2(w_2,2) +
+          p$g_x4*b2(w_2,3) + p$g_x5*b2(w_2,4)
       )
     }
     
@@ -156,8 +168,13 @@ prob <- function(type, m, j, w_1, w_2) {
       )
     } else if (m %in% c(9,11)) {
       prob <- exp2(
-        p$a_y + p$t_y*j + p$g_y1*w_1 + p$g_y2*b(w_2,1) + p$g_y3*b(w_2,2) +
-          p$g_y4*b(w_2,3) + p$g_y5*b(w_2,4) + p$beta_x*x + p$beta_z*z
+        p$a_y + p$t_y*j + p$g_y1*w_1 + p$g_y2*b1(w_2,1) + p$g_y3*b1(w_2,2) +
+          p$g_y4*b1(w_2,3) + p$g_y5*b1(w_2,4) + p$beta_x*x + p$beta_z*z
+      )
+    } else if (m==12) {
+      prob <- exp2(
+        p$a_y + p$t_y*j + p$g_y1*w_1 + p$g_y2*b2(w_2,1) + p$g_y3*b2(w_2,2) +
+          p$g_y4*b2(w_2,3) + p$g_y5*b2(w_2,4) + p$beta_x*x + p$beta_z*z
       )
     }
     
@@ -175,7 +192,7 @@ prob <- function(type, m, j, w_1, w_2) {
 plot_mod <- function(x_axis, type, m) {
   
   if (x_axis=="Age") {
-    grid <- seq(13,100,0.1)
+    grid <- seq(13,90,0.1)
     color <- "Year"
     plot_data <- data.frame(
       x = rep(grid,6),
@@ -241,12 +258,9 @@ plot_mod <- function(x_axis, type, m) {
 ##### VIZ: Plotting modeled probabilities #####
 ###############################################.
 
-m <- 11
-
-# Construct spline basis
-if (m==9) {
-  b <- construct_basis("age (0-100), 4DF")
-}
+m <- 12
+b1 <- construct_basis("age (0-100), 4DF")
+b2 <- construct_basis("age (13-90), 4DF")
 
 # Seroconversion prob as a function of age
 p01 <- plot_mod(x_axis="Age", type="sero", m=m)

@@ -1,4 +1,36 @@
 
+# Getting spline basis initial parameters
+if (F) {
+  
+  b_old <- construct_basis("age (0-100), 4DF")
+  x <- seq(0.13,0.9,0.01)
+  spl_betas <- c(4.2919, 1.0879, 6.5164, -8.508) # Seroconversion
+  # spl_betas <- c(4.4427, 5.073, 11.3514, 5.022) # Mortality
+  
+  y <- sapply(x, function(x) {
+    xb <- c(b_old(x=x, i=1), b_old(x=x, i=2), b_old(x=x, i=3), b_old(x=x, i=4))
+    y <- sum(spl_betas*xb)
+    return(y)
+  })
+  points <- data.frame(x=x, y=y)
+  
+  b_new <- construct_basis("age (13,20,30,60,90)") # Seroconversion
+  # b_new <- construct_basis("age (13,30,60,75,90)") # Mortality
+  b1 <- sapply(x, function(x) { b_new(x,1) })
+  b2 <- sapply(x, function(x) { b_new(x,2) })
+  b3 <- sapply(x, function(x) { b_new(x,3) })
+  b4 <- sapply(x, function(x) { b_new(x,4) })
+  
+  # model <- lm(y~x) # !!!!!
+  model <- lm(y~b1+b2+b3+b4)
+  preds <- data.frame(x=x, y=predict(model))
+  print(as.numeric(round(model$coefficients[2:5],4)))
+  ggplot(points, aes(x=x, y=y)) +
+    geom_point() +
+    geom_line(data=preds, color="forestgreen")
+  
+}
+
 # New DGM parameters
 if (F) {
   
