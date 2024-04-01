@@ -189,6 +189,22 @@ construct_basis <- function(which) {
       return(y[rows,i])
     })
     
+  } else if (which=="year (00,05,10,15,20)") {
+    
+    grid <- seq(0,2.2,0.001)
+    k <- c(0,0.5,1,1.5,2)
+    b <- Vectorize(function(x, i) {
+      splines::ns(x=x, knots=k[2:4], Boundary.knots=k[c(1,5)])[i]
+    }, vectorize.args="x")
+    y <- matrix(NA, nrow=length(grid), ncol=4)
+    for (i in c(1:4)) { y[,i] <- sapply(grid, function(x) { b(x, i=i) }) }
+    rm(b)
+    
+    return(function(x=NA, i=NA) {
+      rows <- unlist(lapply(x, function(x) { which.min(abs(x-grid)) } ))
+      return(y[rows,i])
+    })
+    
   }
   
 }

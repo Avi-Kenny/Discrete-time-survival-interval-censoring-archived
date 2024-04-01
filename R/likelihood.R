@@ -83,6 +83,8 @@ construct_negloglik <- function(
       params <- list(beta_z=p[1], a_y=p[2], g_y=p[3:7], t_y=p[8])
     } else if (model_version %in% c(11,12)) {
       params <- list(a_x=p[1], g_x=p[2:6], t_x=p[7], a_s=p[8], g_s=p[9:10], t_s=p[11], beta_x=p[12], beta_z=p[13], a_y=p[14], g_y=p[15:19], t_y=p[20])
+    } else if (model_version==13) {
+      params <- list(a_x=p[1], g_x=p[2:6], t_x=p[7:10], a_s=p[11], g_s=p[12:13], t_s=p[14], beta_x=p[15], beta_z=p[16], a_y=p[17], g_y=p[18:22], t_y=p[23])
     }
     
     lik_fn <- function(i) {
@@ -376,6 +378,33 @@ if (cfg$model_version==0) {
     return(f_x)
   })()
   
+} else if (cfg$model_version==13) {
+  
+  f_x <- (function() {
+    b <- construct_basis("age (13,20,30,60,90)")
+    b2 <- construct_basis("year (00,05,10,15,20)")
+    f_x <- function(x, x_prev, w, j, s, params) {
+      if (s==0) {
+        if (x==1 && x_prev==1) {
+          return(1)
+        } else {
+          prob <- exp2(
+            params$a_x + params$t_x[1]*b2(j,1) + params$t_x[2]*b2(j,2) +
+              params$t_x[3]*b2(j,3) + params$t_x[4]*b2(j,4) +
+              params$g_x[1]*w[1] + params$g_x[2]*b(w[2],1) +
+              params$g_x[3]*b(w[2],2) + params$g_x[4]*b(w[2],3) +
+              params$g_x[5]*b(w[2],4)
+          )
+          if (x==1) { return(prob) } else { return(1-prob) }
+        }
+      } else {
+        prob <- exp2(params$a_s + params$t_s*j + sum(params$g_s*w))
+        if (x==1) { return(prob) } else { return(1-prob) }
+      }
+    }
+    return(f_x)
+  })()
+  
 }
 
 
@@ -468,25 +497,28 @@ if (cfg$model_version==0) {
   
 } else if (cfg$model_version==10) {
   
+  # Note: there was a bug in this model when it was first run (beta_x excluded)
   b <- construct_basis("age (0-100), 4DF")
   f_y <- function(y, x, w, z, j, params) {
     prob <- exp2(
-      params$beta_z*z + params$a_y + params$g_y[1]*w[1] +
-        params$g_y[2]*b(w[2],1) + params$g_y[3]*b(w[2],2) +
+      params$beta_x*x*(1-z) + params$beta_z*x*z + params$a_y +
+        params$g_y[1]*w[1] + params$g_y[2]*b(w[2],1) + params$g_y[3]*b(w[2],2) +
         params$g_y[4]*b(w[2],3) + params$g_y[5]*b(w[2],4) + params$t_y*j
     )
     if (y==1) { return(prob) } else { return(1-prob) }
   }
 
-} else if (cfg$model_version==12) {
+} else if (cfg$model_version %in% c(12,13)) {
   
+  # Note: there was a bug in this model when it was first run (beta_x excluded)
   f_y <- (function() {
     b <- construct_basis("age (13,30,60,75,90)")
     f_y <- function(y, x, w, z, j, params) {
       prob <- exp2(
-        params$beta_z*z + params$a_y + params$g_y[1]*w[1] +
-          params$g_y[2]*b(w[2],1) + params$g_y[3]*b(w[2],2) +
-          params$g_y[4]*b(w[2],3) + params$g_y[5]*b(w[2],4) + params$t_y*j
+        params$beta_x*x*(1-z) + params$beta_z*x*z + params$a_y +
+          params$g_y[1]*w[1] + params$g_y[2]*b(w[2],1) +
+          params$g_y[3]*b(w[2],2) + params$g_y[4]*b(w[2],3) +
+          params$g_y[5]*b(w[2],4) + params$t_y*j
       )
       if (y==1) { return(prob) } else { return(1-prob) }
     }

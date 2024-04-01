@@ -122,10 +122,10 @@ prob <- function(type, m, j, w_1, w_2) {
     )
   } else if (m==12) {
     p <- list(
-      # a_x=-6.6400764, g_x1=-0.5869769, g_x2=3.5484475, g_x3=-1.3060617, g_x4=8.8769417,
-      # g_x5=-2.5015508, t_x=-0.5328125, a_s=-2.2875883, g_s1=-0.7057172, g_s2=0.8217648,
-      # t_s=0.4269413, beta_x=4.8432714, beta_z=0.3088361, a_y=-6.6778393, g_y1=0.3488879,
-      # g_y2=2.5625870, g_y3=3.1129671, g_y4=8.2793919, g_y5=3.2446157, t_y=-0.5925183
+      a_x=-4.6674897, g_x1=-0.7444126, g_x2=3.6579576, g_x3=-1.9702465, g_x4=-0.8989252,
+      g_x5=-6.6903666, t_x=-1.1693100, a_s=-3.2990485, g_s1=-0.6594199, g_s2=0.8443497,
+      t_s=1.0513203, beta_x=-0.7316351, beta_z=0.4216804, a_y=-5.6547364, g_y1=0.2733265,
+      g_y2=1.7590798, g_y3=2.8024851, g_y4=6.1807478, g_y5=2.6495728, t_y=-0.6332008
     )
   }
   j <- j/10
@@ -173,8 +173,8 @@ prob <- function(type, m, j, w_1, w_2) {
       )
     } else if (m==12) {
       prob <- exp2(
-        p$a_y + p$t_y*j + p$g_y1*w_1 + p$g_y2*b2(w_2,1) + p$g_y3*b2(w_2,2) +
-          p$g_y4*b2(w_2,3) + p$g_y5*b2(w_2,4) + p$beta_x*x + p$beta_z*z
+        p$a_y + p$t_y*j + p$g_y1*w_1 + p$g_y2*b3(w_2,1) + p$g_y3*b3(w_2,2) +
+          p$g_y4*b3(w_2,3) + p$g_y5*b3(w_2,4) + p$beta_x*x + p$beta_z*z
       )
     }
     
@@ -260,7 +260,8 @@ plot_mod <- function(x_axis, type, m) {
 
 m <- 12
 b1 <- construct_basis("age (0-100), 4DF")
-b2 <- construct_basis("age (13-90), 4DF")
+b2 <- construct_basis("age (13,20,30,60,90)")
+b3 <- construct_basis("age (13,30,60,75,90)")
 
 # Seroconversion prob as a function of age
 p01 <- plot_mod(x_axis="Age", type="sero", m=m)
