@@ -94,6 +94,7 @@ print(df_results)
 #' @param m An integer representing the model version number
 #' @return Numeric probability
 prob <- function(type, m, j, w_1, w_2) {
+  
   if (m==7) {
     p <- list(
       a_x=-3.5607, g_x1=-0.3244, g_x2=-0.2809, a_y=-5.7446, g_y1=0.3544,
@@ -127,7 +128,16 @@ prob <- function(type, m, j, w_1, w_2) {
       t_s=1.0513203, beta_x=-0.7316351, beta_z=0.4216804, a_y=-5.6547364, g_y1=0.2733265,
       g_y2=1.7590798, g_y3=2.8024851, g_y4=6.1807478, g_y5=2.6495728, t_y=-0.6332008
     )
+  } else if (m==13) {
+    p <- list(
+      a_x=-6.425, g_x1=-0.6614, g_x2=3.873, g_x3=0.3610, g_x4=0.4009,
+      g_x5=-8.318, t_x1=-1.543, t_x2=-0.4422, t_x3=0.2004, t_x4=-1.972,
+      a_s=-3.281, g_s1=-0.5525, g_s2=0.9998, t_s=0.9649, beta_x=1.009,
+      beta_z=0.7339, a_y=-6.016, g_y1=0.3872, g_y2=1.862, g_y3=3.037,
+      g_y4=6.715, g_y5=3.417, t_y=-0.6883
+    )
   }
+  
   j <- j/10
   w_2 <- w_2/100
   
@@ -143,6 +153,12 @@ prob <- function(type, m, j, w_1, w_2) {
     } else if (m==12) {
       prob <- exp2(
         p$a_x + p$t_x*j + p$g_x1*w_1 + p$g_x2*b2(w_2,1) + p$g_x3*b2(w_2,2) +
+          p$g_x4*b2(w_2,3) + p$g_x5*b2(w_2,4)
+      )
+    } else if (m==13) {
+      prob <- exp2(
+        p$a_x + p$t_x1*b4(j,1) + p$t_x2*b4(j,2) + p$t_x3*b4(j,3) +
+          p$t_x4*b4(j,4) + p$g_x1*w_1 + p$g_x2*b2(w_2,1) + p$g_x3*b2(w_2,2) +
           p$g_x4*b2(w_2,3) + p$g_x5*b2(w_2,4)
       )
     }
@@ -171,7 +187,7 @@ prob <- function(type, m, j, w_1, w_2) {
         p$a_y + p$t_y*j + p$g_y1*w_1 + p$g_y2*b1(w_2,1) + p$g_y3*b1(w_2,2) +
           p$g_y4*b1(w_2,3) + p$g_y5*b1(w_2,4) + p$beta_x*x + p$beta_z*z
       )
-    } else if (m==12) {
+    } else if (m %in% c(12,13)) {
       prob <- exp2(
         p$a_y + p$t_y*j + p$g_y1*w_1 + p$g_y2*b3(w_2,1) + p$g_y3*b3(w_2,2) +
           p$g_y4*b3(w_2,3) + p$g_y5*b3(w_2,4) + p$beta_x*x + p$beta_z*z
@@ -258,10 +274,11 @@ plot_mod <- function(x_axis, type, m) {
 ##### VIZ: Plotting modeled probabilities #####
 ###############################################.
 
-m <- 12
+m <- 13
 b1 <- construct_basis("age (0-100), 4DF")
 b2 <- construct_basis("age (13,20,30,60,90)")
 b3 <- construct_basis("age (13,30,60,75,90)")
+b4 <- construct_basis("year (00,05,10,15,20)")
 
 # Seroconversion prob as a function of age
 p01 <- plot_mod(x_axis="Age", type="sero", m=m)
