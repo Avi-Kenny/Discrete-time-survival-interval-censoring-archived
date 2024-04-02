@@ -7,58 +7,58 @@ construct_negloglik <- function(
   dat, parallelize=FALSE, cl=NULL, model_version=0
 ) {
   
-  # Construct a data object specific to each individual
+  # Construct spline bases
+  if (model_version==13) {
+    b2 <- construct_basis("age (13,20,30,60,90)")
+    b3 <- construct_basis("age (13,30,60,75,90)")
+    b4 <- construct_basis("year (00,05,10,15,20)")
+  }
+  
+  # Construct a dataframe specific to each individual
   n <- attr(dat, "n")
   dat_objs <- lapply(c(1:n), function(i) {
     
     d <- list()
-    dat_i <- dat[dat$id==i,] # Does dat_i need to be returned with r?
-    
+    d$dat_i <- dat[dat$id==i,]
+
     # Start and end times
     d$s_i <- attr(dat, "s_i")[i]
     d$t_i <- attr(dat, "t_i")[i]
     
-    # Data vectors
-    d$w <- subset(dat_i, select=names(dat)[substr(names(dat), 1, 2)=="w_"])
-    d$y <- dat_i$y
-    d$z <- dat_i$z
-    d$v <- dat_i$v
-    d$d <- dat_i$d
-    d$u <- dat_i$u
-    d$cal_time <- dat_i$t_end
-    d$cal_time_sc <- d$cal_time / 10 # Rescaling is done to prevent optimization issues; model verion 6; changed from 100 to 10
+    # Create new variables
+    d$dat_i$init_visit <- 0
+    d$dat_i[1,"init_visit"] <- 1
+    d$dat_i %<>% dplyr::mutate(
+      cal_time_sc = t_end / 10 # Rescaling originally done to prevent optimization issues; check if this is still needed
+    )
     
     # Create spline bases
-    d$spl <- data.frame(tmp=rep(NA, length(dat_i$y)))
+    # !!!!! This section can be sped up by modifying construct_basis()
     if (model_version==13) {
-      b2 <- construct_basis("age (13,20,30,60,90)")
-      b3 <- construct_basis("age (13,30,60,75,90)")
-      b4 <- construct_basis("year (00,05,10,15,20)")
-      d$spl$b2_1 <- sapply(d$w$w_2, function(w_2) { b2(w_2,1) })
-      d$spl$b2_2 <- sapply(d$w$w_2, function(w_2) { b2(w_2,2) })
-      d$spl$b2_3 <- sapply(d$w$w_2, function(w_2) { b2(w_2,3) })
-      d$spl$b2_4 <- sapply(d$w$w_2, function(w_2) { b2(w_2,4) })
-      d$spl$b3_1 <- sapply(d$w$w_2, function(w_2) { b3(w_2,1) })
-      d$spl$b3_2 <- sapply(d$w$w_2, function(w_2) { b3(w_2,2) })
-      d$spl$b3_3 <- sapply(d$w$w_2, function(w_2) { b3(w_2,3) })
-      d$spl$b3_4 <- sapply(d$w$w_2, function(w_2) { b3(w_2,4) })
-      d$spl$b4_1 <- sapply(d$cal_time_sc, function(j) { b4(j,1) })
-      d$spl$b4_2 <- sapply(d$cal_time_sc, function(j) { b4(j,2) })
-      d$spl$b4_3 <- sapply(d$cal_time_sc, function(j) { b4(j,3) })
-      d$spl$b4_4 <- sapply(d$cal_time_sc, function(j) { b4(j,4) })
+      d$dat_i$b2_1 <- sapply(d$dat_i$w_2, function(w_2) { b2(w_2,1) })
+      d$dat_i$b2_2 <- sapply(d$dat_i$w_2, function(w_2) { b2(w_2,2) })
+      d$dat_i$b2_3 <- sapply(d$dat_i$w_2, function(w_2) { b2(w_2,3) })
+      d$dat_i$b2_4 <- sapply(d$dat_i$w_2, function(w_2) { b2(w_2,4) })
+      d$dat_i$b3_1 <- sapply(d$dat_i$w_2, function(w_2) { b3(w_2,1) })
+      d$dat_i$b3_2 <- sapply(d$dat_i$w_2, function(w_2) { b3(w_2,2) })
+      d$dat_i$b3_3 <- sapply(d$dat_i$w_2, function(w_2) { b3(w_2,3) })
+      d$dat_i$b3_4 <- sapply(d$dat_i$w_2, function(w_2) { b3(w_2,4) })
+      d$dat_i$b4_1 <- sapply(d$dat_i$cal_time_sc, function(j) { b4(j,1) })
+      d$dat_i$b4_2 <- sapply(d$dat_i$cal_time_sc, function(j) { b4(j,2) })
+      d$dat_i$b4_3 <- sapply(d$dat_i$cal_time_sc, function(j) { b4(j,3) })
+      d$dat_i$b4_4 <- sapply(d$dat_i$cal_time_sc, function(j) { b4(j,4) })
     }
-    d$spl$tmp <- NULL
     
     # Calculate the set X_i to sum over
     d$X_i_set <- list()
     for (j in c(1:(d$t_i-d$s_i+2))) {
       x_ <- c(rep(0,d$t_i-d$s_i-j+2), rep(1,j-1))
-      T_pm <- T_plusminus(s_i=d$s_i, t_i=d$t_i, x=x_, v=d$v)
+      T_pm <- T_plusminus(s_i=d$s_i, t_i=d$t_i, x=x_, v=d$dat_i$v)
       case_i_ <- case(T_pm$T_minus, T_pm$T_plus)
       if (case_i_!=9 &&
-          all(d$u==x_*d$d) &&
-          all(d$d==g_delta(case=case_i_, s_i=d$s_i, t_i=d$t_i,
-                           T_minus=T_pm$T_minus, T_plus=T_pm$T_plus))
+          all(d$dat_i$u==x_*d$dat_i$delta) &&
+          all(d$dat_i$delta==g_delta(case=case_i_, s_i=d$s_i, t_i=d$t_i,
+                                     T_minus=T_pm$T_minus, T_plus=T_pm$T_plus))
       ) {
         d$X_i_set <- c(d$X_i_set, list(x_))
       }
@@ -108,27 +108,53 @@ construct_negloglik <- function(
       params <- list(a_x=p[1], g_x=p[2:6], t_x=p[7:10], a_s=p[11], g_s=p[12:13], t_s=p[14], beta_x=p[15], beta_z=p[16], a_y=p[17], g_y=p[18:22], t_y=p[23])
     }
     
+    dat_i_names <- names(dat_objs[[1]]$dat_i)
+    inds <- list(
+      w = which(dat_i_names %in% c("w_1", "w_2")),
+      spl = which(
+        substr(dat_i_names, 1, 1)=="b" & substr(dat_i_names, 3, 3)=="_"
+      )
+    )
+
     lik_fn <- function(i) {
       
       # Extract data for individual i
       d <- dat_objs[[i]]
-      w <- t(d$w)
       
       # Compute the likelihood for individual i
       f2 <- sum(unlist(lapply(d$X_i_set, function(x) {
-        x_prev <- c(0,x[1:(length(x)-1)]) # !!!!! This can be precomputed
-        prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
-          # Note: here, j is the index of time within an individual rather than
-          #       a calendar time index
-          w_ij <- as.numeric(w[,j])
-          # if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
+        d$dat_i$x <- x
+        if (length(x)==1) {
+          d$dat_i$x_prev <- 0
+        } else {
+          d$dat_i$x_prev <- c(0,x[1:(length(x)-1)]) # !!!!! This can be precomputed
+        }
+        prod(apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
+          x <- r[["x"]]
+          w_ij <- as.numeric(r[inds$w])
+          j <- r[["cal_time_sc"]]
+          spl_ij <- r[inds$spl]
           return(
-            f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
-                s=In(d$cal_time[j]==d$s_i), spl=d$spl[j,], params=params) *
-              f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], j=d$cal_time_sc[j],
-                  spl=d$spl[j,], params=params)
+            f_x(x=x, x_prev=r[["x_prev"]], w=w_ij, j=j,
+                s=r[["init_visit"]], spl=spl_ij, params=params) *
+              f_y(y=r[["y"]], x=x, w=w_ij, z=r[["z"]], j=j,
+                  spl=spl_ij, params=params)
           )
-        })))
+        }))
+        # x_prev <- c(0,x[1:(length(x)-1)]) # !!!!! This can be precomputed
+        # prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
+        #   # Note: here, j is the index of time within an individual rather than
+        #   #       a calendar time index
+        #   w_ij <- as.numeric(w[,j])
+        #   spl_ij <- d$spl[j,]
+        #   # if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
+        #   return(
+        #     f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
+        #         s=d$init_visit, spl=spl_ij, params=params) *
+        #       f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], j=d$cal_time_sc[j],
+        #           spl=spl_ij, params=params)
+        #   )
+        # })))
       })))
       
       # # Uncomment this code to run model 10 (and comment out above)
@@ -407,11 +433,12 @@ if (cfg$model_version==0) {
         return(1)
       } else {
         prob <- exp2(
-          params$a_x + params$t_x[1]*spl$b4_1 + params$t_x[2]*spl$b4_2 +
-            params$t_x[3]*spl$b4_3 + params$t_x[4]*spl$b4_4 +
-            params$g_x[1]*w[1] + params$g_x[2]*spl$b2_1 +
-            params$g_x[3]*spl$b2_2 + params$g_x[4]*spl$b2_3 +
-            params$g_x[5]*spl$b2_4
+          params$a_x + params$t_x[1]*spl[["b4_1"]] +
+            params$t_x[2]*spl[["b4_2"]] +
+            params$t_x[3]*spl[["b4_3"]] + params$t_x[4]*spl[["b4_4"]] +
+            params$g_x[1]*w[1] + params$g_x[2]*spl[["b2_1"]] +
+            params$g_x[3]*spl[["b2_2"]] + params$g_x[4]*spl[["b2_3"]] +
+            params$g_x[5]*spl[["b2_4"]]
         )
         if (x==1) { return(prob) } else { return(1-prob) }
       }
@@ -531,9 +558,9 @@ if (cfg$model_version==0) {
   f_y <- function(y, x, w, z, j, spl, params) {
     prob <- exp2(
       params$beta_x*x*(1-z) + params$beta_z*x*z + params$a_y +
-        params$g_y[1]*w[1] + params$g_y[2]*spl$b3_1 +
-        params$g_y[3]*spl$b3_2 + params$g_y[4]*spl$b3_3 +
-        params$g_y[5]*spl$b3_4 + params$t_y*j
+        params$g_y[1]*w[1] + params$g_y[2]*spl[["b3_1"]] +
+        params$g_y[3]*spl[["b3_2"]] + params$g_y[4]*spl[["b3_3"]] +
+        params$g_y[5]*spl[["b3_4"]] + params$t_y*j
     )
     if (y==1) { return(prob) } else { return(1-prob) }
   }

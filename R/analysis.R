@@ -502,7 +502,11 @@ if (cfg2$run_analysis) {
   # !!!!! Code profiling
   if (F) {
     par_init <- c(a_x=-6.535, g_x1=-0.6737, g_x2=3.636, g_x3=0.2734, g_x4=0.4366, g_x5=-8.512, t_x1=-1.578, t_x2=-0.2818, t_x3=0.3750, t_x4=-2.160, a_s=-3.369, g_s1=-0.5761, g_s2=0.8899, t_s=1.051, beta_x=1, beta_z=0.5072, a_y=-5.944, g_y1=0.3940, g_y2=1.871, g_y3=2.923, g_y4=6.809, g_y5=3.004, t_y=-0.6077)
-    negloglik(par_init)
+    negloglik <- construct_negloglik(dat, parallelize=F, cl=NULL,
+                                     cfg$model_version)
+    qqq <- negloglik(par_init)
+    # BEFORE: qqq = 17333.29
+    # AFTER: qqq = 17333.29
   }
   
   # Set initial parameter estimates
