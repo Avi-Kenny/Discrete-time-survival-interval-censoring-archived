@@ -35,20 +35,20 @@ construct_negloglik <- function(
     # Create spline bases
     # !!!!! This section can be sped up by modifying construct_basis()
     if (model_version==13) {
-      d$dat_i$b2_1 <- sapply(d$dat_i$w_2, function(w_2) { b2(w_2,1) })
-      d$dat_i$b2_2 <- sapply(d$dat_i$w_2, function(w_2) { b2(w_2,2) })
-      d$dat_i$b2_3 <- sapply(d$dat_i$w_2, function(w_2) { b2(w_2,3) })
-      d$dat_i$b2_4 <- sapply(d$dat_i$w_2, function(w_2) { b2(w_2,4) })
-      d$dat_i$b3_1 <- sapply(d$dat_i$w_2, function(w_2) { b3(w_2,1) })
-      d$dat_i$b3_2 <- sapply(d$dat_i$w_2, function(w_2) { b3(w_2,2) })
-      d$dat_i$b3_3 <- sapply(d$dat_i$w_2, function(w_2) { b3(w_2,3) })
-      d$dat_i$b3_4 <- sapply(d$dat_i$w_2, function(w_2) { b3(w_2,4) })
-      d$dat_i$b4_1 <- sapply(d$dat_i$cal_time_sc, function(j) { b4(j,1) })
-      d$dat_i$b4_2 <- sapply(d$dat_i$cal_time_sc, function(j) { b4(j,2) })
-      d$dat_i$b4_3 <- sapply(d$dat_i$cal_time_sc, function(j) { b4(j,3) })
-      d$dat_i$b4_4 <- sapply(d$dat_i$cal_time_sc, function(j) { b4(j,4) })
+      d$dat_i$b2_1 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,1) }),4)
+      d$dat_i$b2_2 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,2) }),4)
+      d$dat_i$b2_3 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,3) }),4)
+      d$dat_i$b2_4 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,4) }),4)
+      d$dat_i$b3_1 <- signif(sapply(d$dat_i$w_2, function(w_2) { b3(w_2,1) }),4)
+      d$dat_i$b3_2 <- signif(sapply(d$dat_i$w_2, function(w_2) { b3(w_2,2) }),4)
+      d$dat_i$b3_3 <- signif(sapply(d$dat_i$w_2, function(w_2) { b3(w_2,3) }),4)
+      d$dat_i$b3_4 <- signif(sapply(d$dat_i$w_2, function(w_2) { b3(w_2,4) }),4)
+      d$dat_i$b4_1 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b4(j,1) }),4)
+      d$dat_i$b4_2 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b4(j,2) }),4)
+      d$dat_i$b4_3 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b4(j,3) }),4)
+      d$dat_i$b4_4 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b4(j,4) }),4)
     }
-    
+
     # Calculate the set X_i to sum over
     d$X_i_set <- list()
     for (j in c(1:(d$t_i-d$s_i+2))) {
@@ -63,6 +63,9 @@ construct_negloglik <- function(
         d$X_i_set <- c(d$X_i_set, list(x_))
       }
     }
+    
+    # # Convert to matrix
+    # d$dat_i <- as.matrix(d$dat_i)
     
     return(d)
     
@@ -79,6 +82,7 @@ construct_negloglik <- function(
   negloglik <- function(par) {
     
     print(paste("negloglik() called:",Sys.time())) # !!!!!
+    print(sort(sapply(ls(),function(x){object.size(get(x))})))
 
     # Convert parameter vector to a named list
     p <- as.numeric(par)
@@ -109,6 +113,7 @@ construct_negloglik <- function(
     }
     
     dat_i_names <- names(dat_objs[[1]]$dat_i)
+    # dat_i_names <- attr(dat_objs[[1]]$dat_i, "dimnames")[[2]]
     inds <- list(
       w = which(dat_i_names %in% c("w_1", "w_2")),
       spl = which(
@@ -186,72 +191,8 @@ construct_negloglik <- function(
       
     }
     
-    # !!!!! Debugging
-    if (F) {
-      print("Debugging: START")
-      print("cl")
-      print(cl)
-      
-      n_batches <- 4
-      folds <- cut(c(1:n), breaks=n_batches, labels=FALSE)
-      batches <- lapply(c(1:n_batches), function(batch) {
-        c(1:n)[folds==batch]
-      })
-      # cl <- parallel::makeCluster(10) # !!!!!
-      parallel::clusterExport(cl, c("batches", "lik_fn"), envir=environment())
-      
-      fnc <- function(x) { Sys.sleep(4) }
-      # fnc <- function(x) { Sys.sleep(0.0001) }
-      t_1 <- system.time({
-        r1 <- lapply(c(1:70), fnc)
-      })
-      t_2 <- system.time({
-        r2 <- parallel::parLapply(cl, c(1:70), fnc)
-      })
-      print("t_1")
-      print(t_1)
-      print("t_2")
-      print(t_2)
-      stop("hey")
-      
-      
-      t1 <- system.time({
-        v1 <- -1 * sum(log(unlist(lapply(c(1:n), lik_fn))))
-      })
-      t2 <- system.time({
-        v2 <- -1 * sum(log(unlist(parallel::parLapply(cl, c(1:n), lik_fn))))
-      })
-      t3 <- system.time({
-        v3 <- -1 * sum(unlist(parallel::parLapply(
-          cl,
-          c(1:n_batches),
-          function(batch) {
-            sum(log(unlist(lapply(batches[[batch]], lik_fn))))
-          })
-        ))
-      })
-      
-      print("Serial")
-      print(v1)
-      print(t1)
-      print("Parallel")
-      print(v2)
-      print(t2)
-      print(paste0("Parallel (", n_batches, " batches)"))
-      print(v3)
-      print(t3)
-      stop("TEMP STOP")
-      
-      # n_cores <- parallel::detectCores() - 1
-      # print(paste0("Using ", n_cores, " cores."))
-      # cl <- parallel::makeCluster(n_cores)
-      # parallel::clusterExport(cl, ls(.GlobalEnv))
-      
-    }
-
     # Compute the negative likelihood across individuals
     if (parallelize) {
-      
       parallel::clusterExport(cl, c("batches"), envir=environment())
       return(-1 * sum(unlist(parallel::parLapply(
         cl,
