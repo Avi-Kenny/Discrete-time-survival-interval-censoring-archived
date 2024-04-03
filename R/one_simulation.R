@@ -71,7 +71,7 @@ one_simulation <- function() {
   ))
   
   chk(2, "construct_negloglik: START")
-  negloglik <- construct_negloglik(dat)
+  negloglik <- construct_negloglik()
   chk(2, "construct_negloglik: END")
   chk(2, "optim: START")
   opt <- stats::optim(

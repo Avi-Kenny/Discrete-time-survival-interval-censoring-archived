@@ -89,7 +89,7 @@ if (F) {
 chk(0, "START")
 .t_start <- Sys.time()
 cfg2 <- list(
-  process_data = T,
+  process_data = T, # !!!!!
   save_data = F,
   run_dqa = F,
   run_analysis = T,
@@ -159,7 +159,9 @@ if (cfg2$use_simulated_dataset) {
     set.seed(1)
     dat_prc <- dat_raw <- read.csv("../Data/data_raw_full.csv")
     iintids <- unique(dat_prc$iintid)
-    samp_size <- 20000
+    # samp_size <- 20000
+    # samp_size <- 5000
+    samp_size <- 150000 # !!!!!
     # samp_size <- as.integer(Sys.getenv("avi_samp_size")) # !!!!!
     iintids_sample <- sample(iintids, size=samp_size)
     dat_prc %<>% dplyr::filter(iintid %in% iintids_sample)
@@ -382,6 +384,12 @@ if (cfg2$use_simulated_dataset) {
     
     rm(dat_raw,dat_prc)
     
+    # Create transformed dataset object
+    dat_objs <- transform_dataset(dat, model_version=cfg$model_version)
+    
+    saveRDS(dat, "dat.rds")
+    saveRDS(dat_objs, "dat_objs.rds")
+
     # Check estimates for model 10 against Cox model estimates
     # !!!!! Move this code elsewhere
     if (F) {
@@ -431,6 +439,7 @@ if (cfg2$use_simulated_dataset) {
   } else {
     
     dat <- readRDS("dat.rds")
+    dat_objs <- readRDS("dat_objs.rds")
     
   }
   
@@ -484,27 +493,97 @@ if (cfg2$run_dqa) {
 
 if (cfg2$run_analysis) {
   
+  dat_i_names <- names(dat_objs[[1]]$dat_i)
+  inds <- list(
+    w = which(dat_i_names %in% c("w_1", "w_2")),
+    spl = which(substr(dat_i_names, 1, 1)=="b" & substr(dat_i_names, 3, 3)=="_")
+  )
+  
   # Construct log likelihood function
   chk(3, "construct_negloglik: START")
   if (cfg2$parallelize) {
-    n_cores <- cfg$sim_n_cores
-    print(paste0("Using ", n_cores, " cores."))
-    cl <- parallel::makeCluster(n_cores)
-    parallel::clusterExport(cl, ls(.GlobalEnv))
-    negloglik <- construct_negloglik(dat, parallelize=T, cl=cl,
-                                     cfg$model_version)
+    print(paste0("Using ", cfg$sim_n_cores, " cores."))
+    n <- attr(dat, "n")
+    folds <- cut(c(1:n), breaks=cfg$sim_n_cores, labels=FALSE)
+    batches <- lapply(c(1:cfg$sim_n_cores), function(batch) {
+      c(1:n)[folds==batch]
+    })
+    dat_objs_wrapper <- lapply(batches, function(i) { dat_objs[i] }) # !!!!! New
+    cl <- parallel::makeCluster(cfg$sim_n_cores)
+    objs_to_export <- c("f_x", "f_y", "exp2", "lik_fn", "lik_fn2", "inds",
+                        "batches")
+    parallel::clusterExport(cl, objs_to_export, envir=.GlobalEnv)
+    
+    # parallel::clusterExport(cl, ls(.GlobalEnv))
+    # negloglik <- construct_negloglik(parallelize=T, cl=cl,
+    #                                  cfg$model_version)
+    negloglik <- construct_negloglik(parallelize=T, cfg$model_version)
   } else {
-    negloglik <- construct_negloglik(dat, parallelize=F, cl=NULL,
-                                     cfg$model_version)
+    # negloglik <- construct_negloglik(parallelize=F, cl=NULL,
+    #                                  cfg$model_version)
+    negloglik <- construct_negloglik(parallelize=F, cfg$model_version)
   }
   chk(3, "construct_negloglik: END")
   
   # !!!!! Code profiling
   if (F) {
+    
+    if (F) {
+      
+      cl <- parallel::makeCluster(cfg$sim_n_cores)
+      parallel::clusterEvalQ(cl, sink(paste0("C:/Users/ak811/Desktop/Avi/Research/HIVMI/output", Sys.getpid(), ".txt"))) # !!!!!
+      parallel::parLapply(cl, c(1:5), function(i) {
+        print("Check 1")
+        print(pryr::mem_used())
+      })
+      parallel::clusterExport(cl, c("f_x", "f_y", "exp2"), envir=.GlobalEnv)
+      parallel::parLapply(cl, c(1:5), function(i) {
+        print("Check 2")
+        print(pryr::mem_used())
+      })
+      parallel::clusterExport(cl, c("lik_fn"), envir=.GlobalEnv)
+      parallel::parLapply(cl, c(1:5), function(i) {
+        print("Check 3")
+        print(pryr::mem_used())
+      })
+      parallel::clusterExport(cl, c("inds", "batches"), envir=.GlobalEnv)
+      parallel::parLapply(cl, c(1:5), function(i) {
+        print("Check 4")
+        print(pryr::mem_used())
+      })
+      print("Check 4.2")
+      print("pryr::object_size(dat_objs)")
+      print(pryr::object_size(dat_objs))
+      print("pryr::object_size(get('dat_objs', envir=.GlobalEnv))")
+      print(pryr::object_size(get("dat_objs", envir=.GlobalEnv)))
+      parallel::clusterExport(cl, c("dat_objs"), envir=.GlobalEnv)
+      parallel::parLapply(cl, c(1:5), function(i) {
+        print("Check 5")
+        print(pryr::mem_used())
+        print("pryr::object_size(dat_objs)")
+        print(pryr::object_size(dat_objs))
+        # dat_objs[[i]]
+      })
+      
+      parallel::clusterExport(cl, c("dat"), envir=.GlobalEnv)
+      parallel::parLapply(cl, c(1:5), function(i) {
+        pryr::object_size(dat)
+        # pryr::mem_used()
+      })
+      
+      
+    }
+    
     par_init <- c(a_x=-6.535, g_x1=-0.6737, g_x2=3.636, g_x3=0.2734, g_x4=0.4366, g_x5=-8.512, t_x1=-1.578, t_x2=-0.2818, t_x3=0.3750, t_x4=-2.160, a_s=-3.369, g_s1=-0.5761, g_s2=0.8899, t_s=1.051, beta_x=1, beta_z=0.5072, a_y=-5.944, g_y1=0.3940, g_y2=1.871, g_y3=2.923, g_y4=6.809, g_y5=3.004, t_y=-0.6077)
-    negloglik <- construct_negloglik(dat, parallelize=F, cl=NULL,
-                                     cfg$model_version)
-    qqq <- negloglik(par_init)
+    
+    negloglik <- construct_negloglik(parallelize=T, cfg$model_version)
+    system.time({ qqq1 <- negloglik(par_init) })
+    print(qqq1)
+    
+    negloglik <- construct_negloglik(parallelize=F, cfg$model_version)
+    system.time({ qqq2 <- negloglik(par_init) })
+    print(qqq2)
+    
     # BEFORE: qqq = 17333.29
     # AFTER: qqq = 17333.29
   }
@@ -582,6 +661,7 @@ if (cfg2$run_analysis) {
   print(hessian_est)
   hessian_inv <- solve(hessian_est)
   chk(5, "hessian: END")
+  parallel::stopCluster(cl)
   
   # if (cfg2$parallelize) { stopCluster(cl) }
   

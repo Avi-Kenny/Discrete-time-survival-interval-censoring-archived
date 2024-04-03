@@ -1,11 +1,7 @@
-#' Negative log-likelihood across individuals and time
+#' Transform dataset
 #' @param dat A dataset returned by generate_dataset()
-#' @param par Vector of parameters governing the distribution.
-#' @return Numeric likelihood
-#' @notes This corresponds to the missing data structure
-construct_negloglik <- function(
-  dat, parallelize=FALSE, cl=NULL, model_version=0
-) {
+#' @param model_version Model version, as specified in MAIN.R
+transform_dataset <- function(dat, model_version=0) {
   
   # Construct spline bases
   if (model_version==13) {
@@ -14,13 +10,14 @@ construct_negloglik <- function(
     b4 <- construct_basis("year (00,05,10,15,20)")
   }
   
-  # Construct a dataframe specific to each individual
   n <- attr(dat, "n")
+  
+  # Construct a dataframe specific to each individual
   dat_objs <- lapply(c(1:n), function(i) {
     
     d <- list()
     d$dat_i <- dat[dat$id==i,]
-
+    
     # Start and end times
     d$s_i <- attr(dat, "s_i")[i]
     d$t_i <- attr(dat, "t_i")[i]
@@ -48,7 +45,7 @@ construct_negloglik <- function(
       d$dat_i$b4_3 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b4(j,3) }),4)
       d$dat_i$b4_4 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b4(j,4) }),4)
     }
-
+    
     # Calculate the set X_i to sum over
     d$X_i_set <- list()
     for (j in c(1:(d$t_i-d$s_i+2))) {
@@ -71,18 +68,26 @@ construct_negloglik <- function(
     
   })
   
-  if (parallelize) {
-    n_batches <- length(cl)
-    folds <- cut(c(1:n), breaks=n_batches, labels=FALSE)
-    batches <- lapply(c(1:n_batches), function(batch) {
-      c(1:n)[folds==batch]
-    })
-  }
+  rm(dat)
+  
+  return(dat_objs)
+  
+}
+
+#' Negative log-likelihood across individuals and time
+#' @param parallelize Whether or not to parallelize computation
+#' @param model_version Model version, as specified in MAIN.R
+#' @return Numeric likelihood
+#' @notes This corresponds to the missing data structure
+construct_negloglik <- function(parallelize=FALSE, model_version=0) {
   
   negloglik <- function(par) {
     
     print(paste("negloglik() called:",Sys.time())) # !!!!!
-    print(sort(sapply(ls(),function(x){object.size(get(x))})))
+    # print(sort(sapply(ls(parent.frame(2)),function(x) { # !!!!!
+    #   format(object.size(get(x)), units="MB") # !!!!!
+    # }))) # !!!!!
+    # browser() # !!!!!
 
     # Convert parameter vector to a named list
     p <- as.numeric(par)
@@ -112,103 +117,246 @@ construct_negloglik <- function(
       params <- list(a_x=p[1], g_x=p[2:6], t_x=p[7:10], a_s=p[11], g_s=p[12:13], t_s=p[14], beta_x=p[15], beta_z=p[16], a_y=p[17], g_y=p[18:22], t_y=p[23])
     }
     
-    dat_i_names <- names(dat_objs[[1]]$dat_i)
-    # dat_i_names <- attr(dat_objs[[1]]$dat_i, "dimnames")[[2]]
-    inds <- list(
-      w = which(dat_i_names %in% c("w_1", "w_2")),
-      spl = which(
-        substr(dat_i_names, 1, 1)=="b" & substr(dat_i_names, 3, 3)=="_"
-      )
-    )
-
-    lik_fn <- function(i) {
-      
-      # Extract data for individual i
-      d <- dat_objs[[i]]
-      
-      # Compute the likelihood for individual i
-      f2 <- sum(unlist(lapply(d$X_i_set, function(x) {
-        d$dat_i$x <- x
-        if (length(x)==1) {
-          d$dat_i$x_prev <- 0
-        } else {
-          d$dat_i$x_prev <- c(0,x[1:(length(x)-1)]) # !!!!! This can be precomputed
-        }
-        prod(apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
-          x <- r[["x"]]
-          w_ij <- as.numeric(r[inds$w])
-          j <- r[["cal_time_sc"]]
-          spl_ij <- r[inds$spl]
-          return(
-            f_x(x=x, x_prev=r[["x_prev"]], w=w_ij, j=j,
-                s=r[["init_visit"]], spl=spl_ij, params=params) *
-              f_y(y=r[["y"]], x=x, w=w_ij, z=r[["z"]], j=j,
-                  spl=spl_ij, params=params)
-          )
-        }))
-        # x_prev <- c(0,x[1:(length(x)-1)]) # !!!!! This can be precomputed
-        # prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
-        #   # Note: here, j is the index of time within an individual rather than
-        #   #       a calendar time index
-        #   w_ij <- as.numeric(w[,j])
-        #   spl_ij <- d$spl[j,]
-        #   # if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
-        #   return(
-        #     f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
-        #         s=d$init_visit, spl=spl_ij, params=params) *
-        #       f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], j=d$cal_time_sc[j],
-        #           spl=spl_ij, params=params)
-        #   )
-        # })))
-      })))
-      
-      # # Uncomment this code to run model 10 (and comment out above)
-      # f2 <- mean(unlist(lapply(d$X_i_set, function(x) {
-      #   x_prev <- c(0,x[1:(length(x)-1)])
-      #   prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
-      #     # Note: here, j is the index of time within an individual rather than
-      #     #       a calendar time index
-      #     w_ij <- as.numeric(w[,j])
-      #     # if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
-      #     return(
-      #       f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
-      #           s=In(d$cal_time[j]==d$s_i), params=params) * # Maybe create this indicator variable (vector) earlier
-      #         f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], j=d$cal_time_sc[j],
-      #             params=params)
-      #     )
-      #   })))
-      # })))
-      
-      # if (is.na(f2) || is.nan(f2)) {
-      #   browser()
-      # } # Debugging
-      if (f2<=0) {
-        f2 <- 1e-10
-        # warning("Likelihood of zero")
-      }
-      
-      return(f2)
-      
-    }
-    
     # Compute the negative likelihood across individuals
     if (parallelize) {
-      parallel::clusterExport(cl, c("batches"), envir=environment())
-      return(-1 * sum(unlist(parallel::parLapply(
-        cl,
-        c(1:n_batches),
-        function(batch) { sum(log(unlist(lapply(batches[[batch]], lik_fn)))) })
-      )))
+      
+      # parallel::clusterEvalQ(cl, sink(paste0("C:/Users/ak811/Desktop/Avi/Research/HIVMI/output", Sys.getpid(), ".txt"))) # !!!!!
+      # parallel::parLapply(cl, c(1:5), function(i) {
+      #   print("Check 1")
+      #   print(pryr::mem_used())
+      # })
+      # print(pryr::object_size(dat_objs))
+      # parallel::clusterExport(cl, c("dat_objs"), envir=.GlobalEnv)
+
+      # return(-1 * sum(unlist(parallel::parLapply(
+      #   cl,
+      #   c(1:cfg$sim_n_cores),
+      #   function(batch) {
+      #     print("START BATCH")
+      #     print("mem_used() START") # !!!!!
+      #     print(pryr::mem_used()) # !!!!!
+      #     inner_sum <- 0
+      #     for (i in batches[[batch]]) {
+      #       lik_i <- lik_fn(i, params, inds)
+      #       print("mem_used() BEFORE") # !!!!!
+      #       print(pryr::mem_used()) # !!!!!
+      #       print("mem_used() AFTER") # !!!!!
+      #       # browser() # !!!!!
+      #       # mem_used() # !!!!!
+      #       # print("Mem change:")
+      #       # print(mem_change({ lik_i <- lik_fn(i) }))
+      #       inner_sum <- inner_sum + log(lik_i)
+      #     }
+      #     return(inner_sum)
+      #     # sum(log(unlist(lapply(batches[[batch]], lik_fn))))
+      #   })
+      # )))
+      
+      # !!!!! Testing v1
+      if (Sys.getenv("avi_test")=="type1") {
+        print("Type 1")
+        nll <- -1 * sum(log(unlist(parallel::parLapply(cl, dat_objs, function(d) {
+          lik_fn2(d, params, inds)
+        }))))
+        print(paste0("NLL: ", nll))
+        print(pryr::mem_used())
+        return(nll)
+      }
+      
+      # !!!!! Testing v2
+      if (Sys.getenv("avi_test")=="type2") {
+        print("Type 2")
+        nll <- -1 * sum(log(unlist(
+          parallel::parLapply(cl, dat_objs_wrapper, function(d) {
+            lapply(d, function(d2) { lik_fn2(d2, params, inds) })
+          })
+        )))
+        print(paste0("NLL: ", nll))
+        print(pryr::mem_used())
+        return(nll)
+      }
       
     } else {
       
-      return(-1 * sum(log(unlist(lapply(c(1:n), lik_fn)))))
+      stop("This section needs to be updated.")
       
+      # return(-1 * sum(log(unlist(lapply(c(1:n), lik_fn)))))
+      
+      inner_sum <- 0
+      for (i in c(1:n)) {
+        lik_i <- lik_fn(i, params, inds)
+        # browser() # !!!!!
+        print(mem_used()) # !!!!!
+        # print("Mem change:")
+        # print(mem_change({ lik_i <- lik_fn(i) }))
+        inner_sum <- inner_sum + log(lik_i)
+      }
+      return(-1*inner_sum)
     }
     
   }
   
   return(negloglik)
+  
+}
+
+
+
+#' Calculate likelihood for individual i
+#'
+#' @param i Index for an individual
+#' @param params TO DO
+#' @param inds TO DO
+#' @return Numeric likelihood
+#' @note dat_objs is accessed globally
+lik_fn <- function(i, params, inds) {
+  
+  print(paste0("i: ", i))
+  # Extract data for individual i
+  d <- dat_objs[[i]]
+  
+  # Compute the likelihood for individual i
+  f2 <- sum(unlist(lapply(d$X_i_set, function(x) {
+    d$dat_i$x <- x
+    if (length(x)==1) {
+      d$dat_i$x_prev <- 0
+    } else {
+      d$dat_i$x_prev <- c(0,x[1:(length(x)-1)]) # !!!!! This can be precomputed
+    }
+    return(prod(apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
+      x <- r[["x"]]
+      w_ij <- as.numeric(r[inds$w])
+      j <- r[["cal_time_sc"]]
+      spl_ij <- r[inds$spl]
+      return(
+        f_x(x=x, x_prev=r[["x_prev"]], w=w_ij, j=j,
+            s=r[["init_visit"]], spl=spl_ij, params=params) *
+          f_y(y=r[["y"]], x=x, w=w_ij, z=r[["z"]], j=j,
+              spl=spl_ij, params=params)
+      )
+    })))
+    # x_prev <- c(0,x[1:(length(x)-1)]) # !!!!! This can be precomputed
+    # prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
+    #   # Note: here, j is the index of time within an individual rather than
+    #   #       a calendar time index
+    #   w_ij <- as.numeric(w[,j])
+    #   spl_ij <- d$spl[j,]
+    #   # if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
+    #   return(
+    #     f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
+    #         s=d$init_visit, spl=spl_ij, params=params) *
+    #       f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], j=d$cal_time_sc[j],
+    #           spl=spl_ij, params=params)
+    #   )
+    # })))
+  })))
+  
+  # # Uncomment this code to run model 10 (and comment out above)
+  # f2 <- mean(unlist(lapply(d$X_i_set, function(x) {
+  #   x_prev <- c(0,x[1:(length(x)-1)])
+  #   prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
+  #     # Note: here, j is the index of time within an individual rather than
+  #     #       a calendar time index
+  #     w_ij <- as.numeric(w[,j])
+  #     # if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
+  #     return(
+  #       f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
+  #           s=In(d$cal_time[j]==d$s_i), params=params) * # Maybe create this indicator variable (vector) earlier
+  #         f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], j=d$cal_time_sc[j],
+  #             params=params)
+  #     )
+  #   })))
+  # })))
+  
+  # if (is.na(f2) || is.nan(f2)) {
+  #   browser()
+  # } # Debugging
+  if (f2<=0) {
+    f2 <- 1e-10
+    # warning("Likelihood of zero")
+  }
+  
+  return(f2)
+  
+}
+
+
+
+#' Calculate likelihood for individual i
+#'
+#' @param d One component of the list dat_objs
+#' @param params TO DO
+#' @param inds TO DO
+#' @return Numeric likelihood
+#' @note dat_objs is accessed globally
+lik_fn2 <- function(d, params, inds) {
+  
+  # print(paste0("i: ", i))
+  # Extract data for individual i
+  # d <- dat_objs[[i]]
+  
+  # Compute the likelihood for individual i
+  f2 <- sum(unlist(lapply(d$X_i_set, function(x) {
+    d$dat_i$x <- x
+    if (length(x)==1) {
+      d$dat_i$x_prev <- 0
+    } else {
+      d$dat_i$x_prev <- c(0,x[1:(length(x)-1)]) # !!!!! This can be precomputed
+    }
+    return(prod(apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
+      x <- r[["x"]]
+      w_ij <- as.numeric(r[inds$w])
+      j <- r[["cal_time_sc"]]
+      spl_ij <- r[inds$spl]
+      return(
+        f_x(x=x, x_prev=r[["x_prev"]], w=w_ij, j=j,
+            s=r[["init_visit"]], spl=spl_ij, params=params) *
+          f_y(y=r[["y"]], x=x, w=w_ij, z=r[["z"]], j=j,
+              spl=spl_ij, params=params)
+      )
+    })))
+    # x_prev <- c(0,x[1:(length(x)-1)]) # !!!!! This can be precomputed
+    # prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
+    #   # Note: here, j is the index of time within an individual rather than
+    #   #       a calendar time index
+    #   w_ij <- as.numeric(w[,j])
+    #   spl_ij <- d$spl[j,]
+    #   # if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
+    #   return(
+    #     f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
+    #         s=d$init_visit, spl=spl_ij, params=params) *
+    #       f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], j=d$cal_time_sc[j],
+    #           spl=spl_ij, params=params)
+    #   )
+    # })))
+  })))
+  
+  # # Uncomment this code to run model 10 (and comment out above)
+  # f2 <- mean(unlist(lapply(d$X_i_set, function(x) {
+  #   x_prev <- c(0,x[1:(length(x)-1)])
+  #   prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
+  #     # Note: here, j is the index of time within an individual rather than
+  #     #       a calendar time index
+  #     w_ij <- as.numeric(w[,j])
+  #     # if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
+  #     return(
+  #       f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
+  #           s=In(d$cal_time[j]==d$s_i), params=params) * # Maybe create this indicator variable (vector) earlier
+  #         f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], j=d$cal_time_sc[j],
+  #             params=params)
+  #     )
+  #   })))
+  # })))
+  
+  # if (is.na(f2) || is.nan(f2)) {
+  #   browser()
+  # } # Debugging
+  if (f2<=0) {
+    f2 <- 1e-10
+    # warning("Likelihood of zero")
+  }
+  
+  return(f2)
   
 }
 
