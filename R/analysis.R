@@ -159,9 +159,9 @@ if (cfg2$use_simulated_dataset) {
     set.seed(1)
     dat_prc <- dat_raw <- read.csv("../Data/data_raw_full.csv")
     iintids <- unique(dat_prc$iintid)
-    # samp_size <- 20000
-    # samp_size <- 5000
-    samp_size <- 150000 # !!!!!
+    samp_size <- 20000
+    # samp_size <- 5000 # !!!!! Rapid testing
+    # samp_size <- 150000 # !!!!! Testing code speed
     # samp_size <- as.integer(Sys.getenv("avi_samp_size")) # !!!!!
     iintids_sample <- sample(iintids, size=samp_size)
     dat_prc %<>% dplyr::filter(iintid %in% iintids_sample)
@@ -616,6 +616,8 @@ if (cfg2$run_analysis) {
     par_init <- c(a_x=-4.667, g_x1=-0.7444, g_x2=3.658, g_x3=-1.970, g_x4=-0.8989, g_x5=-6.690, t_x=-1.169, a_s=-3.299, g_s1=-0.6594, g_s2=0.8443, t_s=1.051, beta_x=0.4, beta_z=0.4, a_y=-5.654, g_y1=0.2733, g_y2=1.759, g_y3=2.802, g_y4=6.180, g_y5=2.649, t_y=-0.6332)
   } else if (cfg$model_version==13) {
     par_init <- c(a_x=-6.535, g_x1=-0.6737, g_x2=3.636, g_x3=0.2734, g_x4=0.4366, g_x5=-8.512, t_x1=-1.578, t_x2=-0.2818, t_x3=0.3750, t_x4=-2.160, a_s=-3.369, g_s1=-0.5761, g_s2=0.8899, t_s=1.051, beta_x=1, beta_z=0.5072, a_y=-5.944, g_y1=0.3940, g_y2=1.871, g_y3=2.923, g_y4=6.809, g_y5=3.004, t_y=-0.6077)
+  } else if (cfg$model_version==14) {
+    par_init <- c(a_x=-6.4259, g_x1=-0.6615, g_x2=3.8732, g_x3=0.3611, g_x4=0.4009, g_x5=-8.3184, t_x1=-1.5438, t_x2=-0.4423, t_x3=0.2004, t_x4=-1.9727, a_s=-3.2812, g_s1=-0.5526, g_s2=0.9998, t_s=0.965, beta_x=1.0095, beta_z=0.7339, a_y=-6.0168, g_y1=0.3872, g_y2=1.8626, g_y3=3.0372, g_y4=6.7157, g_y5=3.4179, t_y1=0, t_y2=0, t_y3=0, t_y4=0)
   }
   
   # par_true <- c(

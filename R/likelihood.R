@@ -4,7 +4,7 @@
 transform_dataset <- function(dat, model_version=0) {
   
   # Construct spline bases
-  if (model_version==13) {
+  if (model_version %in% c(13,14)) {
     b2 <- construct_basis("age (13,20,30,60,90)")
     b3 <- construct_basis("age (13,30,60,75,90)")
     b4 <- construct_basis("year (00,05,10,15,20)")
@@ -29,9 +29,9 @@ transform_dataset <- function(dat, model_version=0) {
       cal_time_sc = t_end / 10 # Rescaling originally done to prevent optimization issues; check if this is still needed
     )
     
-    # Create spline bases
+    # Apply spline bases to datafrane
     # !!!!! This section can be sped up by modifying construct_basis()
-    if (model_version==13) {
+    if (model_version %in% c(13,14)) {
       d$dat_i$b2_1 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,1) }),4)
       d$dat_i$b2_2 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,2) }),4)
       d$dat_i$b2_3 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,3) }),4)
@@ -115,6 +115,8 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
       params <- list(a_x=p[1], g_x=p[2:6], t_x=p[7], a_s=p[8], g_s=p[9:10], t_s=p[11], beta_x=p[12], beta_z=p[13], a_y=p[14], g_y=p[15:19], t_y=p[20])
     } else if (model_version==13) {
       params <- list(a_x=p[1], g_x=p[2:6], t_x=p[7:10], a_s=p[11], g_s=p[12:13], t_s=p[14], beta_x=p[15], beta_z=p[16], a_y=p[17], g_y=p[18:22], t_y=p[23])
+    } else if (model_version==14) {
+      params <- list(a_x=p[1], g_x=p[2:6], t_x=p[7:10], a_s=p[11], g_s=p[12:13], t_s=p[14], beta_x=p[15], beta_z=p[16], a_y=p[17], g_y=p[18:22], t_y=p[23:26])
     }
     
     # Compute the negative likelihood across individuals
@@ -152,29 +154,29 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
       #   })
       # )))
       
-      # !!!!! Testing v1
-      if (Sys.getenv("avi_test")=="type1") {
-        print("Type 1")
-        nll <- -1 * sum(log(unlist(parallel::parLapply(cl, dat_objs, function(d) {
-          lik_fn2(d, params, inds)
-        }))))
-        print(paste0("NLL: ", nll))
-        print(pryr::mem_used())
-        return(nll)
-      }
+      # # !!!!! Testing v1
+      # if (Sys.getenv("avi_test")=="type1") {
+      #   print("Type 1")
+      #   nll <- -1 * sum(log(unlist(parallel::parLapply(cl, dat_objs, function(d) {
+      #     lik_fn2(d, params, inds)
+      #   }))))
+      #   print(paste0("NLL: ", nll))
+      #   print(pryr::mem_used())
+      #   return(nll)
+      # }
       
       # !!!!! Testing v2
-      if (Sys.getenv("avi_test")=="type2") {
-        print("Type 2")
+      # if (Sys.getenv("avi_test")=="type2") {
+        # print("Type 2")
         nll <- -1 * sum(log(unlist(
           parallel::parLapply(cl, dat_objs_wrapper, function(d) {
             lapply(d, function(d2) { lik_fn2(d2, params, inds) })
           })
         )))
-        print(paste0("NLL: ", nll))
-        print(pryr::mem_used())
-        return(nll)
-      }
+        # print(paste0("NLL: ", nll))
+        # print(pryr::mem_used())
+        # return(nll)
+      # }
       
     } else {
       
@@ -514,7 +516,7 @@ if (cfg$model_version==0) {
     return(f_x)
   })()
   
-} else if (cfg$model_version==13) {
+} else if (cfg$model_version %in% c(13,14)) {
   
   f_x <- function(x, x_prev, w, j, s, spl, params) {
     if (s==0) {
@@ -650,6 +652,20 @@ if (cfg$model_version==0) {
         params$g_y[1]*w[1] + params$g_y[2]*spl[["b3_1"]] +
         params$g_y[3]*spl[["b3_2"]] + params$g_y[4]*spl[["b3_3"]] +
         params$g_y[5]*spl[["b3_4"]] + params$t_y*j
+    )
+    if (y==1) { return(prob) } else { return(1-prob) }
+  }
+  
+} else if (cfg$model_version==14) {
+  
+  f_y <- function(y, x, w, z, j, spl, params) {
+    prob <- exp2(
+      params$beta_x*x*(1-z) + params$beta_z*x*z + params$a_y +
+        params$g_y[1]*w[1] + params$g_y[2]*spl[["b3_1"]] +
+        params$g_y[3]*spl[["b3_2"]] + params$g_y[4]*spl[["b3_3"]] +
+        params$g_y[5]*spl[["b3_4"]] + params$t_y[1]*spl[["b4_1"]] +
+        params$t_y[2]*spl[["b4_2"]] + params$t_y[3]*spl[["b4_3"]] +
+        params$t_y[4]*spl[["b4_4"]]
     )
     if (y==1) { return(prob) } else { return(1-prob) }
   }
