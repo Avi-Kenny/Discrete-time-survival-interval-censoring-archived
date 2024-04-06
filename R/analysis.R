@@ -245,6 +245,13 @@ if (cfg2$use_simulated_dataset) {
       "t_end" = year
     )
     
+    # # !!!!! TEMPORARY
+    # if (Sys.getenv("avi_sex")=="M") {
+    #   dat_prc %<>% dplyr::filter(w_1==1)
+    # } else if (Sys.getenv("avi_sex")=="F") {
+    #   dat_prc %<>% dplyr::filter(w_1==0)
+    # }
+    
     # Sort dataframe
     dat_prc %<>% dplyr::arrange(id,t_start)
     
@@ -389,7 +396,7 @@ if (cfg2$use_simulated_dataset) {
     
     saveRDS(dat, "dat.rds")
     saveRDS(dat_objs, "dat_objs.rds")
-
+    
     # Check estimates for model 10 against Cox model estimates
     # !!!!! Move this code elsewhere
     if (F) {
@@ -617,7 +624,9 @@ if (cfg2$run_analysis) {
   } else if (cfg$model_version==13) {
     par_init <- c(a_x=-6.535, g_x1=-0.6737, g_x2=3.636, g_x3=0.2734, g_x4=0.4366, g_x5=-8.512, t_x1=-1.578, t_x2=-0.2818, t_x3=0.3750, t_x4=-2.160, a_s=-3.369, g_s1=-0.5761, g_s2=0.8899, t_s=1.051, beta_x=1, beta_z=0.5072, a_y=-5.944, g_y1=0.3940, g_y2=1.871, g_y3=2.923, g_y4=6.809, g_y5=3.004, t_y=-0.6077)
   } else if (cfg$model_version==14) {
-    par_init <- c(a_x=-6.4259, g_x1=-0.6615, g_x2=3.8732, g_x3=0.3611, g_x4=0.4009, g_x5=-8.3184, t_x1=-1.5438, t_x2=-0.4423, t_x3=0.2004, t_x4=-1.9727, a_s=-3.2812, g_s1=-0.5526, g_s2=0.9998, t_s=0.965, beta_x=1.0095, beta_z=0.7339, a_y=-6.0168, g_y1=0.3872, g_y2=1.8626, g_y3=3.0372, g_y4=6.7157, g_y5=3.4179, t_y1=0, t_y2=0, t_y3=0, t_y4=0)
+    par_init <- c(a_x=-6.3567, g_x1=-0.7201, g_x2=3.5877, g_x3=0.8982, g_x4=1.2344, g_x5=-7.8761, t_x1=-2.1962, t_x2=-0.396, t_x3=-0.0074, t_x4=-2.2542, a_s=-3.0662, g_s1=-0.6222, g_s2=0.8341, t_s=0.8966, beta_x=0.9409, beta_z=0.7236, a_y=-6.5048, g_y1=0.4056, g_y2=1.9911, g_y3=3.0964, g_y4=6.9362, g_y5=3.4698, t_y1=-0.2982, t_y2=-0.8746, t_y3=-0.5772, t_y4=-1.0723)
+  } else if (cfg$model_version==15) {
+    par_init <- c(a_x=-6.3567, g_x1=3.5877, g_x2=0.8982, g_x3=1.2344, g_x4=-7.8761, g_x5=3.5877, g_x6=0.8982, g_x7=1.2344, g_x8=-7.8761, t_x1=-2.1962, t_x2=-0.396, t_x3=-0.0074, t_x4=-2.2542, a_s=-3.0662, g_s1=-0.6222, g_s2=0.8341, t_s=0.8966, beta_x=0.9409, beta_z=0.7236, a_y=-6.5048, g_y1=0.4056, g_y2=1.9911, g_y3=3.0964, g_y4=6.9362, g_y5=3.4698, t_y1=-0.2982, t_y2=-0.8746, t_y3=-0.5772, t_y4=-1.0723)
   }
   
   # par_true <- c(

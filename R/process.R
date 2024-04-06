@@ -136,6 +136,23 @@ prob <- function(type, m, j, w_1, w_2) {
       beta_z=0.7339, a_y=-6.016, g_y1=0.3872, g_y2=1.862, g_y3=3.037,
       g_y4=6.715, g_y5=3.417, t_y=-0.6883
     )
+  } else if (m==14) {
+    p <- list(
+      a_x=-6.356, g_x1=-0.7200, g_x2=3.587, g_x3=0.8982, g_x4=1.234,
+      g_x5=-7.876, t_x1=-2.196, t_x2=-0.3959, t_x3=-0.007392, t_x4=-2.254,
+      a_s=-3.066, g_s1=-0.6221, g_s2=0.8340, t_s=0.8966, beta_x=0.9409,
+      beta_z=0.7236, a_y=-6.504, g_y1=0.4055, g_y2=1.991, g_y3=3.096,
+      g_y4=6.936, g_y5=3.469, t_y1=-0.2982, t_y2=-0.8745, t_y3=-0.5772,
+      t_y4=-1.072
+    )
+  } else if (m==15) {
+    p <- list(
+      a_x=-6.67, g_x1=4.86, g_x2=1.33, g_x3=0.871, g_x4=-6.53, g_x5=3.66,
+      g_x6=1.07, g_x7=2.60, g_x8=-7.59, t_x1=-1.82, t_x2=-0.728, t_x3=-0.593,
+      t_x4=-2.06, a_s=-3.08, g_s1=-0.742, g_s2=0.753, t_s=0.936, beta_x=1.12,
+      beta_z=1.00, a_y=-6.56, g_y1=0.431, g_y2=1.95, g_y3=3.29, g_y4=7.18,
+      g_y5=3.60, t_y1=-0.319, t_y2=-1.00, t_y3=-0.934, t_y4=-1.12
+    )
   }
   
   j <- j/10
@@ -155,11 +172,22 @@ prob <- function(type, m, j, w_1, w_2) {
         p$a_x + p$t_x*j + p$g_x1*w_1 + p$g_x2*b2(w_2,1) + p$g_x3*b2(w_2,2) +
           p$g_x4*b2(w_2,3) + p$g_x5*b2(w_2,4)
       )
-    } else if (m==13) {
+    } else if (m %in% c(13,14)) {
       prob <- exp2(
         p$a_x + p$t_x1*b4(j,1) + p$t_x2*b4(j,2) + p$t_x3*b4(j,3) +
           p$t_x4*b4(j,4) + p$g_x1*w_1 + p$g_x2*b2(w_2,1) + p$g_x3*b2(w_2,2) +
           p$g_x4*b2(w_2,3) + p$g_x5*b2(w_2,4)
+      )
+    } else if (m==15) {
+      prob <- exp2(
+        p$a_x + p$t_x1*b4(j,1) + p$t_x2*b4(j,2) + p$t_x3*b4(j,3) +
+          p$t_x4*b4(j,4) + w_1*(
+            p$g_x1*b2(w_2,1) + p$g_x2*b2(w_2,2) +
+              p$g_x3*b2(w_2,3) + p$g_x4*b2(w_2,4)
+          ) + (1-w_1)*(
+            p$g_x5*b2(w_2,1) + p$g_x6*b2(w_2,2) +
+              p$g_x7*b2(w_2,3) + p$g_x8*b2(w_2,4)
+          )
       )
     }
     
@@ -190,6 +218,12 @@ prob <- function(type, m, j, w_1, w_2) {
     } else if (m %in% c(12,13)) {
       prob <- exp2(
         p$a_y + p$t_y*j + p$g_y1*w_1 + p$g_y2*b3(w_2,1) + p$g_y3*b3(w_2,2) +
+          p$g_y4*b3(w_2,3) + p$g_y5*b3(w_2,4) + p$beta_x*x + p$beta_z*z
+      )
+    } else if (m %in% c(14,15)) {
+      prob <- exp2(
+        p$a_y + p$t_y1*b4(j,1) + p$t_y2*b4(j,2) + p$t_y3*b4(j,3) +
+          p$t_y4*b4(j,4) + p$g_y1*w_1 + p$g_y2*b3(w_2,1) + p$g_y3*b3(w_2,2) +
           p$g_y4*b3(w_2,3) + p$g_y5*b3(w_2,4) + p$beta_x*x + p$beta_z*z
       )
     }
@@ -274,7 +308,7 @@ plot_mod <- function(x_axis, type, m) {
 ##### VIZ: Plotting modeled probabilities #####
 ###############################################.
 
-m <- 13
+m <- 15
 b1 <- construct_basis("age (0-100), 4DF")
 b2 <- construct_basis("age (13,20,30,60,90)")
 b3 <- construct_basis("age (13,30,60,75,90)")
@@ -305,4 +339,25 @@ p09 <- plot_mod(x_axis="Year", type="mort (HIV+ART-)", m=m)
 print(ggpubr::ggarrange(p01, p02)) # Export 10"x5"
 print(ggpubr::ggarrange(p03, p04)) # Export 10"x5"
 print(ggpubr::ggarrange(p05, p08, p06, p09)) # Export 10"x10"
- 
+
+
+
+# !!!!! 3D plot
+if (F) {
+  library(plotly)
+  len <- 50
+  age_vec <- seq(13,90, length.out=len)
+  year_vec <- seq(0,22, length.out=len)
+  prob_mtx <- matrix(NA, nrow=len, ncol=len)
+  for (row in c(1:len)) {
+    for (col in c(1:len)) {
+      age <- age_vec[row]
+      year <- year_vec[col]
+      prob_mtx[row,col] <- prob(type="sero", m=15, j=year, w_1=0, w_2=age)
+    }
+  }
+  year_vec_display <- year_vec + 1999
+  fig <- plot_ly(x=age_vec, y=year_vec_display, z=prob_mtx)
+  fig <- fig %>% add_surface()
+  fig
+}

@@ -143,7 +143,7 @@ construct_basis <- function(which) {
   
   if (which=="age (0-100), 4DF") {
     
-    grid <- seq(0,1, length.out=100)
+    grid <- seq(0,1, length.out=500)
     k <- c(0,0.25,0.5,0.75,1)
     b <- Vectorize(function(x, i) {
       splines::ns(x=x, knots=k[2:4], Boundary.knots=k[c(1,5)])[i]
@@ -159,7 +159,7 @@ construct_basis <- function(which) {
     
   } else if (which=="age (13,20,30,60,90)") {
     
-    grid <- seq(0.13,0.90, length.out=100)
+    grid <- seq(0.13,0.90, length.out=500)
     k <- c(0.13, 0.2, 0.3, 0.6, 0.9)
     b <- Vectorize(function(x, i) {
       splines::ns(x=x, knots=k[2:4], Boundary.knots=k[c(1,5)])[i]
@@ -175,7 +175,7 @@ construct_basis <- function(which) {
     
   } else if (which=="age (13,30,60,75,90)") {
     
-    grid <- seq(0.13,0.90, length.out=100)
+    grid <- seq(0.13,0.90, length.out=500)
     k <- c(0.13, 0.3, 0.6, 0.75, 0.9)
     b <- Vectorize(function(x, i) {
       splines::ns(x=x, knots=k[2:4], Boundary.knots=k[c(1,5)])[i]
@@ -191,7 +191,7 @@ construct_basis <- function(which) {
     
   } else if (which=="year (00,05,10,15,20)") {
     
-    grid <- seq(0,2.2, length.out=100)
+    grid <- seq(0,2.2, length.out=500)
     k <- c(0,0.5,1,1.5,2)
     b <- Vectorize(function(x, i) {
       splines::ns(x=x, knots=k[2:4], Boundary.knots=k[c(1,5)])[i]
