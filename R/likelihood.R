@@ -4,7 +4,7 @@
 transform_dataset <- function(dat, model_version=0) {
   
   # Construct spline bases
-  if (model_version %in% c(13:15)) {
+  if (model_version %in% c(13:16)) {
     b2 <- construct_basis("age (13,20,30,60,90)")
     b3 <- construct_basis("age (13,30,60,75,90)")
     b4 <- construct_basis("year (00,05,10,15,20)")
@@ -31,7 +31,7 @@ transform_dataset <- function(dat, model_version=0) {
     
     # Apply spline bases to dataframe
     # !!!!! This section can be sped up by modifying construct_basis()
-    if (model_version %in% c(13:15)) {
+    if (model_version %in% c(13:16)) {
       d$dat_i$b2_1 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,1) }),4)
       d$dat_i$b2_2 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,2) }),4)
       d$dat_i$b2_3 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,3) }),4)
@@ -83,7 +83,10 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
   
   negloglik <- function(par) {
     
-    print(paste("negloglik() called:",Sys.time())) # !!!!!
+    counter <<- counter + 1
+    if (counter%%10==0) {
+      print(paste0(counter, " negloglik calls processed: ",Sys.time())) # !!!!!
+    }
     # print(sort(sapply(ls(parent.frame(2)),function(x) { # !!!!!
     #   format(object.size(get(x)), units="MB") # !!!!!
     # }))) # !!!!!
@@ -119,6 +122,8 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
       params <- list(a_x=p[1], g_x=p[2:6], t_x=p[7:10], a_s=p[11], g_s=p[12:13], t_s=p[14], beta_x=p[15], beta_z=p[16], a_y=p[17], g_y=p[18:22], t_y=p[23:26])
     } else if (model_version==15) {
       params <- list(a_x=p[1], g_x=p[2:9], t_x=p[10:13], a_s=p[14], g_s=p[15:16], t_s=p[17], beta_x=p[18], beta_z=p[19], a_y=p[20], g_y=p[21:25], t_y=p[26:29])
+    } else if (model_version==16) {
+      params <- list(a_x=p[1], g_x=p[2:9], t_x=p[10:13], a_s=p[14], g_s=p[15:16], t_s=p[17:20], beta_x=p[21], beta_z=p[22], a_y=p[23], g_y=p[24:28], t_y=p[29:32])
     }
     
     # Compute the negative likelihood across individuals
@@ -569,6 +574,38 @@ if (cfg$model_version==0) {
     }
   }
   
+} else if (cfg$model_version==16) {
+  
+  f_x <- function(x, x_prev, w, j, s, spl, params) {
+    if (s==0) {
+      if (x==1 && x_prev==1) {
+        return(1)
+      } else {
+        prob <- exp2(
+          params$a_x + params$t_x[1]*spl[["b4_1"]] +
+            params$t_x[2]*spl[["b4_2"]] + params$t_x[3]*spl[["b4_3"]] +
+            params$t_x[4]*spl[["b4_4"]] +
+            w[1]*(
+              params$g_x[1]*spl[["b2_1"]] + params$g_x[2]*spl[["b2_2"]] +
+                params$g_x[3]*spl[["b2_3"]] + params$g_x[4]*spl[["b2_4"]]
+            ) +
+            (1-w[1])*(
+              params$g_x[5]*spl[["b2_1"]] + params$g_x[6]*spl[["b2_2"]] +
+                params$g_x[7]*spl[["b2_3"]] + params$g_x[8]*spl[["b2_4"]]
+            )
+        )
+        if (x==1) { return(prob) } else { return(1-prob) }
+      }
+    } else {
+      prob <- exp2(
+        params$a_s + params$t_s[1]*spl[["b4_1"]] + params$t_s[2]*spl[["b4_2"]] +
+          params$t_s[3]*spl[["b4_3"]] + params$t_s[4]*spl[["b4_4"]] +
+          sum(params$g_s*w)
+      )
+      if (x==1) { return(prob) } else { return(1-prob) }
+    }
+  }
+  
 }
 
 
@@ -686,7 +723,7 @@ if (cfg$model_version==0) {
     if (y==1) { return(prob) } else { return(1-prob) }
   }
   
-} else if (cfg$model_version %in% c(14,15)) {
+} else if (cfg$model_version %in% c(14:16)) {
   
   f_y <- function(y, x, w, z, j, spl, params) {
     prob <- exp2(

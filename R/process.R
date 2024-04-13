@@ -153,6 +153,15 @@ prob <- function(type, m, j, w_1, w_2) {
       beta_z=1.00, a_y=-6.56, g_y1=0.431, g_y2=1.95, g_y3=3.29, g_y4=7.18,
       g_y5=3.60, t_y1=-0.319, t_y2=-1.00, t_y3=-0.934, t_y4=-1.12
     )
+  } else if (m==16) {
+    p <- list(
+      a_x=-6.66, g_x1=5.02, g_x2=1.27, g_x3=0.508, g_x4=-6.98, g_x5=3.77,
+      g_x6=0.790, g_x7=2.33, g_x8=-8.08, t_x1=-1.76, t_x2=-0.824, t_x3=-0.990,
+      t_x4=-2.07, a_s=-2.43, g_s1=-0.716, g_s2=0.755, t_s1=0.670, t_s2=0.545,
+      t_s3=0.509, t_s4=1.76, beta_x=1.16, beta_z=0.979, a_y=-6.52, g_y1=0.434,
+      g_y2=1.94, g_y3=3.25, g_y4=7.04, g_y5=3.62, t_y1=-0.274, t_y2=-1.02,
+      t_y3=-0.964, t_y4=-1.10
+    )
   }
   
   j <- j/10
@@ -178,7 +187,7 @@ prob <- function(type, m, j, w_1, w_2) {
           p$t_x4*b4(j,4) + p$g_x1*w_1 + p$g_x2*b2(w_2,1) + p$g_x3*b2(w_2,2) +
           p$g_x4*b2(w_2,3) + p$g_x5*b2(w_2,4)
       )
-    } else if (m==15) {
+    } else if (m %in% c(15:16)) {
       prob <- exp2(
         p$a_x + p$t_x1*b4(j,1) + p$t_x2*b4(j,2) + p$t_x3*b4(j,3) +
           p$t_x4*b4(j,4) + w_1*(
@@ -193,7 +202,14 @@ prob <- function(type, m, j, w_1, w_2) {
     
   } else if (type=="init") {
     
-    prob <- exp2(p$a_s + p$t_s*j + p$g_s1*w_1 + p$g_s2*w_2)
+    if (m<16) {
+      prob <- exp2(p$a_s + p$t_s*j + p$g_s1*w_1 + p$g_s2*w_2)
+    } else if (m==16) {
+      prob <- exp2(
+        p$a_s + p$t_s1*b4(j,1) + p$t_s2*b4(j,2) + p$t_s3*b4(j,3) +
+          p$t_s4*b4(j,4) + p$g_s1*w_1 + p$g_s2*w_2
+      )
+    }
     
   } else {
     
@@ -220,7 +236,7 @@ prob <- function(type, m, j, w_1, w_2) {
         p$a_y + p$t_y*j + p$g_y1*w_1 + p$g_y2*b3(w_2,1) + p$g_y3*b3(w_2,2) +
           p$g_y4*b3(w_2,3) + p$g_y5*b3(w_2,4) + p$beta_x*x + p$beta_z*z
       )
-    } else if (m %in% c(14,15)) {
+    } else if (m %in% c(14:16)) {
       prob <- exp2(
         p$a_y + p$t_y1*b4(j,1) + p$t_y2*b4(j,2) + p$t_y3*b4(j,3) +
           p$t_y4*b4(j,4) + p$g_y1*w_1 + p$g_y2*b3(w_2,1) + p$g_y3*b3(w_2,2) +
@@ -308,7 +324,7 @@ plot_mod <- function(x_axis, type, m) {
 ##### VIZ: Plotting modeled probabilities #####
 ###############################################.
 
-m <- 15
+m <- 16
 b1 <- construct_basis("age (0-100), 4DF")
 b2 <- construct_basis("age (13,20,30,60,90)")
 b3 <- construct_basis("age (13,30,60,75,90)")

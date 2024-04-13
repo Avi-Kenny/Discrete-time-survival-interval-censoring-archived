@@ -89,7 +89,7 @@ if (F) {
 chk(0, "START")
 .t_start <- Sys.time()
 cfg2 <- list(
-  process_data = T, # !!!!!
+  process_data = F, # !!!!!
   save_data = F,
   run_dqa = F,
   run_analysis = T,
@@ -488,6 +488,79 @@ if (cfg2$run_dqa) {
   dqa(sum(dat_prc$y==0, na.rm=T)==
         sum(dat_raw$died==0, na.rm=T) + sum(is.na(dat_raw$died)))
   
+  
+  
+  # Distribution of "year at entry"
+  dat_prc %>%
+    group_by(iintid) %>%
+    mutate(min_year=min(year)) %>%
+    filter(year==min_year) %>%
+    xtabs(~year, data=.)
+  
+  # Distribution of "year of test"
+  xtabs(~yearoftest, data=dat_prc)
+  
+  # Distribution of "year of first test"
+  dat_prc %>%
+    group_by(iintid) %>%
+    filter(!is.na(yearoftest)) %>%
+    mutate(min_year=min(year)) %>%
+    filter(year==min_year) %>%
+    xtabs(~year, data=.)
+  
+  # Distribution of "year of POS test"
+  dat_prc %>%
+    group_by(iintid) %>%
+    filter(!is.na(yearoftest) & hivresult=="P") %>%
+    xtabs(~year, data=.)
+  
+  # Distribution of "year of first POS test"
+  dat_prc %>%
+    group_by(iintid) %>%
+    filter(!is.na(yearoftest) & hivresult=="P") %>%
+    mutate(min_year=min(year)) %>%
+    filter(year==min_year) %>%
+    xtabs(~year, data=.)
+  
+  # Out of "year at entry" years, which years had HIV tests?
+  dat_prc %>%
+    group_by(iintid) %>%
+    mutate(min_year=min(year)) %>%
+    filter(year==min_year) %>%
+    filter(!is.na(yearoftest)) %>%
+    xtabs(~year, data=.)
+  
+  
+  # !!!!! New DQA: checking "initial sero" model
+  dat_2 <- dat %>%
+    group_by(id) %>%
+    mutate(min_time=min(t_start), max_time=max(t_start))
+  dat_3 <- dplyr::filter(dat_2, t_start==min_time)
+  dat_4 <- dplyr::filter(dat_3, v==1)
+  dat_4 %<>% dplyr::mutate(
+    age_below_50 = In(age_start<=50),
+    year_00_07 = In(t_start<=7),
+    year_08_16 = In(t_start>8 & t_start<=16),
+    year_17_22 =  In(t_start>16)
+  )
+  
+  # % Positive (out of testers)
+  mean(dplyr::filter(dat_4, T)$u) # Overall 34%
+  mean(dplyr::filter(dat_4, w_1==1)$u) # Male: 24%
+  mean(dplyr::filter(dat_4, w_1==0)$u) # Female: 38%
+  length(dplyr::filter(dat_4, year_00_07==1)$u) # Year 00-07: xx%
+  length(dplyr::filter(dat_4, year_08_16==1)$u) # Year 08-16: xx%
+  length(dplyr::filter(dat_4, year_17_22==1)$u) # Year 17-22: xx%
+  
+  
+  
+  nrow(dplyr::filter(dat_4, w_1==0 & age_below_50==1 & year_00_07==1))
+  nrow(dplyr::filter(dat_4, w_1==1 & age_below_50==1 & year_00_07==1))
+  nrow(dplyr::filter(dat_4, w_1==0 & age_below_50==1 & year_08_16==1))
+  nrow(dplyr::filter(dat_4, w_1==1 & age_below_50==1 & year_08_16==1))
+  nrow(dplyr::filter(dat_4, w_1==0 & age_below_50==1 & year_17_22==1))
+  nrow(dplyr::filter(dat_4, w_1==1 & age_below_50==1 & year_17_22==1))
+  
   chk(2, "DQA: END")
   
 }
@@ -581,7 +654,7 @@ if (cfg2$run_analysis) {
       
     }
     
-    par_init <- c(a_x=-6.535, g_x1=-0.6737, g_x2=3.636, g_x3=0.2734, g_x4=0.4366, g_x5=-8.512, t_x1=-1.578, t_x2=-0.2818, t_x3=0.3750, t_x4=-2.160, a_s=-3.369, g_s1=-0.5761, g_s2=0.8899, t_s=1.051, beta_x=1, beta_z=0.5072, a_y=-5.944, g_y1=0.3940, g_y2=1.871, g_y3=2.923, g_y4=6.809, g_y5=3.004, t_y=-0.6077)
+    par_init <- c(a_x=-6.535, g_x1=-0.6737, g_x2=3.636, g_x3=0.2734, g_x4=0.4366, g_x5=-8.512, t_x1=-1.578, t_x2=-0.2818, t_x3=0.3750, t_x4=-2.160, a_s=-3.369, g_s1=-0.5761, g_s2=0.8899, t_s1=0, t_s2=0, t_s3=0, t_s4=0, beta_x=1, beta_z=0.5072, a_y=-5.944, g_y1=0.3940, g_y2=1.871, g_y3=2.923, g_y4=6.809, g_y5=3.004, t_y=-0.6077)
     
     negloglik <- construct_negloglik(parallelize=T, cfg$model_version)
     system.time({ qqq1 <- negloglik(par_init) })
@@ -626,7 +699,9 @@ if (cfg2$run_analysis) {
   } else if (cfg$model_version==14) {
     par_init <- c(a_x=-6.3567, g_x1=-0.7201, g_x2=3.5877, g_x3=0.8982, g_x4=1.2344, g_x5=-7.8761, t_x1=-2.1962, t_x2=-0.396, t_x3=-0.0074, t_x4=-2.2542, a_s=-3.0662, g_s1=-0.6222, g_s2=0.8341, t_s=0.8966, beta_x=0.9409, beta_z=0.7236, a_y=-6.5048, g_y1=0.4056, g_y2=1.9911, g_y3=3.0964, g_y4=6.9362, g_y5=3.4698, t_y1=-0.2982, t_y2=-0.8746, t_y3=-0.5772, t_y4=-1.0723)
   } else if (cfg$model_version==15) {
-    par_init <- c(a_x=-6.3567, g_x1=3.5877, g_x2=0.8982, g_x3=1.2344, g_x4=-7.8761, g_x5=3.5877, g_x6=0.8982, g_x7=1.2344, g_x8=-7.8761, t_x1=-2.1962, t_x2=-0.396, t_x3=-0.0074, t_x4=-2.2542, a_s=-3.0662, g_s1=-0.6222, g_s2=0.8341, t_s=0.8966, beta_x=0.9409, beta_z=0.7236, a_y=-6.5048, g_y1=0.4056, g_y2=1.9911, g_y3=3.0964, g_y4=6.9362, g_y5=3.4698, t_y1=-0.2982, t_y2=-0.8746, t_y3=-0.5772, t_y4=-1.0723)
+    par_init <- c(a_x=-6.67, g_x1=4.86, g_x2=1.33, g_x3=0.871, g_x4=-6.53, g_x5=3.66, g_x6=1.07, g_x7=2.60, g_x8=-7.59, t_x1=-1.82, t_x2=-0.728, t_x3=-0.593, t_x4=-2.06, a_s=-3.08, g_s1=-0.742, g_s2=0.753, t_s=0.936, beta_x=1.12, beta_z=1.00, a_y=-6.56, g_y1=0.431, g_y2=1.95, g_y3=3.29, g_y4=7.18, g_y5=3.60, t_y1=-0.319, t_y2=-1.00, t_y3=-0.934, t_y4=-1.12)
+  } else if (cfg$model_version==16) {
+    par_init <- c(a_x=-6.67, g_x1=4.86, g_x2=1.33, g_x3=0.871, g_x4=-6.53, g_x5=3.66, g_x6=1.07, g_x7=2.60, g_x8=-7.59, t_x1=-1.82, t_x2=-0.728, t_x3=-0.593, t_x4=-2.06, a_s=-3.08, g_s1=-0.742, g_s2=0.753, t_s1=0, t_s2=0, t_s3=0, t_s4=0, beta_x=1.12, beta_z=1.00, a_y=-6.56, g_y1=0.431, g_y2=1.95, g_y3=3.29, g_y4=7.18, g_y5=3.60, t_y1=-0.319, t_y2=-1.00, t_y3=-0.934, t_y4=-1.12)
   }
   
   # par_true <- c(
@@ -639,6 +714,7 @@ if (cfg2$run_analysis) {
   
   # Run optimizer
   chk(4, "optim: START")
+  counter <- 0
   opt <- stats::optim(
     par = par_init,
     fn = negloglik,
@@ -669,8 +745,17 @@ if (cfg2$run_analysis) {
       v = 2 # v gives the reduction factor
     )
   )
-  print(hessian_est)
-  hessian_inv <- solve(hessian_est)
+  
+  tryCatch(
+    expr = {
+      hessian_inv <- solve(hessian_est)
+    },
+    error = function(e) {
+      print("Hessian not invertible.")
+      print(hessian_est)
+    }
+  )
+  
   chk(5, "hessian: END")
   parallel::stopCluster(cl)
   
