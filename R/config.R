@@ -17,7 +17,7 @@ if (Sys.getenv("HOME")=="/home/akenny") {
                  "/Code__", Sys.getenv("proj"))
   )
 } else if (Sys.getenv("HOME")=="/hpc/home/ak811") {
-  # Bayes
+  # DCC
   cluster_config <- list(
     js = "slurm",
     dir = paste0("/hpc/home/ak811/", Sys.getenv("proj"),
