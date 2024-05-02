@@ -162,6 +162,16 @@ prob <- function(type, m, j, w_1, w_2) {
       g_y2=1.94, g_y3=3.25, g_y4=7.04, g_y5=3.62, t_y1=-0.274, t_y2=-1.02,
       t_y3=-0.964, t_y4=-1.10
     )
+  } else if (m==17) {
+    p <- list(
+      a_x=-6.9521, g_x1=4.2808, g_x2=-0.1476, g_x3=1.4616, g_x4=-5.7527,
+      g_x5=2.4626, g_x6=0.1639, g_x7=3.6117, g_x8=-7.3954, t_x1=-1.093,
+      t_x2=-0.888, t_x3=-1.3534, t_x4=-1.4756, a_s=-2.8117, g_s1=-0.3086,
+      g_s2=0.8134, g_s3=-0.1185, g_s4=3.2074, g_s5=-1.4434, beta_x=1.369,
+      beta_z=1.1501, a_y=-6.5127, g_y1=0.4162, g_y2=1.7359, g_y3=3.1651,
+      g_y4=6.5974, g_y5=4.0223, t_y1=-0.1488, t_y2=-0.8869, t_y3=-0.6838,
+      t_y4=-1.0119
+    )
   }
   
   j <- j/10
@@ -187,7 +197,7 @@ prob <- function(type, m, j, w_1, w_2) {
           p$t_x4*b4(j,4) + p$g_x1*w_1 + p$g_x2*b2(w_2,1) + p$g_x3*b2(w_2,2) +
           p$g_x4*b2(w_2,3) + p$g_x5*b2(w_2,4)
       )
-    } else if (m %in% c(15:16)) {
+    } else if (m %in% c(15:17)) {
       prob <- exp2(
         p$a_x + p$t_x1*b4(j,1) + p$t_x2*b4(j,2) + p$t_x3*b4(j,3) +
           p$t_x4*b4(j,4) + w_1*(
@@ -208,6 +218,11 @@ prob <- function(type, m, j, w_1, w_2) {
       prob <- exp2(
         p$a_s + p$t_s1*b4(j,1) + p$t_s2*b4(j,2) + p$t_s3*b4(j,3) +
           p$t_s4*b4(j,4) + p$g_s1*w_1 + p$g_s2*w_2
+      )
+    } else if (m==17) {
+      prob <- exp2(
+        p$a_s + p$g_s1*w_1 + p$g_s2*b3(w_2,1) + p$g_s3*b3(w_2,2) + 
+          p$g_s4*b3(w_2,3) + p$g_s5*b3(w_2,4)
       )
     }
     
@@ -236,7 +251,7 @@ prob <- function(type, m, j, w_1, w_2) {
         p$a_y + p$t_y*j + p$g_y1*w_1 + p$g_y2*b3(w_2,1) + p$g_y3*b3(w_2,2) +
           p$g_y4*b3(w_2,3) + p$g_y5*b3(w_2,4) + p$beta_x*x + p$beta_z*z
       )
-    } else if (m %in% c(14:16)) {
+    } else if (m %in% c(14:17)) {
       prob <- exp2(
         p$a_y + p$t_y1*b4(j,1) + p$t_y2*b4(j,2) + p$t_y3*b4(j,3) +
           p$t_y4*b4(j,4) + p$g_y1*w_1 + p$g_y2*b3(w_2,1) + p$g_y3*b3(w_2,2) +
@@ -324,7 +339,7 @@ plot_mod <- function(x_axis, type, m) {
 ##### VIZ: Plotting modeled probabilities #####
 ###############################################.
 
-m <- 16
+m <- 17
 b1 <- construct_basis("age (0-100), 4DF")
 b2 <- construct_basis("age (13,20,30,60,90)")
 b3 <- construct_basis("age (13,30,60,75,90)")

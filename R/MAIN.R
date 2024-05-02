@@ -1,8 +1,8 @@
 # Main config
 cfg <- list(
-  run_sims = F,
+  run_sims = T,
   run_process = F,
-  run_analysis = T,
+  run_analysis = F,
   sim_level_set = "level_set_1",
   sim_run_or_update = "run",
   sim_num = 1000,
@@ -10,7 +10,7 @@ cfg <- list(
   # sim_n_cores = 50,
   sim_n_cores = as.integer(Sys.getenv("SLURM_CPUS_PER_TASK")),
   sim_stop_at_error = F,
-  model_version = 16
+  model_version = 18
 )
 
 # Secondary config
