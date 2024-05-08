@@ -172,6 +172,16 @@ prob <- function(type, m, j, w_1, w_2) {
       g_y4=6.5974, g_y5=4.0223, t_y1=-0.1488, t_y2=-0.8869, t_y3=-0.6838,
       t_y4=-1.0119
     )
+  } else if (m==18) {
+    p <- list(
+      a_x=-6.4096, g_x1=4.1462, g_x2=-0.1444, g_x3=3.1393, g_x4=-1.3482,
+      g_x5=1.2633, g_x6=0.0586, g_x7=4.4453, g_x8=-4.8883, t_x1=-1.4829,
+      t_x2=-0.6214, t_x3=-0.7727, t_x4=-1.5254, a_s=-2.8516, g_s1=-0.3645,
+      g_s2=0.6237, g_s3=0.1533, g_s4=3.0059, g_s5=-2.2575, beta_x1=2.6741,
+      beta_x2=-1.1132, beta_z1=1.9645, beta_z2=-0.6451, a_y=-6.9768,
+      g_y1=0.4823, g_y2=1.4844, g_y3=3.1972, g_y4=5.6193, g_y5=3.705,
+      t_y1=0.5472, t_y2=-0.0325, t_y3=0.5716, t_y4=-0.0745
+    )
   }
   
   j <- j/10
@@ -197,7 +207,7 @@ prob <- function(type, m, j, w_1, w_2) {
           p$t_x4*b4(j,4) + p$g_x1*w_1 + p$g_x2*b2(w_2,1) + p$g_x3*b2(w_2,2) +
           p$g_x4*b2(w_2,3) + p$g_x5*b2(w_2,4)
       )
-    } else if (m %in% c(15:17)) {
+    } else if (m %in% c(15:18)) {
       prob <- exp2(
         p$a_x + p$t_x1*b4(j,1) + p$t_x2*b4(j,2) + p$t_x3*b4(j,3) +
           p$t_x4*b4(j,4) + w_1*(
@@ -219,7 +229,7 @@ prob <- function(type, m, j, w_1, w_2) {
         p$a_s + p$t_s1*b4(j,1) + p$t_s2*b4(j,2) + p$t_s3*b4(j,3) +
           p$t_s4*b4(j,4) + p$g_s1*w_1 + p$g_s2*w_2
       )
-    } else if (m==17) {
+    } else if (m %in% c(17,18)) {
       prob <- exp2(
         p$a_s + p$g_s1*w_1 + p$g_s2*b3(w_2,1) + p$g_s3*b3(w_2,2) + 
           p$g_s4*b3(w_2,3) + p$g_s5*b3(w_2,4)
@@ -255,7 +265,14 @@ prob <- function(type, m, j, w_1, w_2) {
       prob <- exp2(
         p$a_y + p$t_y1*b4(j,1) + p$t_y2*b4(j,2) + p$t_y3*b4(j,3) +
           p$t_y4*b4(j,4) + p$g_y1*w_1 + p$g_y2*b3(w_2,1) + p$g_y3*b3(w_2,2) +
-          p$g_y4*b3(w_2,3) + p$g_y5*b3(w_2,4) + p$beta_x*x + p$beta_z*z
+          p$g_y4*b3(w_2,3) + p$g_y5*b3(w_2,4) + p$beta_x*x*(1-z) + p$beta_z*x*z
+      )
+    } else if (m==18) {
+      prob <- exp2(
+        p$a_y + p$t_y1*b4(j,1) + p$t_y2*b4(j,2) + p$t_y3*b4(j,3) +
+          p$t_y4*b4(j,4) + p$g_y1*w_1 + p$g_y2*b3(w_2,1) + p$g_y3*b3(w_2,2) +
+          p$g_y4*b3(w_2,3) + p$g_y5*b3(w_2,4) +
+          (p$beta_x1+p$beta_x2*j)*x*(1-z) + (p$beta_z1+p$beta_z2*j)*x*z
       )
     }
     
@@ -339,7 +356,7 @@ plot_mod <- function(x_axis, type, m) {
 ##### VIZ: Plotting modeled probabilities #####
 ###############################################.
 
-m <- 17
+m <- 18
 b1 <- construct_basis("age (0-100), 4DF")
 b2 <- construct_basis("age (13,20,30,60,90)")
 b3 <- construct_basis("age (13,30,60,75,90)")

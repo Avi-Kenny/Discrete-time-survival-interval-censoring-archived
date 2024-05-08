@@ -1,8 +1,8 @@
 # Main config
 cfg <- list(
-  run_sims = T,
+  run_sims = F, # !!!!!
   run_process = F,
-  run_analysis = F,
+  run_analysis = T, # !!!!!
   sim_level_set = "level_set_1",
   sim_run_or_update = "run",
   sim_num = 1000,
