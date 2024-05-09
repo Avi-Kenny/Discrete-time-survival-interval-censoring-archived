@@ -174,6 +174,15 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
       #   return(nll)
       # }
       
+      # # !!!!! TEMPORARY; for testing
+      # nll <- -1 * sum(log(unlist(
+      #   lapply(dat_objs_wrapper, function(d) {
+      #     lapply(d, function(d2) { lik_fn2(d2, params, inds) })
+      #   })
+      # )))
+      
+      
+      
       # !!!!! Testing v2
       # if (Sys.getenv("avi_test")=="type2") {
         # print("Type 2")
@@ -246,42 +255,10 @@ lik_fn <- function(i, params, inds) {
               spl=spl_ij, params=params)
       )
     })))
-    # x_prev <- c(0,x[1:(length(x)-1)]) # !!!!! This can be precomputed
-    # prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
-    #   # Note: here, j is the index of time within an individual rather than
-    #   #       a calendar time index
-    #   w_ij <- as.numeric(w[,j])
-    #   spl_ij <- d$spl[j,]
-    #   # if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
-    #   return(
-    #     f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
-    #         s=d$init_visit, spl=spl_ij, params=params) *
-    #       f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], j=d$cal_time_sc[j],
-    #           spl=spl_ij, params=params)
-    #   )
-    # })))
   })))
   
-  # # Uncomment this code to run model 10 (and comment out above)
-  # f2 <- mean(unlist(lapply(d$X_i_set, function(x) {
-  #   x_prev <- c(0,x[1:(length(x)-1)])
-  #   prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
-  #     # Note: here, j is the index of time within an individual rather than
-  #     #       a calendar time index
-  #     w_ij <- as.numeric(w[,j])
-  #     # if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
-  #     return(
-  #       f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
-  #           s=In(d$cal_time[j]==d$s_i), params=params) * # Maybe create this indicator variable (vector) earlier
-  #         f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], j=d$cal_time_sc[j],
-  #             params=params)
-  #     )
-  #   })))
-  # })))
-  
-  # if (is.na(f2) || is.nan(f2)) {
-  #   browser()
-  # } # Debugging
+  browser() # !!!!!
+
   if (f2<=0) {
     f2 <- 1e-10
     # warning("Likelihood of zero")
@@ -306,58 +283,90 @@ lik_fn2 <- function(d, params, inds) {
   # Extract data for individual i
   # d <- dat_objs[[i]]
   
-  # Compute the likelihood for individual i
-  f2 <- sum(unlist(lapply(d$X_i_set, function(x) {
-    d$dat_i$x <- x
-    if (length(x)==1) {
-      d$dat_i$x_prev <- 0
-    } else {
-      d$dat_i$x_prev <- c(0,x[1:(length(x)-1)]) # !!!!! This can be precomputed
-    }
-    return(prod(apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
-      x <- r[["x"]]
+  # !!!!! New code
+  {
+    
+    # Precompute values
+    vec_00 <- apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
       w_ij <- as.numeric(r[inds$w])
       j <- r[["cal_time_sc"]]
       spl_ij <- r[inds$spl]
       return(
-        f_x(x=x, x_prev=r[["x_prev"]], w=w_ij, j=j,
+        f_x(x=0, x_prev=0, w=w_ij, j=j,
             s=r[["init_visit"]], spl=spl_ij, params=params) *
-          f_y(y=r[["y"]], x=x, w=w_ij, z=r[["z"]], j=j,
+          f_y(y=r[["y"]], x=0, w=w_ij, z=r[["z"]], j=j,
               spl=spl_ij, params=params)
       )
+    })
+    vec_01 <- apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
+      w_ij <- as.numeric(r[inds$w])
+      j <- r[["cal_time_sc"]]
+      spl_ij <- r[inds$spl]
+      return(
+        f_x(x=1, x_prev=0, w=w_ij, j=j,
+            s=r[["init_visit"]], spl=spl_ij, params=params) *
+          f_y(y=r[["y"]], x=1, w=w_ij, z=r[["z"]], j=j,
+              spl=spl_ij, params=params)
+      )
+    })
+    vec_11 <- apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
+      w_ij <- as.numeric(r[inds$w])
+      j <- r[["cal_time_sc"]]
+      spl_ij <- r[inds$spl]
+      return(
+        f_x(x=1, x_prev=1, w=w_ij, j=j,
+            s=r[["init_visit"]], spl=spl_ij, params=params) *
+          f_y(y=r[["y"]], x=1, w=w_ij, z=r[["z"]], j=j,
+              spl=spl_ij, params=params)
+      )
+    })
+    
+    f2 <- sum(unlist(lapply(d$X_i_set, function(x) {
+      if (length(x)==1) { # !!!!! This can be precomputed
+        x_prev <- 0
+      } else {
+        x_prev <- c(0,x[1:(length(x)-1)])
+      }
+      
+      return(prod(sapply(X=c(1:length(x)), FUN = function(j) {
+        x_prev_j <- x_prev[j]
+        x_j <- x[j]
+        if (x_prev_j==0 && x_j==0) {
+          return(vec_00[j])
+        } else if (x_prev_j==0 && x_j==1) {
+          return(vec_01[j])
+        } else if (x_prev_j==1 && x_j==1) {
+          return(vec_11[j])
+        }
+      })))
+      
     })))
-    # x_prev <- c(0,x[1:(length(x)-1)]) # !!!!! This can be precomputed
-    # prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
-    #   # Note: here, j is the index of time within an individual rather than
-    #   #       a calendar time index
-    #   w_ij <- as.numeric(w[,j])
-    #   spl_ij <- d$spl[j,]
-    #   # if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
-    #   return(
-    #     f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
-    #         s=d$init_visit, spl=spl_ij, params=params) *
-    #       f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], j=d$cal_time_sc[j],
-    #           spl=spl_ij, params=params)
-    #   )
-    # })))
-  })))
+    
+  }
   
-  # # Uncomment this code to run model 10 (and comment out above)
-  # f2 <- mean(unlist(lapply(d$X_i_set, function(x) {
-  #   x_prev <- c(0,x[1:(length(x)-1)])
-  #   prod(unlist(lapply(c(1:(d$t_i-d$s_i+1)), function(j) {
-  #     # Note: here, j is the index of time within an individual rather than
-  #     #       a calendar time index
-  #     w_ij <- as.numeric(w[,j])
-  #     # if (x[j]==0 && x_prev[j]==1) { stop("f_x() cannot be called with x=0 and x_prev=1.") } # !!!!! TEMPORARY
+  # # Compute the likelihood for individual i
+  # f2 <- sum(unlist(lapply(d$X_i_set, function(x) {
+  #   d$dat_i$x <- x
+  #   if (length(x)==1) {
+  #     d$dat_i$x_prev <- 0
+  #   } else {
+  #     d$dat_i$x_prev <- c(0,x[1:(length(x)-1)]) # !!!!! This can be precomputed
+  #   }
+  #   return(prod(apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
+  #     x <- r[["x"]]
+  #     w_ij <- as.numeric(r[inds$w])
+  #     j <- r[["cal_time_sc"]]
+  #     spl_ij <- r[inds$spl]
   #     return(
-  #       f_x(x=x[j], x_prev=x_prev[j], w=w_ij, j=d$cal_time_sc[j],
-  #           s=In(d$cal_time[j]==d$s_i), params=params) * # Maybe create this indicator variable (vector) earlier
-  #         f_y(y=d$y[j], x=x[j], w=w_ij, z=d$z[j], j=d$cal_time_sc[j],
-  #             params=params)
+  #       f_x(x=x, x_prev=r[["x_prev"]], w=w_ij, j=j,
+  #           s=r[["init_visit"]], spl=spl_ij, params=params) *
+  #         f_y(y=r[["y"]], x=x, w=w_ij, z=r[["z"]], j=j,
+  #             spl=spl_ij, params=params)
   #     )
   #   })))
   # })))
+  
+  # browser() # !!!!!
   
   # if (is.na(f2) || is.nan(f2)) {
   #   browser()
