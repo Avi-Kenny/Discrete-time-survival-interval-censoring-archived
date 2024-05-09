@@ -193,7 +193,7 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
         )))
         # print(paste0("NLL: ", nll))
         # print(pryr::mem_used())
-        # return(nll)
+        return(nll)
       # }
       
     } else {
@@ -287,38 +287,23 @@ lik_fn2 <- function(d, params, inds) {
   {
     
     # Precompute values
-    vec_00 <- apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
+    f_xy_vals <- apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
       w_ij <- as.numeric(r[inds$w])
       j <- r[["cal_time_sc"]]
       spl_ij <- r[inds$spl]
-      return(
-        f_x(x=0, x_prev=0, w=w_ij, j=j,
-            s=r[["init_visit"]], spl=spl_ij, params=params) *
-          f_y(y=r[["y"]], x=0, w=w_ij, z=r[["z"]], j=j,
-              spl=spl_ij, params=params)
-      )
-    })
-    vec_01 <- apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
-      w_ij <- as.numeric(r[inds$w])
-      j <- r[["cal_time_sc"]]
-      spl_ij <- r[inds$spl]
-      return(
-        f_x(x=1, x_prev=0, w=w_ij, j=j,
-            s=r[["init_visit"]], spl=spl_ij, params=params) *
-          f_y(y=r[["y"]], x=1, w=w_ij, z=r[["z"]], j=j,
-              spl=spl_ij, params=params)
-      )
-    })
-    vec_11 <- apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
-      w_ij <- as.numeric(r[inds$w])
-      j <- r[["cal_time_sc"]]
-      spl_ij <- r[inds$spl]
-      return(
-        f_x(x=1, x_prev=1, w=w_ij, j=j,
-            s=r[["init_visit"]], spl=spl_ij, params=params) *
-          f_y(y=r[["y"]], x=1, w=w_ij, z=r[["z"]], j=j,
-              spl=spl_ij, params=params)
-      )
+      
+      f_x_00 <- f_x(x=0, x_prev=0, w=w_ij, j=j, s=r[["init_visit"]], spl=spl_ij,
+                    params=params)
+      f_x_01 <- f_x(x=1, x_prev=0, w=w_ij, j=j, s=r[["init_visit"]], spl=spl_ij,
+                    params=params)
+      f_x_11 <- f_x(x=1, x_prev=1, w=w_ij, j=j, s=r[["init_visit"]], spl=spl_ij,
+                    params=params)
+      f_y_0 <- f_y(y=r[["y"]], x=0, w=w_ij, z=r[["z"]], j=j, spl=spl_ij,
+                   params=params)
+      f_y_1 <- f_y(y=r[["y"]], x=1, w=w_ij, z=r[["z"]], j=j, spl=spl_ij,
+                   params=params)
+      
+      return(c(f_x_00*f_y_0, f_x_01*f_y_1, f_x_11*f_y_1))
     })
     
     f2 <- sum(unlist(lapply(d$X_i_set, function(x) {
@@ -332,41 +317,17 @@ lik_fn2 <- function(d, params, inds) {
         x_prev_j <- x_prev[j]
         x_j <- x[j]
         if (x_prev_j==0 && x_j==0) {
-          return(vec_00[j])
+          return(f_xy_vals[1,j])
         } else if (x_prev_j==0 && x_j==1) {
-          return(vec_01[j])
+          return(f_xy_vals[2,j])
         } else if (x_prev_j==1 && x_j==1) {
-          return(vec_11[j])
+          return(f_xy_vals[3,j])
         }
       })))
       
     })))
     
   }
-  
-  # # Compute the likelihood for individual i
-  # f2 <- sum(unlist(lapply(d$X_i_set, function(x) {
-  #   d$dat_i$x <- x
-  #   if (length(x)==1) {
-  #     d$dat_i$x_prev <- 0
-  #   } else {
-  #     d$dat_i$x_prev <- c(0,x[1:(length(x)-1)]) # !!!!! This can be precomputed
-  #   }
-  #   return(prod(apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
-  #     x <- r[["x"]]
-  #     w_ij <- as.numeric(r[inds$w])
-  #     j <- r[["cal_time_sc"]]
-  #     spl_ij <- r[inds$spl]
-  #     return(
-  #       f_x(x=x, x_prev=r[["x_prev"]], w=w_ij, j=j,
-  #           s=r[["init_visit"]], spl=spl_ij, params=params) *
-  #         f_y(y=r[["y"]], x=x, w=w_ij, z=r[["z"]], j=j,
-  #             spl=spl_ij, params=params)
-  #     )
-  #   })))
-  # })))
-  
-  # browser() # !!!!!
   
   # if (is.na(f2) || is.nan(f2)) {
   #   browser()

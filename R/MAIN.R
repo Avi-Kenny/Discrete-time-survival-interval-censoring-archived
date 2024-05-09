@@ -1,4 +1,9 @@
 # Main config
+# Sys.setenv(SLURM_CPUS_PER_TASK=5) # For running locally
+# Sys.setenv(avi_samp_size=20000) # For running locally
+# Sys.setenv(avi_maxit=3000) # For running locally
+# Sys.setenv(avi_r=2) # For running locally
+# Sys.setenv(avi_reltol=1e-5) # For running locally
 cfg <- list(
   run_sims = F, # !!!!!
   run_process = F,

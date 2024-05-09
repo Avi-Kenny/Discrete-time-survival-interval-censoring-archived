@@ -725,12 +725,14 @@ if (cfg2$run_analysis) {
   # Run optimizer
   chk(4, "optim: START")
   counter <- 0
+  nll_init <- negloglik(par_init)
+  print(paste("negloglik(par_init):", nll_init))
   opt <- stats::optim(
     par = par_init,
     fn = negloglik,
     method = "Nelder-Mead",
     control = list(maxit=avi_maxit,
-                   reltol=avi_reltol)) # !!!!!
+                   reltol=avi_reltol))
   print("optim() finished.")
   print(opt)
 
