@@ -164,7 +164,7 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
       # )))
       
       # # !!!!! Testing v1
-      # if (Sys.getenv("avi_test")=="type1") {
+      # if (Sys.getenv("test_type")=="type1") {
       #   print("Type 1")
       #   nll <- -1 * sum(log(unlist(parallel::parLapply(cl, dat_objs, function(d) {
       #     lik_fn2(d, params, inds)
@@ -175,7 +175,7 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
       # }
       
       # !!!!! Testing v2
-      # if (Sys.getenv("avi_test")=="type2") {
+      # if (Sys.getenv("test_type")=="type2") {
         # print("Type 2")
         nll <- -1 * sum(log(unlist(
           parallel::parLapply(cl, dat_objs_wrapper, function(d) {

@@ -6,86 +6,6 @@ for (pkg in c(cfg$pkgs,cfg$pkgs_nocluster)) {
   suppressMessages({ do.call("library", list(pkg)) })
 }
 
-# !!!!! Testing: slurm_apply
-if (F) {
-  
-  sim.pi <- function(iterations=1000) {
-    print("hey 1")
-    x.pos <- runif(iterations, min=-1, max=1)
-    y.pos <- runif(iterations, min=-1, max=1)
-    draw.pos <- ifelse(x.pos^2 + y.pos^2 <= 1, TRUE, FALSE)
-    draws.in <- length(which(draw.pos == TRUE))
-    print("hey 2")
-    return(data.frame(iterations,draws.in))
-  }
-  
-  params <- data.frame(iterations = rep(1000,100))
-  
-  sjob1 <- slurm_apply(
-    f = sim.pi,
-    params = params,
-    jobname = "rslurm-pi-example",
-    nodes = 10,
-    cpus_per_node = 1
-  )
-  
-  if (T) {
-    slr_job <- sjob1
-    res_files <- paste0("results_", 0:(slr_job$nodes - 1), ".RDS")
-    print("res_files")
-    print(res_files)
-    tmpdir <- paste0("_rslurm_", slr_job$jobname)
-    print("tmpdir")
-    print(tmpdir)
-  }
-  
-  res <- get_slurm_out(sjob1, outtype="table")
-  
-  my_pi <- 4/(sum(res$iterations)/sum(res$draws.in))
-  cat("\n... done\n")
-  cat(paste0(
-    "pi estimated to ", my_pi, " over ", sum(res$iterations), " iterations\n"
-  ))
-  
-  cleanup_files(sjob1)
-  
-}
-
-# !!!!! Testing: slurm_map
-if (F) {
-  
-  sim.pi <- function(iterations=1000) {
-    x.pos <- runif(iterations, min=-1, max=1)
-    y.pos <- runif(iterations, min=-1, max=1)
-    draw.pos <- ifelse(x.pos^2 + y.pos^2 <= 1, TRUE, FALSE)
-    draws.in <- length(which(draw.pos == TRUE))
-    return(data.frame(iterations,draws.in))
-  }
-  
-  params <- c(1:100)
-  
-  sjob1 <- slurm_map(
-    x = params,
-    f = sim.pi,
-    jobname = "rslurm-pi-example",
-    nodes = 10,
-    cpus_per_node = 1
-  )
-  
-  res <- get_slurm_out(sjob1, outtype="table")
-  
-  my_pi <- 4/(sum(res$iterations)/sum(res$draws.in))
-  cat("\n... done\n")
-  cat(paste0(
-    "pi estimated to ", my_pi, " over ", sum(res$iterations), " iterations\n"
-  ))
-  
-  cleanup_files(sjob1)
-  
-}
-
-# stop("Stopping examples.")
-
 chk(0, "START")
 .t_start <- Sys.time()
 cfg2 <- list(
@@ -94,23 +14,21 @@ cfg2 <- list(
   run_dqa = F,
   run_analysis = T,
   parallelize = T,
-  use_simulated_dataset = F
+  use_simulated_dataset = F,
+  samp_size = 20000, # as.integer(Sys.getenv("samp_size"))
+  opt_maxit = 5000,
+  opt_r = 2,
+  opt_reltol = 1e-5
 )
 
 # !!!!! TEMPORARY: testing different optim config options
 if (T) {
-  avi_maxit <- as.integer(Sys.getenv("avi_maxit"))
-  avi_reltol <- as.numeric(Sys.getenv("avi_reltol"))
-  avi_r <- as.numeric(Sys.getenv("avi_r"))
-  # avi_maxit <- 200
-  # avi_reltol <- 1e-5
-  # avi_r <- 2
   print("CONFIG")
   print("------------")
-  print(paste("maxit:", avi_maxit))
-  print(paste("reltol:", avi_reltol))
-  print(paste("r:", avi_r))
-  print(paste("sample size:", as.integer(Sys.getenv("avi_samp_size"))))
+  print(paste("maxit:", cfg2$opt_maxit))
+  print(paste("reltol:", cfg2$opt_reltol))
+  print(paste("r:", cfg2$opt_r))
+  print(paste("sample size:", cfg2$samp_size))
   print("------------")
 }
 
@@ -159,11 +77,9 @@ if (cfg2$use_simulated_dataset) {
     set.seed(1)
     dat_prc <- dat_raw <- read.csv("../Data/data_raw_full.csv")
     iintids <- unique(dat_prc$iintid)
-    samp_size <- 20000
-    # samp_size <- 5000 # !!!!! Rapid testing
-    # samp_size <- 150000 # !!!!! Testing code speed
-    # samp_size <- as.integer(Sys.getenv("avi_samp_size")) # !!!!!
-    iintids_sample <- sample(iintids, size=samp_size)
+    # cfg2$samp_size <- 5000 # !!!!! Rapid testing
+    # cfg2$samp_size <- 150000 # !!!!! Testing code speed
+    iintids_sample <- sample(iintids, size=cfg2$samp_size)
     dat_prc %<>% dplyr::filter(iintid %in% iintids_sample)
     
     # Drop unnecessary columns
@@ -252,9 +168,9 @@ if (cfg2$use_simulated_dataset) {
     )
     
     # # !!!!! TEMPORARY
-    # if (Sys.getenv("avi_sex")=="M") {
+    # if (Sys.getenv("sex")=="M") {
     #   dat_prc %<>% dplyr::filter(w_1==1)
-    # } else if (Sys.getenv("avi_sex")=="F") {
+    # } else if (Sys.getenv("sex")=="F") {
     #   dat_prc %<>% dplyr::filter(w_1==0)
     # }
     
@@ -729,8 +645,8 @@ if (cfg2$run_analysis) {
     par = par_init,
     fn = negloglik,
     method = "Nelder-Mead",
-    control = list(maxit=avi_maxit,
-                   reltol=avi_reltol)) # !!!!!
+    control = list(maxit=cfg2$opt_maxit,
+                   reltol=cfg2$opt_reltol)) # !!!!!
   print("optim() finished.")
   print(opt)
 
@@ -751,7 +667,7 @@ if (cfg2$run_analysis) {
       eps = 0.0001,
       d = 0.0001, # d gives the fraction of x to use for the initial numerical approximation
       zero.tol = sqrt(.Machine$double.eps/7e-7),
-      r = avi_r, # r gives the number of Richardson improvement iterations (repetitions with successly smaller d
+      r = cfg2$opt_r, # r gives the number of Richardson improvement iterations (repetitions with successly smaller d
       v = 2 # v gives the reduction factor
     )
   )
@@ -804,10 +720,10 @@ if (cfg2$run_analysis) {
   #   list(
   #     runtime = .t_end - .t_start,
   #     n_cores = n_cores,
-  #     avi_maxit = avi_maxit,
-  #     avi_reltol = avi_reltol,
-  #     avi_samp_size = samp_size,
-  #     avi_r = avi_r,
+  #     opt_maxit = cfg2$opt_maxit,
+  #     opt_reltol = cfg2$opt_reltol,
+  #     samp_size = cfg2$samp_size,
+  #     opt_r = cfg2$opt_r,
   #     res = res
   #   ),
   #   file = paste0("res_", runif(1), ".rds")
