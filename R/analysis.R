@@ -76,17 +76,28 @@ if (cfg2$use_simulated_dataset) {
     # dat_prc <- dat_raw <- read.csv("../Data/data_raw_10000.csv")
     
     set.seed(1)
-    dat_prc <- dat_raw <- read.csv("../Data/data_raw_full.csv")
-    iintids <- unique(dat_prc$iintid)
+    # dat_prc <- dat_raw <- read.csv("../Data/data_raw_full.csv")
+    dat_prc <- dat_raw <- read.csv("../Data/data_raw_full_v2.csv")
+    iintids <- unique(dat_prc$IIntId)
     # cfg2$samp_size <- 5000 # !!!!! Rapid testing
     # cfg2$samp_size <- 150000 # !!!!! Testing code speed
     iintids_sample <- sample(iintids, size=cfg2$samp_size)
-    dat_prc %<>% dplyr::filter(iintid %in% iintids_sample)
+    dat_prc %<>% dplyr::filter(IIntId %in% iintids_sample)
+    
+    # Rename columns
+    dat_prc %<>% dplyr::rename(
+      "id" = IIntId,
+      "year" = Year
+    )
     
     # Drop unnecessary columns
-    # dat_prc %<>% subset(select=-c(enter, exit, X_t, X_t0))
-    dat_prc %<>% subset(select=-c(enter, exit))
-    # !!!!! Drop hiv_result_fill, earliestartinitdate ?????
+    dat_prc %<>% subset(select=-c(X, EarliestARTInitDate))
+
+    # # Restrict to specific observation window
+    # # !!!!! This needs to change to account for new initial status model
+    # nrow(dat_prc)
+    # dat_prc %<>% dplyr::filter(year>=2010)
+    # nrow(dat_prc)
     
     # Start time
     window_start <- min(dat_prc$year)
@@ -94,67 +105,74 @@ if (cfg2$use_simulated_dataset) {
     # Function to convert dates
     date_start <- as.Date("01jan1960", format="%d%b%Y")
     convert_date <- memoise(function(date) {
-      date <- as.Date(date, format="%d%b%Y")
-      # return(lubridate::interval(start=date_start, end=date) %/% years(1))
+      # date <- as.Date(date, format="%d%b%Y")
+      date <- as.Date(date, format="%Y-%m-%d")
       return(lubridate::year(date))
     })
     
+    # Filter out obs with sex=="Unknown"
+    nrow(dat_prc)
+    dat_prc %<>% dplyr::filter(sex!="Unknown")
+    nrow(dat_prc)
+    
     # Data wrangling
     dat_prc %<>% dplyr::mutate(
-      id = iintid,
       sex = ifelse(sex=="Male", 1, 0),
-      died = ifelse(is.na(died), 0, died),
+      # died = ifelse(is.na(died), 0, died),
       dob = convert_date(dob),
       dod = convert_date(dod),
-      first_hiv_pos_dt = convert_date(first_hiv_pos_dt),
-      last_hiv_neg_dt = convert_date(last_hiv_neg_dt),
-      earliestartinitdate = convert_date(earliestartinitdate),
-      onart = ifelse(is.na(onart), 0, onart),
+      age_start = year - dob,
+      # first_hiv_pos_dt = convert_date(first_hiv_pos_dt),
+      # last_hiv_neg_dt = convert_date(last_hiv_neg_dt),
+      ART_status = ifelse(is.na(ART_status), 0, ART_status),
       year_prev = year - 1
     )
     
-    # Filter out children with tests before age 13
+    # !!!!! CONTINUE !!!!!
+    
+    # Filter out children with tests before age 12
     nrow(dat_prc)
     children_with_tests <- dplyr::filter(
-      dat_prc, age_end<=13 & resultdate!=""
-    )$iintid
-    dat_prc %<>% dplyr::filter(!(iintid %in% children_with_tests))
+      dat_prc, age_start<=13 & ResultDate!=""
+    )$id
+    dat_prc %<>% dplyr::filter(!(id %in% children_with_tests))
     nrow(dat_prc)
     
     # Remove all data before 13th birthday
     nrow(dat_prc)
-    dat_prc %<>% dplyr::filter(age_end>=13)
+    dat_prc %<>% dplyr::filter(age_start>=13)
     nrow(dat_prc)
     
     # Filter out adults with tests after age 90
     # !!!!! Temporary
     nrow(dat_prc)
     adults90_with_tests <- dplyr::filter(
-      dat_prc, age_end>90 & resultdate!=""
-    )$iintid
+      dat_prc, age_start>90 & ResultDate!=""
+    )$id
     if (length(adults90_with_tests)>0) {
-      dat_prc %<>% dplyr::filter(!(iintid %in% adults90_with_tests))
+      dat_prc %<>% dplyr::filter(!(id %in% adults90_with_tests))
     }
     nrow(dat_prc)
     
     # Remove all data after 90th birthday
     nrow(dat_prc)
-    dat_prc %<>% dplyr::filter(age_end<=90)
+    dat_prc %<>% dplyr::filter(age_start<90)
     nrow(dat_prc)
     
     # Filter out records with a negative test after a positive test
+    # !!!!! Needs to change; first_hiv_pos_dt and last_hiv_neg_dt vars removed
     nrow(dat_prc)
     dat_prc %<>% dplyr::filter(
-      is.na(first_hiv_pos_dt) | is.na(last_hiv_neg_dt) |
-        first_hiv_pos_dt>last_hiv_neg_dt
+      is.na(first_hiv_pos_dt) | is.na(last_hiv_neg_dt) | # !!!!!
+        first_hiv_pos_dt>last_hiv_neg_dt # !!!!!
     )
     nrow(dat_prc)
     
     # Remove tests with an "S" result
-    rows_with_s <- which(dat_prc$hivresult=="S")
+    rows_with_s <- which(dat_prc$HIVResult=="S")
     dat_prc[rows_with_s, "yearoftest"] <- NA
-    dat_prc[rows_with_s, "resultdate"] <- ""
-    dat_prc[rows_with_s, "hivresult"] <- ""
+    dat_prc[rows_with_s, "ResultDate"] <- ""
+    dat_prc[rows_with_s, "HIVResult"] <- ""
     
     # Rearrange columns
     dat_prc %<>% dplyr::relocate(year_prev, .before=year)
@@ -163,7 +181,7 @@ if (cfg2$use_simulated_dataset) {
     dat_prc %<>% dplyr::rename(
       "w_1" = sex,
       "y" = died,
-      "z" = onart,
+      "z" = ART_status,
       "t_start" = year_prev,
       "t_end" = year
     )
@@ -179,11 +197,12 @@ if (cfg2$use_simulated_dataset) {
     dat_prc %<>% dplyr::arrange(id,t_start)
     
     # Create grouped dataset
+    # !!!!! Needs to change; first_hiv_pos_dt and last_hiv_neg_dt vars removed
     dat_grp <- dat_prc %>% dplyr::group_by(id) %>%
       dplyr::summarize(
         count = n(),
-        T_minus = last_hiv_neg_dt[1],
-        T_plus = first_hiv_pos_dt[1],
+        T_minus = last_hiv_neg_dt[1], # !!!!!
+        T_plus = first_hiv_pos_dt[1], # !!!!!
         s_i = min(t_end),
         t_i = max(t_end)
       )
@@ -243,21 +262,22 @@ if (cfg2$use_simulated_dataset) {
     dat_prc$delta <- delta
     
     # Create V (testing) and U (positive/known) indicators
+    # !!!!! Needs to change; first_hiv_pos_dt and last_hiv_neg_dt vars removed
     dat_prc %<>% dplyr::mutate(
       v = In(!is.na(dat_prc$yearoftest)),
-      u = In(!is.na(first_hiv_pos_dt) & t_end>=first_hiv_pos_dt)
+      u = In(!is.na(first_hiv_pos_dt) & t_end>=first_hiv_pos_dt) # !!!!!
     )
     
     # Rescale time variable to start at 1
+    # !!!!! Needs to change; first_hiv_pos_dt and last_hiv_neg_dt vars removed
     dat_prc %<>% dplyr::mutate(
       dob = (dob - window_start) + 1,
       dod = (dod - window_start) + 1,
       t_start = (t_start - window_start) + 1,
       t_end = (t_end - window_start) + 1,
       yearoftest = (yearoftest - window_start) + 1,
-      first_hiv_pos_dt = (first_hiv_pos_dt - window_start) + 1,
-      last_hiv_neg_dt = (last_hiv_neg_dt - window_start) + 1,
-      earliestartinitdate = (earliestartinitdate - window_start) + 1
+      first_hiv_pos_dt = (first_hiv_pos_dt - window_start) + 1, # !!!!!
+      last_hiv_neg_dt = (last_hiv_neg_dt - window_start) + 1 # !!!!!
     )
     attr(dat_prc, "s_i") <- (attr(dat_prc, "s_i") - window_start) + 1
     attr(dat_prc, "t_i") <- (attr(dat_prc, "t_i") - window_start) + 1
@@ -306,9 +326,8 @@ if (cfg2$use_simulated_dataset) {
     # write.table(dat_raw, file="dat_raw.csv", sep=",", row.names=FALSE)
     
     cols_to_drop <- c(
-      "iintid", "dob", "dod", "age_start", "age_end", "yearoftest", "resultdate",
-      "hivresult", "first_hiv_pos_dt", "last_hiv_neg_dt", "hiv_result_fill",
-      "earliestartinitdate"
+      "dob", "dod", "age_start", "yearoftest", "ResultDate",
+      "HIVResult", "hiv_result_fill"
     )
     for (col in cols_to_drop) { dat[[col]] <- NULL }
     
@@ -387,17 +406,18 @@ if (cfg2$run_dqa) {
   chk(2, "DQA: START")
   
   # Setup
+  # !!!!! Needs to change; first_hiv_pos_dt and last_hiv_neg_dt vars removed
   dqa <- function(test) { if (test==F) { stop("DQA Error") } }
-  dat_grp2 <- dat_raw %>% dplyr::group_by(iintid) %>%
+  dat_grp2 <- dat_raw %>% dplyr::group_by(id) %>%
     dplyr::summarize(
-      unique_T_plus = (function(vec){ length(unique(vec)) })(first_hiv_pos_dt),
-      unique_T_minus = (function(vec){ length(unique(vec)) })(last_hiv_neg_dt)
+      unique_T_plus = (function(vec){ length(unique(vec)) })(first_hiv_pos_dt), # !!!!!
+      unique_T_minus = (function(vec){ length(unique(vec)) })(last_hiv_neg_dt) # !!!!!
     )
   
   # Tests on raw data
   dqa(identical(sort(unique(dat_raw$sex)), c("Female", "Male")))
   dqa(sum(dat_raw$died==0, na.rm=T) + sum(dat_raw$died==1, na.rm=T)
-      == length(unique(dat_raw$iintid)))
+      == length(unique(dat_raw$id)))
   dqa(max(dat_grp2$unique_T_plus)==1)
   dqa(max(dat_grp2$unique_T_minus)==1)
   
@@ -415,7 +435,7 @@ if (cfg2$run_dqa) {
   
   # Distribution of "year at entry"
   dat_prc %>%
-    group_by(iintid) %>%
+    group_by(id) %>%
     mutate(min_year=min(year)) %>%
     filter(year==min_year) %>%
     xtabs(~year, data=.)
@@ -425,7 +445,7 @@ if (cfg2$run_dqa) {
   
   # Distribution of "year of first test"
   dat_prc %>%
-    group_by(iintid) %>%
+    group_by(id) %>%
     filter(!is.na(yearoftest)) %>%
     mutate(min_year=min(year)) %>%
     filter(year==min_year) %>%
@@ -433,21 +453,21 @@ if (cfg2$run_dqa) {
   
   # Distribution of "year of POS test"
   dat_prc %>%
-    group_by(iintid) %>%
-    filter(!is.na(yearoftest) & hivresult=="P") %>%
+    group_by(id) %>%
+    filter(!is.na(yearoftest) & HIVResult=="P") %>%
     xtabs(~year, data=.)
   
   # Distribution of "year of first POS test"
   dat_prc %>%
-    group_by(iintid) %>%
-    filter(!is.na(yearoftest) & hivresult=="P") %>%
+    group_by(id) %>%
+    filter(!is.na(yearoftest) & HIVResult=="P") %>%
     mutate(min_year=min(year)) %>%
     filter(year==min_year) %>%
     xtabs(~year, data=.)
   
   # Out of "year at entry" years, which years had HIV tests?
   dat_prc %>%
-    group_by(iintid) %>%
+    group_by(id) %>%
     mutate(min_year=min(year)) %>%
     filter(year==min_year) %>%
     filter(!is.na(yearoftest)) %>%
