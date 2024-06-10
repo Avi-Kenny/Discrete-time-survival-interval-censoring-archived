@@ -130,13 +130,13 @@ if (cfg2$use_simulated_dataset) {
     
     # !!!!! CONTINUE !!!!!
     
-    # # Filter out children with tests before age 12
-    # nrow(dat_prc)
-    # children_with_tests <- dplyr::filter(
-    #   dat_prc, age_start<=13 & ResultDate!=""
-    # )$id
-    # dat_prc %<>% dplyr::filter(!(id %in% children_with_tests))
-    # nrow(dat_prc)
+    # Filter out children with tests before age 12
+    nrow(dat_prc)
+    children_with_tests <- dplyr::filter(
+      dat_prc, age_start<=13 & ResultDate!=""
+    )$id
+    dat_prc %<>% dplyr::filter(!(id %in% children_with_tests))
+    nrow(dat_prc)
     
     # Remove all data before 13th birthday
     nrow(dat_prc)
