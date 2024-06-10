@@ -89,7 +89,7 @@ if (F) {
 chk(0, "START")
 .t_start <- Sys.time()
 cfg2 <- list(
-  process_data = F, # !!!!!
+  process_data = T, # !!!!!
   save_data = F,
   run_dqa = F,
   run_analysis = T,
@@ -107,6 +107,7 @@ if (T) {
   # avi_r <- 2
   print("CONFIG")
   print("------------")
+  print(paste("model_version:", cfg$model_version))
   print(paste("maxit:", avi_maxit))
   print(paste("reltol:", avi_reltol))
   print(paste("r:", avi_r))
@@ -596,7 +597,7 @@ if (cfg2$run_analysis) {
     })
     dat_objs_wrapper <- lapply(batches, function(i) { dat_objs[i] }) # !!!!! New
     cl <- parallel::makeCluster(cfg$sim_n_cores)
-    objs_to_export <- c("f_x", "f_y", "exp2", "lik_fn", "lik_fn2", "inds",
+    objs_to_export <- c("f_x", "f_y", "icll", "lik_fn", "lik_fn2", "inds",
                         "batches")
     parallel::clusterExport(cl, objs_to_export, envir=.GlobalEnv)
     
@@ -622,7 +623,7 @@ if (cfg2$run_analysis) {
         print("Check 1")
         print(pryr::mem_used())
       })
-      parallel::clusterExport(cl, c("f_x", "f_y", "exp2"), envir=.GlobalEnv)
+      parallel::clusterExport(cl, c("f_x", "f_y", "icll"), envir=.GlobalEnv)
       parallel::parLapply(cl, c(1:5), function(i) {
         print("Check 2")
         print(pryr::mem_used())

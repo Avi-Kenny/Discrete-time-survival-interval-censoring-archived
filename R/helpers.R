@@ -10,27 +10,35 @@ expit <- function(x) {1/(1+exp(-x))}
 
 
 
-#' Modified exp function (see scratch for derivation)
+#' #' Modified exp function (see scratch for derivation)
+#' #' 
+#' #' @param x Numeric input
+#' #' @return Numeric output
+#' exp2 <- (function() {
+#'   
+#'   expit <- function(x) {1/(1+exp(-x))}
+#'   logit <- function(x) { log(x/(1-x)) }
+#'   e <- -0.1 # This value configurable but hard-coded
+#'   ell <- logit(exp(e))
+#'   x_0 <- e - (ell*exp(ell))/(exp(e)*(1+exp(ell))^2)
+#'   k_0 <- exp(e-ell)*(1+exp(ell))^2
+#'   exp2 <- function(x) {
+#'     if (x<=e) {
+#'       return(exp(x))
+#'     } else {
+#'       return(1/(1+exp(k_0*(x_0-x))))
+#'     }
+#'   }
+#'   return(exp2)
+#' })()
+
+
+
+#' Inverse of complementary log-log link function
 #' 
 #' @param x Numeric input
 #' @return Numeric output
-exp2 <- (function() {
-  
-  expit <- function(x) {1/(1+exp(-x))}
-  logit <- function(x) { log(x/(1-x)) }
-  e <- -0.1 # This value configurable but hard-coded
-  ell <- logit(exp(e))
-  x_0 <- e - (ell*exp(ell))/(exp(e)*(1+exp(ell))^2)
-  k_0 <- exp(e-ell)*(1+exp(ell))^2
-  exp2 <- function(x) {
-    if (x<=e) {
-      return(exp(x))
-    } else {
-      return(1/(1+exp(k_0*(x_0-x))))
-    }
-  }
-  return(exp2)
-})()
+icll <- function(x) { 1 - exp(-exp(x)) }
 
 
 

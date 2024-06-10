@@ -10,11 +10,27 @@ transform_dataset <- function(dat, model_version=0) {
   
   n <- attr(dat, "n")
   
+  # This procedure assumes the dataset is sorted by id
+  row_map <- new.env()
+  id_prev <- -1
+  i <- 1
+  row_start <- 1
+  for (id in dat$id) {
+    if (id!=id_prev) {
+      row_map[[as.character(id_prev)]] <- c(row_start:(i-1))
+      row_start <- i
+    }
+    id_prev <- id
+    i <- i + 1
+  }
+  row_map[[as.character(id_prev)]] <- c(row_start:(i-1))
+  
   # Construct a dataframe specific to each individual
   dat_objs <- lapply(c(1:n), function(i) {
     
     d <- list()
-    d$dat_i <- dat[dat$id==i,]
+    # d$dat_i <- dat[dat$id==i,]
+    d$dat_i <- dat[row_map[[as.character(i)]],]
     
     # Start and end times
     d$s_i <- attr(dat, "s_i")[i]
@@ -23,9 +39,7 @@ transform_dataset <- function(dat, model_version=0) {
     # Create new variables
     d$dat_i$init_visit <- 0
     d$dat_i[1,"init_visit"] <- 1
-    d$dat_i %<>% dplyr::mutate(
-      cal_time_sc = t_end / 10 # Rescaling originally done to prevent optimization issues; check if this is still needed
-    )
+    d$dat_i$cal_time_sc <- d$dat_i$t_end / 10 # Rescaling originally done to prevent optimization issues; check if this is still needed
     
     # Apply spline bases to dataframe
     # !!!!! This section can be sped up by modifying construct_basis()
@@ -357,11 +371,11 @@ if (cfg$model_version==0) {
       if (x==1 && x_prev==1) {
         return(1)
       } else {
-        prob <- exp2(params$a_x + params$t_x*j + sum(params$g_x*w))
+        prob <- icll(params$a_x + params$t_x*j + sum(params$g_x*w))
         if (x==1) { return(prob) } else { return(1-prob) }
       }
     } else {
-      prob <- exp2(params$a_s + params$t_s*j + sum(params$g_s*w))
+      prob <- icll(params$a_s + params$t_s*j + sum(params$g_s*w))
       if (x==1) { return(prob) } else { return(1-prob) }
     }
   }
@@ -373,11 +387,11 @@ if (cfg$model_version==0) {
       if (x==1 && x_prev==1) {
         return(1)
       } else {
-        prob <- exp2(params$a_x)
+        prob <- icll(params$a_x)
         if (x==1) { return(prob) } else { return(1-prob) }
       }
     } else {
-      prob <- exp2(params$a_s)
+      prob <- icll(params$a_s)
       if (x==1) { return(prob) } else { return(1-prob) }
     }
   }
@@ -389,11 +403,11 @@ if (cfg$model_version==0) {
       if (x==1 && x_prev==1) {
         return(1)
       } else {
-        prob <- exp2(params$a_x + params$g_x1*w[1])
+        prob <- icll(params$a_x + params$g_x1*w[1])
         if (x==1) { return(prob) } else { return(1-prob) }
       }
     } else {
-      prob <- exp2(params$a_s + params$g_s1*w[1])
+      prob <- icll(params$a_s + params$g_s1*w[1])
       if (x==1) { return(prob) } else { return(1-prob) }
     }
   }
@@ -405,11 +419,11 @@ if (cfg$model_version==0) {
       if (x==1 && x_prev==1) {
         return(1)
       } else {
-        prob <- exp2(params$a_x + sum(params$g_x*w))
+        prob <- icll(params$a_x + sum(params$g_x*w))
         if (x==1) { return(prob) } else { return(1-prob) }
       }
     } else {
-      prob <- exp2(params$a_s + sum(params$g_s*w))
+      prob <- icll(params$a_s + sum(params$g_s*w))
       if (x==1) { return(prob) } else { return(1-prob) }
     }
   }
@@ -421,11 +435,11 @@ if (cfg$model_version==0) {
       if (x==1 && x_prev==1) {
         return(1)
       } else {
-        prob <- exp2(params$a_x + params$t_x*j + sum(params$g_x*w))
+        prob <- icll(params$a_x + params$t_x*j + sum(params$g_x*w))
         if (x==1) { return(prob) } else { return(1-prob) }
       }
     } else {
-      prob <- exp2(params$a_s + sum(params$g_s*w))
+      prob <- icll(params$a_s + sum(params$g_s*w))
       if (x==1) { return(prob) } else { return(1-prob) }
     }
   }
@@ -437,11 +451,11 @@ if (cfg$model_version==0) {
       if (x==1 && x_prev==1) {
         return(1)
       } else {
-        prob <- exp2(params$a_x + params$t_x*j + sum(params$g_x*w))
+        prob <- icll(params$a_x + params$t_x*j + sum(params$g_x*w))
         if (x==1) { return(prob) } else { return(1-prob) }
       }
     } else {
-      prob <- exp2(params$a_s + params$t_s*j + sum(params$g_s*w))
+      prob <- icll(params$a_s + params$t_s*j + sum(params$g_s*w))
       if (x==1) { return(prob) } else { return(1-prob) }
     }
   }
@@ -458,7 +472,7 @@ if (cfg$model_version==0) {
       if (x==1 && x_prev==1) {
         return(1)
       } else {
-        prob <- exp2(
+        prob <- icll(
           params$a_x + params$t_x*j + params$g_x[1]*w[1] +
             params$g_x[2]*b1(w[2],1) + params$g_x[3]*b1(w[2],2) +
             params$g_x[4]*b1(w[2],3) + params$g_x[5]*b1(w[2],4)
@@ -466,7 +480,7 @@ if (cfg$model_version==0) {
         if (x==1) { return(prob) } else { return(1-prob) }
       }
     } else {
-      prob <- exp2(params$a_s + params$t_s*j + sum(params$g_s*w))
+      prob <- icll(params$a_s + params$t_s*j + sum(params$g_s*w))
       if (x==1) { return(prob) } else { return(1-prob) }
     }
   }
@@ -480,7 +494,7 @@ if (cfg$model_version==0) {
         if (x==1 && x_prev==1) {
           return(1)
         } else {
-          prob <- exp2(
+          prob <- icll(
             params$a_x + params$t_x*j + params$g_x[1]*w[1] +
               params$g_x[2]*b2(w[2],1) + params$g_x[3]*b2(w[2],2) +
               params$g_x[4]*b2(w[2],3) + params$g_x[5]*b2(w[2],4)
@@ -488,7 +502,7 @@ if (cfg$model_version==0) {
           if (x==1) { return(prob) } else { return(1-prob) }
         }
       } else {
-        prob <- exp2(params$a_s + params$t_s*j + sum(params$g_s*w))
+        prob <- icll(params$a_s + params$t_s*j + sum(params$g_s*w))
         if (x==1) { return(prob) } else { return(1-prob) }
       }
     }
@@ -502,7 +516,7 @@ if (cfg$model_version==0) {
       if (x==1 && x_prev==1) {
         return(1)
       } else {
-        prob <- exp2(
+        prob <- icll(
           params$a_x + params$t_x[1]*spl[["b4_1"]] +
             params$t_x[2]*spl[["b4_2"]] +
             params$t_x[3]*spl[["b4_3"]] + params$t_x[4]*spl[["b4_4"]] +
@@ -513,7 +527,7 @@ if (cfg$model_version==0) {
         if (x==1) { return(prob) } else { return(1-prob) }
       }
     } else {
-      prob <- exp2(params$a_s + params$t_s*j + sum(params$g_s*w))
+      prob <- icll(params$a_s + params$t_s*j + sum(params$g_s*w))
       if (x==1) { return(prob) } else { return(1-prob) }
     }
   }
@@ -525,7 +539,7 @@ if (cfg$model_version==0) {
       if (x==1 && x_prev==1) {
         return(1)
       } else {
-        prob <- exp2(
+        prob <- icll(
           params$a_x + params$t_x[1]*spl[["b4_1"]] +
             params$t_x[2]*spl[["b4_2"]] + params$t_x[3]*spl[["b4_3"]] +
             params$t_x[4]*spl[["b4_4"]] +
@@ -541,7 +555,7 @@ if (cfg$model_version==0) {
         if (x==1) { return(prob) } else { return(1-prob) }
       }
     } else {
-      prob <- exp2(params$a_s + params$t_s*j + sum(params$g_s*w))
+      prob <- icll(params$a_s + params$t_s*j + sum(params$g_s*w))
       if (x==1) { return(prob) } else { return(1-prob) }
     }
   }
@@ -553,7 +567,7 @@ if (cfg$model_version==0) {
       if (x==1 && x_prev==1) {
         return(1)
       } else {
-        prob <- exp2(
+        prob <- icll(
           params$a_x + params$t_x[1]*spl[["b4_1"]] +
             params$t_x[2]*spl[["b4_2"]] + params$t_x[3]*spl[["b4_3"]] +
             params$t_x[4]*spl[["b4_4"]] +
@@ -569,7 +583,7 @@ if (cfg$model_version==0) {
         if (x==1) { return(prob) } else { return(1-prob) }
       }
     } else {
-      prob <- exp2(
+      prob <- icll(
         params$a_s + params$t_s[1]*spl[["b4_1"]] + params$t_s[2]*spl[["b4_2"]] +
           params$t_s[3]*spl[["b4_3"]] + params$t_s[4]*spl[["b4_4"]] +
           sum(params$g_s*w)
@@ -585,7 +599,7 @@ if (cfg$model_version==0) {
       if (x==1 && x_prev==1) {
         return(1)
       } else {
-        prob <- exp2(
+        prob <- icll(
           params$a_x + params$t_x[1]*spl[["b4_1"]] +
             params$t_x[2]*spl[["b4_2"]] + params$t_x[3]*spl[["b4_3"]] +
             params$t_x[4]*spl[["b4_4"]] +
@@ -601,7 +615,7 @@ if (cfg$model_version==0) {
         if (x==1) { return(prob) } else { return(1-prob) }
       }
     } else {
-      prob <- exp2(
+      prob <- icll(
         params$a_s + params$g_s[1]*w[1] + params$g_s[2]*spl[["b3_1"]] +
           params$g_s[3]*spl[["b3_2"]] + params$g_s[4]*spl[["b3_3"]] + 
           params$g_s[5]*spl[["b3_4"]]
@@ -625,9 +639,9 @@ if (cfg$model_version==0) {
 if (cfg$model_version==0) {
   
   f_y <- function(y, x, w, z, j, spl, params) {
-    prob <- exp2(
-      params$a_y + params$t_y*j + sum(params$g_y*w) + params$beta_x*x +
-        params$beta_z*z
+    prob <- icll(
+      params$a_y + params$t_y*j + sum(params$g_y*w) + params$beta_x*x*(1-z) +
+        params$beta_z*x*z
     )
     if (y==1) { return(prob) } else { return(1-prob) }
   }
@@ -635,15 +649,15 @@ if (cfg$model_version==0) {
 } else if (cfg$model_version==1) {
   
   f_y <- function(y, x, w, z, j, spl, params) {
-    prob <- exp2(params$a_y + params$beta_x*x + params$beta_z*z)
+    prob <- icll(params$a_y + params$beta_x*x*(1-z) + params$beta_z*x*z)
     if (y==1) { return(prob) } else { return(1-prob) }
   }
   
 } else if (cfg$model_version==2) {
   
   f_y <- function(y, x, w, z, j, spl, params) {
-    prob <- exp2(
-      params$a_y + params$g_y1*w[1] + params$beta_x*x + params$beta_z*z
+    prob <- icll(
+      params$a_y + params$g_y1*w[1] + params$beta_x*x*(1-z) + params$beta_z*x*z
     )
     if (y==1) { return(prob) } else { return(1-prob) }
   }
@@ -651,8 +665,8 @@ if (cfg$model_version==0) {
 } else if (cfg$model_version==3) {
   
   f_y <- function(y, x, w, z, j, spl, params) {
-    prob <- exp2(
-      params$a_y + sum(params$g_y*w) + params$beta_x*x + params$beta_z*z
+    prob <- icll(
+      params$a_y + sum(params$g_y*w) + params$beta_x*x*(1-z) + params$beta_z*x*z
     )
     if (y==1) { return(prob) } else { return(1-prob) }
   }
@@ -660,7 +674,7 @@ if (cfg$model_version==0) {
 } else if (cfg$model_version==4) {
   
   f_y <- function(y, x, w, z, j, spl, params) {
-    prob <- exp2(
+    prob <- icll(
       params$a_y + sum(params$g_y*w) + params$beta_x*x*(1-z) + params$beta_z*x*z
     )
     if (y==1) { return(prob) } else { return(1-prob) }
@@ -669,7 +683,7 @@ if (cfg$model_version==0) {
 } else if (cfg$model_version %in% c(5,6,7)) {
   
   f_y <- function(y, x, w, z, j, spl, params) {
-    prob <- exp2(
+    prob <- icll(
       params$a_y + params$t_y*j + sum(params$g_y*w) + params$beta_x*x*(1-z) +
         params$beta_z*x*z
     )
@@ -679,7 +693,7 @@ if (cfg$model_version==0) {
 } else if (cfg$model_version==8) {
   
   f_y <- function(y, x, w, z, j, spl, params) {
-    prob <- exp2(
+    prob <- icll(
       params$a_y + params$t_y*j + params$g_y[1]*w[1] + params$g_y[2]*w[2] +
         params$g_y[3]*(w[2]^2) + params$g_y[4]*(w[2]^3) +
         params$beta_x*x*(1-z) + params$beta_z*x*z
@@ -691,7 +705,7 @@ if (cfg$model_version==0) {
   
   b1 <- construct_basis("age (0-100), 4DF")
   f_y <- function(y, x, w, z, j, spl, params) {
-    prob <- exp2(
+    prob <- icll(
       params$a_y + params$t_y*j + params$g_y[1]*w[1] +
         params$g_y[2]*b1(w[2],1) + params$g_y[3]*b1(w[2],2) +
         params$g_y[4]*b1(w[2],3) + params$g_y[5]*b1(w[2],4) +
@@ -705,7 +719,7 @@ if (cfg$model_version==0) {
   # Note: there was a bug in this model when it was first run (beta_x excluded)
   b1 <- construct_basis("age (0-100), 4DF")
   f_y <- function(y, x, w, z, j, spl, params) {
-    prob <- exp2(
+    prob <- icll(
       params$beta_x*x*(1-z) + params$beta_z*x*z + params$a_y +
         params$g_y[1]*w[1] + params$g_y[2]*b1(w[2],1) +
         params$g_y[3]*b1(w[2],2) + params$g_y[4]*b1(w[2],3) +
@@ -718,7 +732,7 @@ if (cfg$model_version==0) {
   
   # Note: there was a bug in this model when it was first run (beta_x excluded)
   f_y <- function(y, x, w, z, j, spl, params) {
-    prob <- exp2(
+    prob <- icll(
       params$beta_x*x*(1-z) + params$beta_z*x*z + params$a_y +
         params$g_y[1]*w[1] + params$g_y[2]*spl[["b3_1"]] +
         params$g_y[3]*spl[["b3_2"]] + params$g_y[4]*spl[["b3_3"]] +
@@ -730,7 +744,7 @@ if (cfg$model_version==0) {
 } else if (cfg$model_version %in% c(14:17)) {
   
   f_y <- function(y, x, w, z, j, spl, params) {
-    prob <- exp2(
+    prob <- icll(
       params$beta_x*x*(1-z) + params$beta_z*x*z + params$a_y +
         params$g_y[1]*w[1] + params$g_y[2]*spl[["b3_1"]] +
         params$g_y[3]*spl[["b3_2"]] + params$g_y[4]*spl[["b3_3"]] +
@@ -744,7 +758,7 @@ if (cfg$model_version==0) {
 } else if (cfg$model_version==18) {
   
   f_y <- function(y, x, w, z, j, spl, params) {
-    prob <- exp2(
+    prob <- icll(
       (params$beta_x[1]+params$beta_x[2]*j)*x*(1-z) +
         (params$beta_z[1]+params$beta_z[2]*j)*x*z + params$a_y +
         params$g_y[1]*w[1] + params$g_y[2]*spl[["b3_1"]] +

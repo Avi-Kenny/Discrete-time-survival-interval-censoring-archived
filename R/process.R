@@ -103,9 +103,14 @@ prob <- function(type, m, j, w_1, w_2) {
     )
   } else if (m==8) {
     p <- list(
-      a_x=-2.2421, g_x1=-0.5886, g_x2=-0.9116, a_y=-6.3142, g_y1=0.3968,
-      g_y2=7.1492, g_y3=-3.9706, g_y4=1.9161, beta_x=1.6961, beta_z=1.4211,
-      t_x=-1.7858, t_y=-0.7475, a_s=-5.148, t_s=1.9954, g_s1=-0.4421, g_s2=0.344
+      # a_x=-2.0049, g_x1=-0.6199, g_x2=-1.1939, a_y=-6.1569, g_y1=0.4559,   # Exp2 link
+      # g_y2=4.4967, g_y3=0.1729, g_y4=0.6047, beta_x=1.5029, beta_z=1.0327, # Exp2 link
+      # t_x=-1.0738, t_y=-0.7204, a_s=-3.0524, t_s=0.9542, g_s1=-0.679,      # Exp2 link
+      # g_s2=0.5649                                                          # Exp2 link
+      a_x=-2.0485, g_x1=-0.6246, g_x2=-1.2661, a_y=-6.217, g_y1=0.4657,      # ICLL link
+      g_y2=4.9816, g_y3=-0.8304, g_y4=1.3535, beta_x=1.4295, beta_z=0.8031,  # ICLL link
+      t_x=-1.0071, t_y=-0.6757, a_s=-2.924, t_s=0.8632, g_s1=-0.7216,        # ICLL link
+      g_s2=1.143                                                             # ICLL link
     )
   } else if (m==9) {
     p <- list(
@@ -174,13 +179,13 @@ prob <- function(type, m, j, w_1, w_2) {
     )
   } else if (m==18) {
     p <- list(
-      a_x=-6.4096, g_x1=4.1462, g_x2=-0.1444, g_x3=3.1393, g_x4=-1.3482,
-      g_x5=1.2633, g_x6=0.0586, g_x7=4.4453, g_x8=-4.8883, t_x1=-1.4829,
-      t_x2=-0.6214, t_x3=-0.7727, t_x4=-1.5254, a_s=-2.8516, g_s1=-0.3645,
-      g_s2=0.6237, g_s3=0.1533, g_s4=3.0059, g_s5=-2.2575, beta_x1=2.6741,
-      beta_x2=-1.1132, beta_z1=1.9645, beta_z2=-0.6451, a_y=-6.9768,
-      g_y1=0.4823, g_y2=1.4844, g_y3=3.1972, g_y4=5.6193, g_y5=3.705,
-      t_y1=0.5472, t_y2=-0.0325, t_y3=0.5716, t_y4=-0.0745
+      a_x=-6.595, g_x1=4.9865, g_x2=-0.0678, g_x3=3.3413, g_x4=-2.434,
+      g_x5=2.2745, g_x6=0.5098, g_x7=3.4084, g_x8=-7.592, t_x1=-1.2784,
+      t_x2=0.0156, t_x3=-1.8474, t_x4=-2.0441, a_s=-2.98, g_s1=-0.4025,
+      g_s2=1.012, g_s3=0.1064, g_s4=3.5446, g_s5=-1.4723, beta_x1=2.85,
+      beta_x2=-1.2749, beta_z1=2.9831, beta_z2=-1.2721, a_y=-7.0407,
+      g_y1=0.4276, g_y2=1.5275, g_y3=3.0409, g_y4=5.7313, g_y5=4.0272,
+      t_y1=0.6658, t_y2=-0.0827, t_y3=0.6919, t_y4=0.061
     )
   }
   
@@ -190,25 +195,25 @@ prob <- function(type, m, j, w_1, w_2) {
   if (type=="sero") {
     
     if (m<11) {
-      prob <- exp2(p$a_x + p$t_x*j + p$g_x1*w_1 + p$g_x2*w_2)
+      prob <- icll(p$a_x + p$t_x*j + p$g_x1*w_1 + p$g_x2*w_2)
     } else if (m==11) {
-      prob <- exp2(
+      prob <- icll(
         p$a_x + p$t_x*j + p$g_x1*w_1 + p$g_x2*b1(w_2,1) + p$g_x3*b1(w_2,2) +
           p$g_x4*b1(w_2,3) + p$g_x5*b1(w_2,4)
       )
     } else if (m==12) {
-      prob <- exp2(
+      prob <- icll(
         p$a_x + p$t_x*j + p$g_x1*w_1 + p$g_x2*b2(w_2,1) + p$g_x3*b2(w_2,2) +
           p$g_x4*b2(w_2,3) + p$g_x5*b2(w_2,4)
       )
     } else if (m %in% c(13,14)) {
-      prob <- exp2(
+      prob <- icll(
         p$a_x + p$t_x1*b4(j,1) + p$t_x2*b4(j,2) + p$t_x3*b4(j,3) +
           p$t_x4*b4(j,4) + p$g_x1*w_1 + p$g_x2*b2(w_2,1) + p$g_x3*b2(w_2,2) +
           p$g_x4*b2(w_2,3) + p$g_x5*b2(w_2,4)
       )
     } else if (m %in% c(15:18)) {
-      prob <- exp2(
+      prob <- icll(
         p$a_x + p$t_x1*b4(j,1) + p$t_x2*b4(j,2) + p$t_x3*b4(j,3) +
           p$t_x4*b4(j,4) + w_1*(
             p$g_x1*b2(w_2,1) + p$g_x2*b2(w_2,2) +
@@ -223,14 +228,14 @@ prob <- function(type, m, j, w_1, w_2) {
   } else if (type=="init") {
     
     if (m<16) {
-      prob <- exp2(p$a_s + p$t_s*j + p$g_s1*w_1 + p$g_s2*w_2)
+      prob <- icll(p$a_s + p$t_s*j + p$g_s1*w_1 + p$g_s2*w_2)
     } else if (m==16) {
-      prob <- exp2(
+      prob <- icll(
         p$a_s + p$t_s1*b4(j,1) + p$t_s2*b4(j,2) + p$t_s3*b4(j,3) +
           p$t_s4*b4(j,4) + p$g_s1*w_1 + p$g_s2*w_2
       )
     } else if (m %in% c(17,18)) {
-      prob <- exp2(
+      prob <- icll(
         p$a_s + p$g_s1*w_1 + p$g_s2*b3(w_2,1) + p$g_s3*b3(w_2,2) + 
           p$g_s4*b3(w_2,3) + p$g_s5*b3(w_2,4)
       )
@@ -240,35 +245,35 @@ prob <- function(type, m, j, w_1, w_2) {
     
     if (type=="mort (HIV-)") { x <- 0; z <- 0;}
     if (type=="mort (HIV+ART-)") { x <- 1; z <- 0;}
-    if (type=="mort (HIV+ART+)") { x <- 0; z <- 1;}
+    if (type=="mort (HIV+ART+)") { x <- 1; z <- 1;}
     
     if (m==7) {
-      prob <- exp2(
+      prob <- icll(
         p$a_y + p$t_y*j + p$g_y1*w_1 + p$g_y2*w_2 + p$beta_x*x + p$beta_z*z
       )
     } else if (m==8) {
-      prob <- exp2(
+      prob <- icll(
         p$a_y + p$t_y*j + p$g_y1*w_1 + p$g_y2*w_2 + p$g_y3*w_2^2 +
-          p$g_y4*w_2^3 + p$beta_x*x + p$beta_z*z
+          p$g_y4*w_2^3 + p$beta_x*x*(1-z) + p$beta_z*x*z
       )
     } else if (m %in% c(9,11)) {
-      prob <- exp2(
+      prob <- icll(
         p$a_y + p$t_y*j + p$g_y1*w_1 + p$g_y2*b1(w_2,1) + p$g_y3*b1(w_2,2) +
-          p$g_y4*b1(w_2,3) + p$g_y5*b1(w_2,4) + p$beta_x*x + p$beta_z*z
+          p$g_y4*b1(w_2,3) + p$g_y5*b1(w_2,4) + p$beta_x*x*(1-z) + p$beta_z*z*z
       )
     } else if (m %in% c(12,13)) {
-      prob <- exp2(
+      prob <- icll(
         p$a_y + p$t_y*j + p$g_y1*w_1 + p$g_y2*b3(w_2,1) + p$g_y3*b3(w_2,2) +
-          p$g_y4*b3(w_2,3) + p$g_y5*b3(w_2,4) + p$beta_x*x + p$beta_z*z
+          p$g_y4*b3(w_2,3) + p$g_y5*b3(w_2,4) + p$beta_x*x*(1-z) + p$beta_z*x*z
       )
     } else if (m %in% c(14:17)) {
-      prob <- exp2(
+      prob <- icll(
         p$a_y + p$t_y1*b4(j,1) + p$t_y2*b4(j,2) + p$t_y3*b4(j,3) +
           p$t_y4*b4(j,4) + p$g_y1*w_1 + p$g_y2*b3(w_2,1) + p$g_y3*b3(w_2,2) +
           p$g_y4*b3(w_2,3) + p$g_y5*b3(w_2,4) + p$beta_x*x*(1-z) + p$beta_z*x*z
       )
     } else if (m==18) {
-      prob <- exp2(
+      prob <- icll(
         p$a_y + p$t_y1*b4(j,1) + p$t_y2*b4(j,2) + p$t_y3*b4(j,3) +
           p$t_y4*b4(j,4) + p$g_y1*w_1 + p$g_y2*b3(w_2,1) + p$g_y3*b3(w_2,2) +
           p$g_y4*b3(w_2,3) + p$g_y5*b3(w_2,4) +
@@ -377,16 +382,17 @@ p04 <- plot_mod(x_axis="Year", type="init", m=m)
 # Mortality prob as a function of age
 p05 <- plot_mod(x_axis="Age", type="mort (HIV-)", m=m)
 p06 <- plot_mod(x_axis="Age", type="mort (HIV+ART-)", m=m)
-# p07 <- plot_mod(x_axis="Age", type="mort (HIV+ART+)", m=m)
+p07 <- plot_mod(x_axis="Age", type="mort (HIV+ART+)", m=m)
 
 # Mortality prob as a function of calendar time
 p08 <- plot_mod(x_axis="Year", type="mort (HIV-)", m=m)
 p09 <- plot_mod(x_axis="Year", type="mort (HIV+ART-)", m=m)
-# p10 <- plot_mod(x_axis="Year", type="mort (HIV+ART+)", m=m)
+p10 <- plot_mod(x_axis="Year", type="mort (HIV+ART+)", m=m)
 
 print(ggpubr::ggarrange(p01, p02)) # Export 10"x5"
 print(ggpubr::ggarrange(p03, p04)) # Export 10"x5"
 print(ggpubr::ggarrange(p05, p08, p06, p09)) # Export 10"x10"
+print(ggpubr::ggarrange(p05, p06, p07, p08, p09, p10, ncol=3, nrow=2)) # Export 10"x15"
 
 
 
