@@ -117,6 +117,7 @@ if (cfg2$use_simulated_dataset) {
     
     # Misc data wrangling
     dat_prc %<>% dplyr::mutate(
+      died = ifelse(is.na(died), 0, died),
       sex = ifelse(sex=="Male", 1, 0),
       dob = convert_date(dob),
       dod = convert_date(dod),
