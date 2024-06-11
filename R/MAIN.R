@@ -6,8 +6,8 @@
 # Sys.setenv(avi_reltol=1e-5) # For running locally
 cfg <- list(
   run_sims = F, # !!!!!
-  run_process = F,
   run_analysis = T, # !!!!!
+  run_process = F,
   sim_level_set = "level_set_1",
   sim_run_or_update = "run",
   sim_num = 1000,
@@ -15,7 +15,7 @@ cfg <- list(
   # sim_n_cores = 50,
   sim_n_cores = as.integer(Sys.getenv("SLURM_CPUS_PER_TASK")),
   sim_stop_at_error = F,
-  model_version = 18
+  model_version = 8
 )
 
 # Secondary config
