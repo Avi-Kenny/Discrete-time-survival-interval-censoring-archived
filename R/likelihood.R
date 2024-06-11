@@ -214,18 +214,13 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
       
       stop("This section needs to be updated.")
       
-      # return(-1 * sum(log(unlist(lapply(c(1:n), lik_fn)))))
+      nll <- -1 * sum(log(unlist(
+        lapply(dat_objs_wrapper, function(d) {
+          lapply(d, function(d2) { lik_fn2(d2, params, inds) })
+        })
+      )))
+      return(nll)
       
-      inner_sum <- 0
-      for (i in c(1:n)) {
-        lik_i <- lik_fn(i, params, inds)
-        # browser() # !!!!!
-        print(mem_used()) # !!!!!
-        # print("Mem change:")
-        # print(mem_change({ lik_i <- lik_fn(i) }))
-        inner_sum <- inner_sum + log(lik_i)
-      }
-      return(-1*inner_sum)
     }
     
   }
