@@ -145,74 +145,14 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
     # Compute the negative likelihood across individuals
     if (parallelize) {
       
-      # parallel::clusterEvalQ(cl, sink(paste0("C:/Users/ak811/Desktop/Avi/Research/HIVMI/output", Sys.getpid(), ".txt"))) # !!!!!
-      # parallel::parLapply(cl, c(1:5), function(i) {
-      #   print("Check 1")
-      #   print(pryr::mem_used())
-      # })
-      # print(pryr::object_size(dat_objs))
-      # parallel::clusterExport(cl, c("dat_objs"), envir=.GlobalEnv)
-
-      # return(-1 * sum(unlist(parallel::parLapply(
-      #   cl,
-      #   c(1:cfg$sim_n_cores),
-      #   function(batch) {
-      #     print("START BATCH")
-      #     print("mem_used() START") # !!!!!
-      #     print(pryr::mem_used()) # !!!!!
-      #     inner_sum <- 0
-      #     for (i in batches[[batch]]) {
-      #       lik_i <- lik_fn(i, params, inds)
-      #       print("mem_used() BEFORE") # !!!!!
-      #       print(pryr::mem_used()) # !!!!!
-      #       print("mem_used() AFTER") # !!!!!
-      #       # browser() # !!!!!
-      #       # mem_used() # !!!!!
-      #       # print("Mem change:")
-      #       # print(mem_change({ lik_i <- lik_fn(i) }))
-      #       inner_sum <- inner_sum + log(lik_i)
-      #     }
-      #     return(inner_sum)
-      #     # sum(log(unlist(lapply(batches[[batch]], lik_fn))))
-      #   })
-      # )))
-      
-      # # !!!!! Testing v1
-      # if (Sys.getenv("test_type")=="type1") {
-      #   print("Type 1")
-      #   nll <- -1 * sum(log(unlist(parallel::parLapply(cl, dat_objs, function(d) {
-      #     lik_fn2(d, params, inds)
-      #   }))))
-      #   print(paste0("NLL: ", nll))
-      #   print(pryr::mem_used())
-      #   return(nll)
-      # }
-      
-      # # !!!!! TEMPORARY; for testing
-      # nll <- -1 * sum(log(unlist(
-      #   lapply(dat_objs_wrapper, function(d) {
-      #     lapply(d, function(d2) { lik_fn2(d2, params, inds) })
-      #   })
-      # )))
-      
-      
-      
-      # !!!!! Testing v2
-      # if (Sys.getenv("test_type")=="type2") {
-        # print("Type 2")
         nll <- -1 * sum(log(unlist(
           parallel::parLapply(cl, dat_objs_wrapper, function(d) {
             lapply(d, function(d2) { lik_fn2(d2, params, inds) })
           })
         )))
-        # print(paste0("NLL: ", nll))
-        # print(pryr::mem_used())
         return(nll)
-      # }
-      
+
     } else {
-      
-      stop("This section needs to be updated.")
       
       nll <- -1 * sum(log(unlist(
         lapply(dat_objs_wrapper, function(d) {
