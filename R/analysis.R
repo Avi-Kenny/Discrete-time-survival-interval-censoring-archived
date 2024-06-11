@@ -303,7 +303,9 @@ if (cfg2$use_simulated_dataset) {
     # write.table(dat_raw, file="dat_raw.csv", sep=",", row.names=FALSE)
     
     cols_to_drop <- c(
-      "dob", "dod", "age", "ResultDate", "HIVResult", "hiv_result_fill"
+      "dob", "dod", "age", "ResultDate", "HIVResult", "hiv_result_fill",
+      "VisitDate", "ReceivedHIVTestResult", "CurrentlyOnART", "HIV_status",
+      "HadPosHIVResult", "first_hiv_pos_dt", "last_hiv_neg_dt"
     )
     for (col in cols_to_drop) { dat[[col]] <- NULL }
     
@@ -511,8 +513,7 @@ if (cfg2$run_analysis) {
     })
     dat_objs_wrapper <- lapply(batches, function(i) { dat_objs[i] }) # !!!!! New
     cl <- parallel::makeCluster(cfg$sim_n_cores)
-    objs_to_export <- c("f_x", "f_y", "icll", "lik_fn", "lik_fn2", "inds",
-                        "batches")
+    objs_to_export <- c("f_x", "f_y", "icll", "lik_fn2", "inds", "batches")
     parallel::clusterExport(cl, objs_to_export, envir=.GlobalEnv)
     
     # parallel::clusterExport(cl, ls(.GlobalEnv))
@@ -522,6 +523,16 @@ if (cfg2$run_analysis) {
   } else {
     # negloglik <- construct_negloglik(parallelize=F, cl=NULL,
     #                                  cfg$model_version)
+    
+    # !!!!! Temporary
+    {
+      n <- attr(dat, "n")
+      folds <- cut(c(1:n), breaks=2, labels=FALSE)
+      batches <- lapply(c(1:2), function(batch) {
+        c(1:n)[folds==batch]
+      })
+      dat_objs_wrapper <- lapply(batches, function(i) { dat_objs[i] })
+    }
     negloglik <- construct_negloglik(parallelize=F, cfg$model_version)
   }
   chk(3, "construct_negloglik: END")
@@ -542,7 +553,7 @@ if (cfg2$run_analysis) {
         print("Check 2")
         print(pryr::mem_used())
       })
-      parallel::clusterExport(cl, c("lik_fn"), envir=.GlobalEnv)
+      parallel::clusterExport(cl, c("lik_fn2"), envir=.GlobalEnv)
       parallel::parLapply(cl, c(1:5), function(i) {
         print("Check 3")
         print(pryr::mem_used())

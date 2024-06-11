@@ -171,51 +171,51 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
 
 
 
-#' Calculate likelihood for individual i
-#'
-#' @param i Index for an individual
-#' @param params TO DO
-#' @param inds TO DO
-#' @return Numeric likelihood
-#' @note dat_objs is accessed globally
-lik_fn <- function(i, params, inds) {
-  
-  print(paste0("i: ", i))
-  # Extract data for individual i
-  d <- dat_objs[[i]]
-  
-  # Compute the likelihood for individual i
-  f2 <- sum(unlist(lapply(d$X_i_set, function(x) {
-    d$dat_i$x <- x
-    if (length(x)==1) {
-      d$dat_i$x_prev <- 0
-    } else {
-      d$dat_i$x_prev <- c(0,x[1:(length(x)-1)]) # !!!!! This can be precomputed
-    }
-    return(prod(apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
-      x <- r[["x"]]
-      w_ij <- as.numeric(r[inds$w])
-      j <- r[["cal_time_sc"]]
-      spl_ij <- r[inds$spl]
-      return(
-        f_x(x=x, x_prev=r[["x_prev"]], w=w_ij, j=j,
-            s=r[["init_visit"]], spl=spl_ij, params=params) *
-          f_y(y=r[["y"]], x=x, w=w_ij, z=r[["z"]], j=j,
-              spl=spl_ij, params=params)
-      )
-    })))
-  })))
-  
-  browser() # !!!!!
-
-  if (f2<=0) {
-    f2 <- 1e-10
-    # warning("Likelihood of zero")
-  }
-  
-  return(f2)
-  
-}
+#' #' Calculate likelihood for individual i
+#' #'
+#' #' @param i Index for an individual
+#' #' @param params TO DO
+#' #' @param inds TO DO
+#' #' @return Numeric likelihood
+#' #' @note dat_objs is accessed globally
+#' lik_fn <- function(i, params, inds) {
+#'   
+#'   print(paste0("i: ", i))
+#'   # Extract data for individual i
+#'   d <- dat_objs[[i]]
+#'   
+#'   # Compute the likelihood for individual i
+#'   f2 <- sum(unlist(lapply(d$X_i_set, function(x) {
+#'     d$dat_i$x <- x
+#'     if (length(x)==1) {
+#'       d$dat_i$x_prev <- 0
+#'     } else {
+#'       d$dat_i$x_prev <- c(0,x[1:(length(x)-1)]) # !!!!! This can be precomputed
+#'     }
+#'     return(prod(apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
+#'       x <- r[["x"]]
+#'       w_ij <- as.numeric(r[inds$w])
+#'       j <- r[["cal_time_sc"]]
+#'       spl_ij <- r[inds$spl]
+#'       return(
+#'         f_x(x=x, x_prev=r[["x_prev"]], w=w_ij, j=j,
+#'             s=r[["init_visit"]], spl=spl_ij, params=params) *
+#'           f_y(y=r[["y"]], x=x, w=w_ij, z=r[["z"]], j=j,
+#'               spl=spl_ij, params=params)
+#'       )
+#'     })))
+#'   })))
+#'   
+#'   browser() # !!!!!
+#' 
+#'   if (f2<=0) {
+#'     f2 <- 1e-10
+#'     # warning("Likelihood of zero")
+#'   }
+#'   
+#'   return(f2)
+#'   
+#' }
 
 
 
@@ -231,6 +231,7 @@ lik_fn2 <- function(d, params, inds) {
   # print(paste0("i: ", i))
   # Extract data for individual i
   # d <- dat_objs[[i]]
+  # browser() # !!!!!
   
   # !!!!! New code
   {
@@ -241,6 +242,7 @@ lik_fn2 <- function(d, params, inds) {
       j <- r[["cal_time_sc"]]
       spl_ij <- r[inds$spl]
       
+      # browser() # !!!!!
       f_x_00 <- f_x(x=0, x_prev=0, w=w_ij, j=j, s=r[["init_visit"]], spl=spl_ij,
                     params=params)
       f_x_01 <- f_x(x=1, x_prev=0, w=w_ij, j=j, s=r[["init_visit"]], spl=spl_ij,
