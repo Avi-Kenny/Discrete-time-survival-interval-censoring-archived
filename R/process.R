@@ -107,10 +107,10 @@ prob <- function(type, m, j, w_1, w_2) {
       # g_y2=4.4967, g_y3=0.1729, g_y4=0.6047, beta_x=1.5029, beta_z=1.0327, # Exp2 link
       # t_x=-1.0738, t_y=-0.7204, a_s=-3.0524, t_s=0.9542, g_s1=-0.679,      # Exp2 link
       # g_s2=0.5649                                                          # Exp2 link
-      a_x=-2.0485, g_x1=-0.6246, g_x2=-1.2661, a_y=-6.217, g_y1=0.4657,      # ICLL link
-      g_y2=4.9816, g_y3=-0.8304, g_y4=1.3535, beta_x=1.4295, beta_z=0.8031,  # ICLL link
-      t_x=-1.0071, t_y=-0.6757, a_s=-2.924, t_s=0.8632, g_s1=-0.7216,        # ICLL link
-      g_s2=1.143                                                             # ICLL link
+      a_x=-1.629, g_x1=-0.643, g_x2=-2.100, a_y=-5.945, g_y1=0.382,          # ICLL link
+      g_y2=4.633, g_y3=-0.742, g_y4=1.280, beta_x=1.099, beta_z=1.046,       # ICLL link
+      t_x=-1.739, t_y=-0.720, a_s=-2.272, t_s=0.249, g_s1=-0.485,            # ICLL link
+      g_s2=1.511                                                             # ICLL link
     )
   } else if (m==9) {
     p <- list(
@@ -361,7 +361,7 @@ plot_mod <- function(x_axis, type, m) {
 ##### VIZ: Plotting modeled probabilities #####
 ###############################################.
 
-m <- 18
+m <- 8
 b1 <- construct_basis("age (0-100), 4DF")
 b2 <- construct_basis("age (13,20,30,60,90)")
 b3 <- construct_basis("age (13,30,60,75,90)")

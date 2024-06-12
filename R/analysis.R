@@ -18,7 +18,8 @@ cfg2 <- list(
   samp_size = 20000, # as.integer(Sys.getenv("samp_size"))
   opt_maxit = 5000,
   opt_r = 2,
-  opt_reltol = 1e-5
+  opt_reltol = 1e-5,
+  window_start = 2000
 )
 
 # !!!!! TEMPORARY: testing different optim config options
@@ -69,18 +70,13 @@ if (cfg2$use_simulated_dataset) {
   
   if (cfg2$process_data) {
     
-    # Read in data; see generate_data() for expected columns
-    # dat_prc <- dat_raw <- read.csv("../../Data/data_raw_1000.csv")
-    # dat_prc <- dat_raw <- read.csv("../Data/data_raw_1000_v2.csv")
-    # dat_prc <- dat_raw <- read.csv("../Data/data_raw_1000_v3.csv")
-    # dat_prc <- dat_raw <- read.csv("../Data/data_raw_10000.csv")
-    
     set.seed(1)
-    # dat_prc <- dat_raw <- read.csv("../Data/data_raw_full.csv")
+    
+    # Read in data
     dat_prc <- dat_raw <- read.csv("../Data/data_raw_full_v2.csv")
+    
+    # Take sample from dataset (for model development)
     iintids <- unique(dat_prc$IIntId)
-    # cfg2$samp_size <- 5000 # !!!!! Rapid testing
-    # cfg2$samp_size <- 150000 # !!!!! Testing code speed
     iintids_sample <- sample(iintids, size=cfg2$samp_size)
     dat_prc %<>% dplyr::filter(IIntId %in% iintids_sample)
     
@@ -93,17 +89,7 @@ if (cfg2$use_simulated_dataset) {
     # Drop unnecessary columns
     dat_prc %<>% subset(select=-c(X, EarliestARTInitDate))
 
-    # # Restrict to specific observation window
-    # # !!!!! This needs to change to account for new initial status model
-    # nrow(dat_prc)
-    # dat_prc %<>% dplyr::filter(year>=2010)
-    # nrow(dat_prc)
-    
-    # Start time
-    window_start <- min(dat_prc$year)
-    
     # Function to convert dates
-    date_start <- as.Date("01jan1960", format="%d%b%Y")
     convert_date <- memoise(function(date) {
       # date <- as.Date(date, format="%d%b%Y")
       date <- as.Date(date, format="%Y-%m-%d")
@@ -267,17 +253,17 @@ if (cfg2$use_simulated_dataset) {
     
     # Rescale time variable to start at 1
     dat_prc %<>% dplyr::mutate(
-      dob = (dob - window_start) + 1,
-      dod = (dod - window_start) + 1,
-      t_end = (t_end - window_start) + 1,
-      first_hiv_pos_dt = (first_hiv_pos_dt - window_start) + 1,
-      last_hiv_neg_dt = (last_hiv_neg_dt - window_start) + 1
+      dob = (dob - cfg2$window_start) + 1,
+      dod = (dod - cfg2$window_start) + 1,
+      t_end = (t_end - cfg2$window_start) + 1,
+      first_hiv_pos_dt = (first_hiv_pos_dt - cfg2$window_start) + 1,
+      last_hiv_neg_dt = (last_hiv_neg_dt - cfg2$window_start) + 1
     )
-    attr(dat_prc, "s_i") <- (attr(dat_prc, "s_i") - window_start) + 1
-    attr(dat_prc, "t_i") <- (attr(dat_prc, "t_i") - window_start) + 1
+    attr(dat_prc, "s_i") <- (attr(dat_prc, "s_i") - cfg2$window_start) + 1
+    attr(dat_prc, "t_i") <- (attr(dat_prc, "t_i") - cfg2$window_start) + 1
     
     # Create (scaled) age variable
-    # Consider rounding w_2 as well (for memoising)
+    # !!!!! Consider rounding w_2 as well (for memoising)
     dat_prc %<>% dplyr::mutate(w_2 = (t_end-dob)/100)
     
     # DQA
