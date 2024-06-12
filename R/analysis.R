@@ -2,6 +2,8 @@
 ##### Config #####
 ##################.
 
+set.seed(1)
+
 for (pkg in c(cfg$pkgs,cfg$pkgs_nocluster)) {
   suppressMessages({ do.call("library", list(pkg)) })
 }
@@ -19,7 +21,7 @@ cfg2 <- list(
   opt_maxit = 5000,
   opt_r = 2,
   opt_reltol = 1e-5,
-  window_start = 2000
+  window_start = 2010
 )
 
 # !!!!! TEMPORARY: testing different optim config options
@@ -146,6 +148,34 @@ if (cfg2$use_simulated_dataset) {
     rows_with_s <- which(dat_prc$HIVResult=="S")
     dat_prc[rows_with_s, "ResultDate"] <- ""
     dat_prc[rows_with_s, "HIVResult"] <- ""
+    
+    # Create flag for individuals whose status is positive/known at window_start
+    dat_pos_at_start <- dat_prc %>%
+      dplyr::filter(year<=cfg2$window_start) %>%
+      mutate(pos=ifelse(is.na(HIVResult), 0, In(HIVResult=="P"))) %>%
+      dplyr::group_by(id) %>%
+      dplyr::summarize(pos_at_start = max(pos)) %>%
+      dplyr::filter(pos_at_start==1)
+    ids_pos_at_start <- dat_pos_at_start$id
+    rm(dat_pos_at_start)
+    
+    # Remove all data prior to window_start
+    dat_prc %<>% dplyr::filter(year>=cfg2$window_start)
+    
+    # Set V=1 if status is known at window_start
+    rows <- which(
+      dat_prc$id %in% ids_pos_at_start & dat_prc$year==cfg2$window_start
+    )
+    for (row in rows) {
+      hiv_res <- dat_prc[row,"HIVResult"]
+      if (is.na(hiv_res) || hiv_res!="P") {
+        dat_prc[row,"HIVResult"] <- "P"
+        dat_prc[row,"ResultDate"] <- as.Date(
+          paste0(cfg2$window_start, "-01-01"),
+          format = "%Y-%m-%d"
+        )
+      }
+    }
     
     # Add `first_hiv_pos_dt` and `last_hiv_neg_dt`
     dat_prc %<>% dplyr::mutate(
@@ -623,7 +653,7 @@ if (cfg2$run_analysis) {
   } else if (cfg$model_version==17) {
     par_init <- c(a_x=-6.67, g_x1=4.86, g_x2=1.33, g_x3=0.871, g_x4=-6.53, g_x5=3.66, g_x6=1.07, g_x7=2.60, g_x8=-7.59, t_x1=-1.82, t_x2=-0.728, t_x3=-0.593, t_x4=-2.06, a_s=-3.08, g_s1=-0.742, g_s2=0, g_s3=0, g_s4=0, g_s5=0, beta_x=1.12, beta_z=1.00, a_y=-6.56, g_y1=0.431, g_y2=1.95, g_y3=3.29, g_y4=7.18, g_y5=3.60, t_y1=-0.319, t_y2=-1.00, t_y3=-0.934, t_y4=-1.12)
   } else if (cfg$model_version==18) {
-    par_init <- c(a_x=-6.9521, g_x1=4.2808, g_x2=-0.1476, g_x3=1.4616, g_x4=-5.7527, g_x5=2.4626, g_x6=0.1639, g_x7=3.6117, g_x8=-7.3954, t_x1=-1.093, t_x2=-0.888, t_x3=-1.3534, t_x4=-1.4756, a_s=-2.8117, g_s1=-0.3086, g_s2=0.8134, g_s3=-0.1185, g_s4=3.2074, g_s5=-1.4434, beta_x1=1.369, beta_x2=0, beta_z1=1.1501, beta_z2=0, a_y=-6.5127, g_y1=0.4162, g_y2=1.7359, g_y3=3.1651, g_y4=6.5974, g_y5=4.0223, t_y1=-0.1488, t_y2=-0.8869, t_y3=-0.6838, t_y4=-1.0119)
+    par_init <- c(a_x=-7.855, g_x1=4.791, g_x2=-0.935, g_x3=0.844, g_x4=-8.116, g_x5=2.804, g_x6=-2.155, g_x7=5.066, g_x8=-5.616, t_x1=-1.084, t_x2=-0.764, t_x3=-1.505, t_x4=-2.598, a_s=-3.043, g_s1=-0.281, g_s2=1.184, g_s3=0.219, g_s4=3.380, g_s5=-3.239, beta_x1=2.636, beta_x2=-1.051, beta_z1=3.983, beta_z2=-1.870, a_y=-7.221, g_y1=0.411, g_y2=1.692, g_y3=3.440, g_y4=6.288, g_y5=3.826, t_y1=0.413, t_y2=0.030, t_y3=0.530, t_y4=-0.235)
   }
   
   # par_true <- c(
