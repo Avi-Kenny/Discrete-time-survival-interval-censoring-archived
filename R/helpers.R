@@ -164,6 +164,9 @@ construct_basis <- function(which) {
   } else if (which=="year (00,05,10,15,20)") {
     grid <- seq(0,2.2, length.out=500)
     k <- seq(0,2, length.out=5)
+  } else if (which=="year (10,13,16,19,22)") {
+    grid <- seq(1,2.2, length.out=500)
+    k <- seq(1,2.2, length.out=5)
   }
   
   b <- Vectorize(function(x, i) {
