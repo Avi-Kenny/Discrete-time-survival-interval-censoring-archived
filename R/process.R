@@ -192,6 +192,15 @@ prob <- function(type, m, j, w_1, w_2) {
       beta_z2=-3.966, a_y=-7.504, g_y1=0.598, g_y2=2.118, g_y3=3.794,              # Window start 2010
       g_y4=6.900, g_y5=4.007, t_y1=0.303, t_y2=-0.594, t_y3=-1.262, t_y4=-1.038    # Window start 2010
     )
+  } else if (m==19) {
+    p <- list(
+      a_x=-9.088, g_x1=2.253, g_x2=-0.301, g_x3=2.574, g_x4=-5.358, g_x5=-0.954,
+      g_x6=-0.102, g_x7=9.014, g_x8=-2.098, t_x1=3.821, t_x2=-2.059,
+      t_x3=-4.684, t_x4=0.401, a_s=-3.040, g_s1=-0.406, g_s2=1.430, g_s3=-0.652,
+      g_s4=3.780, g_s5=-3.256, beta_x1=1.819, beta_x2=-1.302, beta_z1=3.743,
+      beta_z2=-3.832, a_y=-7.567, g_y1=0.574, g_y2=2.136, g_y3=3.802,
+      g_y4=6.921, g_y5=3.995, t_y1=-3.916, t_y2=-2.986, t_y3=-0.747, t_y4=-1.149
+    )
   }
   
   j <- j/10
@@ -228,6 +237,17 @@ prob <- function(type, m, j, w_1, w_2) {
               p$g_x7*b2(w_2,3) + p$g_x8*b2(w_2,4)
           )
       )
+    } else if (m==19) {
+      prob <- icll(
+        p$a_x + p$t_x1*b5(j,1) + p$t_x2*b5(j,2) + p$t_x3*b5(j,3) +
+          p$t_x4*b5(j,4) + w_1*(
+            p$g_x1*b2(w_2,1) + p$g_x2*b2(w_2,2) +
+              p$g_x3*b2(w_2,3) + p$g_x4*b2(w_2,4)
+          ) + (1-w_1)*(
+            p$g_x5*b2(w_2,1) + p$g_x6*b2(w_2,2) +
+              p$g_x7*b2(w_2,3) + p$g_x8*b2(w_2,4)
+          )
+      )
     }
     
   } else if (type=="init") {
@@ -239,7 +259,7 @@ prob <- function(type, m, j, w_1, w_2) {
         p$a_s + p$t_s1*b4(j,1) + p$t_s2*b4(j,2) + p$t_s3*b4(j,3) +
           p$t_s4*b4(j,4) + p$g_s1*w_1 + p$g_s2*w_2
       )
-    } else if (m %in% c(17,18)) {
+    } else if (m %in% c(17,18,19)) {
       prob <- icll(
         p$a_s + p$g_s1*w_1 + p$g_s2*b3(w_2,1) + p$g_s3*b3(w_2,2) + 
           p$g_s4*b3(w_2,3) + p$g_s5*b3(w_2,4)
@@ -281,6 +301,13 @@ prob <- function(type, m, j, w_1, w_2) {
       prob <- icll(
         p$a_y + p$t_y1*b4(j,1) + p$t_y2*b4(j,2) + p$t_y3*b4(j,3) +
           p$t_y4*b4(j,4) + p$g_y1*w_1 + p$g_y2*b3(w_2,1) + p$g_y3*b3(w_2,2) +
+          p$g_y4*b3(w_2,3) + p$g_y5*b3(w_2,4) +
+          (p$beta_x1+p$beta_x2*j)*x*(1-z) + (p$beta_z1+p$beta_z2*j)*x*z
+      )
+    } else if (m==19) {
+      prob <- icll(
+        p$a_y + p$t_y1*b5(j,1) + p$t_y2*b5(j,2) + p$t_y3*b5(j,3) +
+          p$t_y4*b5(j,4) + p$g_y1*w_1 + p$g_y2*b3(w_2,1) + p$g_y3*b3(w_2,2) +
           p$g_y4*b3(w_2,3) + p$g_y5*b3(w_2,4) +
           (p$beta_x1+p$beta_x2*j)*x*(1-z) + (p$beta_z1+p$beta_z2*j)*x*z
       )
@@ -375,13 +402,13 @@ plot_mod <- function(x_axis, type, m, w_start) {
 ##### VIZ: Plotting modeled probabilities #####
 ###############################################.
 
-m <- 18
+m <- 19
 w_start <- 2010
 b1 <- construct_basis("age (0-100), 4DF")
 b2 <- construct_basis("age (13,20,30,60,90)")
 b3 <- construct_basis("age (13,30,60,75,90)")
-b4 <- construct_basis("year (00,05,10,15,20)")
-b5 <- construct_basis("year (10,13,16,19,22)")
+b4 <- construct_basis("year (00,05,10,15,20)", window_start=w_start)
+b5 <- construct_basis("year (10,13,16,19,22)", window_start=w_start)
 
 # Seroconversion prob as a function of age
 p01 <- plot_mod(x_axis="Age", type="sero", m=m, w_start=w_start)
@@ -407,7 +434,7 @@ p10 <- plot_mod(x_axis="Year", type="mort (HIV+ART+)", m=m, w_start=w_start)
 
 print(ggpubr::ggarrange(p01, p02)) # Export 10"x5"
 print(ggpubr::ggarrange(p03, p04)) # Export 10"x5"
-print(ggpubr::ggarrange(p05, p08, p06, p09)) # Export 10"x10"
+# print(ggpubr::ggarrange(p05, p08, p06, p09)) # Export 10"x10"
 print(ggpubr::ggarrange(p05, p06, p07, p08, p09, p10, ncol=3, nrow=2)) # Export 15"x10"
 
 

@@ -143,12 +143,13 @@ chk <- function(num, msg="") {
 
 #' Create a natural cubic spline basis
 #' 
-#' @param x Numeric input
-#' @param i Index of spline column
-#' @param m Model version number; corresponds to cfg$model_version
-#' @param s Spline number; for cases in which models use multiple splines
-construct_basis <- function(which) {
+#' @param which Which basis to construct
+#' @param window_start Start year
+construct_basis <- function(which, window_start=NA) {
   
+  scale_age <- function(x) { x / 100 }
+  scale_year <- function(x) { (x-window_start)/10 }
+
   if (which=="age (0-100), 4DF") {
     grid <- seq(0,1, length.out=500)
     k <- c(0,0.25,0.5,0.75,1)
@@ -160,13 +161,13 @@ construct_basis <- function(which) {
     k <- c(0.13, 0.3, 0.6, 0.75, 0.9)
   } else if (which=="age (13,32,52,71,90)") {
     grid <- seq(0.13,0.90, length.out=500)
-    k <- seq(0.13,0.90, length.out=5)
+    k <- scale_age(seq(13,90, length.out=5))
   } else if (which=="year (00,05,10,15,20)") {
-    grid <- seq(0,2.2, length.out=500)
-    k <- seq(0,2, length.out=5)
+    grid <- scale_year(seq(2000,2022, length.out=500))
+    k <- scale_year(seq(2000,2020, length.out=5))
   } else if (which=="year (10,13,16,19,22)") {
-    grid <- seq(1,2.2, length.out=500)
-    k <- seq(1,2.2, length.out=5)
+    grid <- scale_year(seq(2010,2022, length.out=500))
+    k <- scale_year(seq(2010,2022, length.out=5))
   }
   
   b <- Vectorize(function(x, i) {

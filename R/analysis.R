@@ -328,7 +328,8 @@ if (cfg2$use_simulated_dataset) {
     rm(dat_raw,dat_prc)
     
     # Create transformed dataset object
-    dat_objs <- transform_dataset(dat, model_version=cfg$model_version)
+    dat_objs <- transform_dataset(dat, model_version=cfg$model_version,
+                                  window_start=cfg2$window_start)
     
     if (cfg2$save_data) {
       saveRDS(dat, "dat.rds")

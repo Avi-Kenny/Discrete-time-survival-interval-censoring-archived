@@ -1,13 +1,13 @@
 #' Transform dataset
 #' @param dat A dataset returned by generate_dataset()
 #' @param model_version Model version, as specified in MAIN.R
-transform_dataset <- function(dat, model_version=0) {
+transform_dataset <- function(dat, model_version=0, window_start) {
   
   # Construct spline bases
   b2 <- construct_basis("age (13,20,30,60,90)")
   b3 <- construct_basis("age (13,30,60,75,90)")
-  b4 <- construct_basis("year (00,05,10,15,20)")
-  b5 <- construct_basis("year (10,13,16,19,22)")
+  b4 <- construct_basis("year (00,05,10,15,20)", window_start=window_start)
+  b5 <- construct_basis("year (10,13,16,19,22)", window_start=window_start)
   
   n <- attr(dat, "n")
   
