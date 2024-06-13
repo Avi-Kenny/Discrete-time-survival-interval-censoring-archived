@@ -297,7 +297,17 @@ prob <- function(type, m, j, w_1, w_2) {
 #' @param type One of c("sero", "init", "mort")
 #' @param m An integer representing the model version number
 #' @return ggplot2 object
-plot_mod <- function(x_axis, type, m) {
+plot_mod <- function(x_axis, type, m, w_start) {
+  
+  if (w_start==2000) {
+    j_vals <- c(0,10,20)
+    j_labs <- c("2000","2010","2020")
+    grid <- seq(0,22,0.01)
+  } else if (w_start==2010) {
+    j_vals <- c(1,6,11)
+    j_labs <- c("2010","2015","2020")
+    grid <- seq(0,13,0.01)
+  }
   
   if (x_axis=="Age") {
     grid <- seq(13,90,0.1)
@@ -305,21 +315,20 @@ plot_mod <- function(x_axis, type, m) {
     plot_data <- data.frame(
       x = rep(grid,6),
       Probability = c(
-        sapply(grid, function(w_2) { prob(type, m, j=0, w_1=0, w_2) }),
-        sapply(grid, function(w_2) { prob(type, m, j=0, w_1=1, w_2) }),
-        sapply(grid, function(w_2) { prob(type, m, j=10, w_1=0, w_2) }),
-        sapply(grid, function(w_2) { prob(type, m, j=10, w_1=1, w_2) }),
-        sapply(grid, function(w_2) { prob(type, m, j=20, w_1=0, w_2) }),
-        sapply(grid, function(w_2) { prob(type, m, j=20, w_1=1, w_2) })
+        sapply(grid, function(w_2) { prob(type, m, j=j_vals[1], w_1=0, w_2) }),
+        sapply(grid, function(w_2) { prob(type, m, j=j_vals[1], w_1=1, w_2) }),
+        sapply(grid, function(w_2) { prob(type, m, j=j_vals[2], w_1=0, w_2) }),
+        sapply(grid, function(w_2) { prob(type, m, j=j_vals[2], w_1=1, w_2) }),
+        sapply(grid, function(w_2) { prob(type, m, j=j_vals[3], w_1=0, w_2) }),
+        sapply(grid, function(w_2) { prob(type, m, j=j_vals[3], w_1=1, w_2) })
       ),
       Sex = rep(rep(c("Female", "Male"),3), each=length(grid)),
-      color = rep(c("2000","2010","2020"), each=2*length(grid))
+      color = rep(j_labs, each=2*length(grid))
     )
   } else if (x_axis=="Year") {
-    grid <- seq(0,22,0.01)
     color <- "Age"
     plot_data <- data.frame(
-      x = rep(grid,6) + 1999,
+      x = rep(grid,6) + (w_start-1),
       Probability = c(
         sapply(grid, function(j) { prob(type, m, j, w_1=0, w_2=20) }),
         sapply(grid, function(j) { prob(type, m, j, w_1=1, w_2=20) }),
@@ -367,37 +376,39 @@ plot_mod <- function(x_axis, type, m) {
 ###############################################.
 
 m <- 18
+w_start <- 2010
 b1 <- construct_basis("age (0-100), 4DF")
 b2 <- construct_basis("age (13,20,30,60,90)")
 b3 <- construct_basis("age (13,30,60,75,90)")
 b4 <- construct_basis("year (00,05,10,15,20)")
+b5 <- construct_basis("year (10,13,16,19,22)")
 
 # Seroconversion prob as a function of age
-p01 <- plot_mod(x_axis="Age", type="sero", m=m)
+p01 <- plot_mod(x_axis="Age", type="sero", m=m, w_start=w_start)
 
 # Seroconversion prob as a function of calendar time
-p02 <- plot_mod(x_axis="Year", type="sero", m=m)
+p02 <- plot_mod(x_axis="Year", type="sero", m=m, w_start=w_start)
 
 # HIV+ initial status as a function of age
-p03 <- plot_mod(x_axis="Age", type="init", m=m)
+p03 <- plot_mod(x_axis="Age", type="init", m=m, w_start=w_start)
 
 # HIV+ initial status as a function of calendar time
-p04 <- plot_mod(x_axis="Year", type="init", m=m)
+p04 <- plot_mod(x_axis="Year", type="init", m=m, w_start=w_start)
 
 # Mortality prob as a function of age
-p05 <- plot_mod(x_axis="Age", type="mort (HIV-)", m=m)
-p06 <- plot_mod(x_axis="Age", type="mort (HIV+ART-)", m=m)
-p07 <- plot_mod(x_axis="Age", type="mort (HIV+ART+)", m=m)
+p05 <- plot_mod(x_axis="Age", type="mort (HIV-)", m=m, w_start=w_start)
+p06 <- plot_mod(x_axis="Age", type="mort (HIV+ART-)", m=m, w_start=w_start)
+p07 <- plot_mod(x_axis="Age", type="mort (HIV+ART+)", m=m, w_start=w_start)
 
 # Mortality prob as a function of calendar time
-p08 <- plot_mod(x_axis="Year", type="mort (HIV-)", m=m)
-p09 <- plot_mod(x_axis="Year", type="mort (HIV+ART-)", m=m)
-p10 <- plot_mod(x_axis="Year", type="mort (HIV+ART+)", m=m)
+p08 <- plot_mod(x_axis="Year", type="mort (HIV-)", m=m, w_start=w_start)
+p09 <- plot_mod(x_axis="Year", type="mort (HIV+ART-)", m=m, w_start=w_start)
+p10 <- plot_mod(x_axis="Year", type="mort (HIV+ART+)", m=m, w_start=w_start)
 
 print(ggpubr::ggarrange(p01, p02)) # Export 10"x5"
 print(ggpubr::ggarrange(p03, p04)) # Export 10"x5"
 print(ggpubr::ggarrange(p05, p08, p06, p09)) # Export 10"x10"
-print(ggpubr::ggarrange(p05, p06, p07, p08, p09, p10, ncol=3, nrow=2)) # Export 10"x15"
+print(ggpubr::ggarrange(p05, p06, p07, p08, p09, p10, ncol=3, nrow=2)) # Export 15"x10"
 
 
 
