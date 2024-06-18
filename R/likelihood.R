@@ -191,54 +191,6 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
 
 
 
-#' #' Calculate likelihood for individual i
-#' #'
-#' #' @param i Index for an individual
-#' #' @param params TO DO
-#' #' @param inds TO DO
-#' #' @return Numeric likelihood
-#' #' @note dat_objs is accessed globally
-#' lik_fn <- function(i, params, inds) {
-#'   
-#'   print(paste0("i: ", i))
-#'   # Extract data for individual i
-#'   d <- dat_objs[[i]]
-#'   
-#'   # Compute the likelihood for individual i
-#'   f2 <- sum(unlist(lapply(d$X_i_set, function(x) {
-#'     d$dat_i$x <- x
-#'     if (length(x)==1) {
-#'       d$dat_i$x_prev <- 0
-#'     } else {
-#'       d$dat_i$x_prev <- c(0,x[1:(length(x)-1)]) # !!!!! This can be precomputed
-#'     }
-#'     return(prod(apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
-#'       x <- r[["x"]]
-#'       w_ij <- as.numeric(r[inds$w])
-#'       j <- r[["cal_time_sc"]]
-#'       spl_ij <- r[inds$spl]
-#'       return(
-#'         f_x(x=x, x_prev=r[["x_prev"]], w=w_ij, j=j,
-#'             s=r[["init_visit"]], spl=spl_ij, params=params) *
-#'           f_y(y=r[["y"]], x=x, w=w_ij, z=r[["z"]], j=j,
-#'               spl=spl_ij, params=params)
-#'       )
-#'     })))
-#'   })))
-#'   
-#'   browser() # !!!!!
-#' 
-#'   if (f2<=0) {
-#'     f2 <- 1e-10
-#'     # warning("Likelihood of zero")
-#'   }
-#'   
-#'   return(f2)
-#'   
-#' }
-
-
-
 #' Calculate likelihood for individual i
 #'
 #' @param d One component of the list dat_objs
@@ -247,112 +199,166 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
 #' @return Numeric likelihood
 #' @note dat_objs is accessed globally
 lik_fn2 <- function(d, params, inds) {
-  
-  # print(paste0("i: ", i))
-  # Extract data for individual i
+
+  # # print(paste0("i: ", i))
+  # # Extract data for individual i
   # d <- dat_objs[[i]]
-  # browser() # !!!!!
-  
-  {
-    
-    # Precompute Z values; might need to move this later
-    f_z_00 <- f_z(z=0, z_prev=0, x=1)
-    f_z_01 <- f_z(z=1, z_prev=0, x=1)
-    f_z_11 <- f_z(z=1, z_prev=1, x=1)
-    
-    # Precompute values
-    f_xy_vals <- apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
+
+  # Compute the likelihood for individual i
+  f2 <- sum(unlist(lapply(d$X_i_set, function(xz) {
+    d$dat_i$x <- xz$x
+    if (length(xz$x)==1) {
+      d$dat_i$x_prev <- 0
+    } else {
+      d$dat_i$x_prev <- c(0,xz$x[1:(length(xz$x)-1)]) # !!!!! This can be precomputed
+    }
+    return(prod(apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
+      x <- r[["x"]]
       w_ij <- as.numeric(r[inds$w])
       j <- r[["cal_time_sc"]]
       spl_ij <- r[inds$spl]
-      
-      # browser() # !!!!!
-      f_x_00 <- f_x(x=0, x_prev=0, w=w_ij, j=j, s=r[["init_visit"]], spl=spl_ij,
-                    params=params)
-      f_x_01 <- f_x(x=1, x_prev=0, w=w_ij, j=j, s=r[["init_visit"]], spl=spl_ij,
-                    params=params)
-      f_x_11 <- f_x(x=1, x_prev=1, w=w_ij, j=j, s=r[["init_visit"]], spl=spl_ij,
-                    params=params)
-      
-      f_y_0 <- f_y(y=r[["y"]], x=0, w=w_ij, z=r[["z"]], j=j, spl=spl_ij,
-                   params=params)
-      f_y_1 <- f_y(y=r[["y"]], x=1, w=w_ij, z=r[["z"]], j=j, spl=spl_ij,
-                   params=params)
-      
-      return(c(f_x_00*f_y_0, f_x_01*f_y_1, f_x_11*f_y_1))
-    })
-    
-    # len <- length(d$X_i_set$x)
-    # if (len>=7) {
-    # 
-    #   f2_fnc <- function(x) {
-    #     if (length(x)==1) { # !!!!! This can be precomputed
-    #       x_prev <- 0
-    #     } else {
-    #       x_prev <- c(0,x[1:(length(x)-1)])
-    #     }
-    # 
-    #     return(prod(sapply(X=c(1:length(x)), FUN = function(j) {
-    #       x_prev_j <- x_prev[j]
-    #       x_j <- x[j]
-    #       if (x_prev_j==0 && x_j==0) {
-    #         return(f_xy_vals[1,j])
-    #       } else if (x_prev_j==0 && x_j==1) {
-    #         return(f_xy_vals[2,j])
-    #       } else if (x_prev_j==1 && x_j==1) {
-    #         return(f_xy_vals[3,j])
-    #       }
-    #     })))
-    # 
-    #   }
-    # 
-    #   f2_first <- f2_fnc(d$X_i_set$x[[1]])
-    #   f2_last <- f2_fnc(d$X_i_set$x[[len]])
-    #   f2_mid_1 <- f2_fnc(d$X_i_set$x[[2]])
-    #   f2_mid_2 <- f2_fnc(d$X_i_set$x[[round((len+1)/2)]])
-    #   f2_mid_3 <- f2_fnc(d$X_i_set$x[[len-1]])
-    # 
-    #   simpson_sum <- (1/6)*(f2_mid_1+4*f2_mid_2+f2_mid_3)
-    #   f2 <- sum(f2_first+f2_last+(len-2)*simpson_sum)
-    # 
-    # } else {
-      
-      f2 <- sum(unlist(lapply(d$X_i_set, function(xz) {
-        if (length(xz$x)==1) { # !!!!! This can be precomputed
-          x_prev <- 0
-        } else {
-          x_prev <- c(0,xz$x[1:(length(xz$x)-1)])
-        }
-        
-        return(prod(sapply(X=c(1:length(xz$x)), FUN = function(j) {
-          x_prev_j <- x_prev[j]
-          x_j <- xz$x[j]
-          if (x_prev_j==0 && x_j==0) {
-            return(f_xy_vals[1,j])
-          } else if (x_prev_j==0 && x_j==1) {
-            return(f_xy_vals[2,j])
-          } else if (x_prev_j==1 && x_j==1) {
-            return(f_xy_vals[3,j])
-          }
-        })))
-        
-      })))
-      
-    # }
-    
-  }
-  
-  # if (is.na(f2) || is.nan(f2)) {
-  #   browser()
-  # } # Debugging
+      return(
+        f_x(x=x, x_prev=r[["x_prev"]], w=w_ij, j=j,
+            s=r[["init_visit"]], spl=spl_ij, params=params) *
+          f_y(y=r[["y"]], x=x, w=w_ij, z=r[["z"]], j=j,
+              spl=spl_ij, params=params)
+      )
+    })))
+  })))
+
+  # browser() # !!!!!
+
   if (f2<=0) {
     f2 <- 1e-10
     # warning("Likelihood of zero")
   }
-  
+
   return(f2)
-  
+
 }
+
+
+
+#' #' Calculate likelihood for individual i
+#' #'
+#' #' @param d One component of the list dat_objs
+#' #' @param params TO DO
+#' #' @param inds TO DO
+#' #' @return Numeric likelihood
+#' #' @note dat_objs is accessed globally
+#' lik_fn2 <- function(d, params, inds) {
+#'   
+#'   # print(paste0("i: ", i))
+#'   # Extract data for individual i
+#'   # d <- dat_objs[[i]]
+#'   # browser() # !!!!!
+#'   
+#'   {
+#'     
+#'     # Precompute Z values; might need to move this later
+#'     f_z_00 <- f_z(z=0, z_prev=0, x=1)
+#'     f_z_01 <- f_z(z=1, z_prev=0, x=1)
+#'     f_z_11 <- f_z(z=1, z_prev=1, x=1)
+#'     
+#'     # Precompute values
+#'     f_xy_vals <- apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
+#'       w_ij <- as.numeric(r[inds$w])
+#'       j <- r[["cal_time_sc"]]
+#'       spl_ij <- r[inds$spl]
+#'       
+#'       # browser() # !!!!!
+#'       f_x_00 <- f_x(x=0, x_prev=0, w=w_ij, j=j, s=r[["init_visit"]], spl=spl_ij,
+#'                     params=params)
+#'       f_x_01 <- f_x(x=1, x_prev=0, w=w_ij, j=j, s=r[["init_visit"]], spl=spl_ij,
+#'                     params=params)
+#'       f_x_11 <- f_x(x=1, x_prev=1, w=w_ij, j=j, s=r[["init_visit"]], spl=spl_ij,
+#'                     params=params)
+#'       
+#'       f_y_00 <- f_y(y=r[["y"]], x=0, w=w_ij, z=0, j=j, spl=spl_ij,
+#'                    params=params)
+#'       f_y_01 <- f_y(y=r[["y"]], x=1, w=w_ij, z=0, j=j, spl=spl_ij,
+#'                    params=params)
+#'       f_y_11 <- f_y(y=r[["y"]], x=1, w=w_ij, z=1, j=j, spl=spl_ij,
+#'                    params=params)
+#'       
+#'       r[["z"]]
+#'       
+#'       return(c(f_x_00*f_y_0, f_x_01*f_y_1, f_x_11*f_y_1))
+#'       # !!!!! asdf
+#'       
+#'     })
+#'     
+#'     # len <- length(d$X_i_set$x)
+#'     # if (len>=7) {
+#'     # 
+#'     #   f2_fnc <- function(x) {
+#'     #     if (length(x)==1) { # !!!!! This can be precomputed
+#'     #       x_prev <- 0
+#'     #     } else {
+#'     #       x_prev <- c(0,x[1:(length(x)-1)])
+#'     #     }
+#'     # 
+#'     #     return(prod(sapply(X=c(1:length(x)), FUN = function(j) {
+#'     #       x_prev_j <- x_prev[j]
+#'     #       x_j <- x[j]
+#'     #       if (x_prev_j==0 && x_j==0) {
+#'     #         return(f_xy_vals[1,j])
+#'     #       } else if (x_prev_j==0 && x_j==1) {
+#'     #         return(f_xy_vals[2,j])
+#'     #       } else if (x_prev_j==1 && x_j==1) {
+#'     #         return(f_xy_vals[3,j])
+#'     #       }
+#'     #     })))
+#'     # 
+#'     #   }
+#'     # 
+#'     #   f2_first <- f2_fnc(d$X_i_set$x[[1]])
+#'     #   f2_last <- f2_fnc(d$X_i_set$x[[len]])
+#'     #   f2_mid_1 <- f2_fnc(d$X_i_set$x[[2]])
+#'     #   f2_mid_2 <- f2_fnc(d$X_i_set$x[[round((len+1)/2)]])
+#'     #   f2_mid_3 <- f2_fnc(d$X_i_set$x[[len-1]])
+#'     # 
+#'     #   simpson_sum <- (1/6)*(f2_mid_1+4*f2_mid_2+f2_mid_3)
+#'     #   f2 <- sum(f2_first+f2_last+(len-2)*simpson_sum)
+#'     # 
+#'     # } else {
+#'       
+#'       f2 <- sum(unlist(lapply(d$X_i_set, function(xz) {
+#'         if (length(xz$x)==1) { # !!!!! This can be precomputed
+#'           x_prev <- 0
+#'         } else {
+#'           x_prev <- c(0,xz$x[1:(length(xz$x)-1)])
+#'         }
+#'         
+#'         return(prod(sapply(X=c(1:length(xz$x)), FUN = function(j) {
+#'           x_prev_j <- x_prev[j]
+#'           x_j <- xz$x[j]
+#'           if (x_prev_j==0 && x_j==0) {
+#'             return(f_xy_vals[1,j])
+#'           } else if (x_prev_j==0 && x_j==1) {
+#'             return(f_xy_vals[2,j])
+#'           } else if (x_prev_j==1 && x_j==1) {
+#'             return(f_xy_vals[3,j])
+#'           }
+#'         })))
+#'         
+#'       })))
+#'       
+#'     # }
+#'     
+#'   }
+#'   
+#'   # if (is.na(f2) || is.nan(f2)) {
+#'   #   browser()
+#'   # } # Debugging
+#'   if (f2<=0) {
+#'     f2 <- 1e-10
+#'     # warning("Likelihood of zero")
+#'   }
+#'   
+#'   return(f2)
+#'   
+#' }
 
 
 
