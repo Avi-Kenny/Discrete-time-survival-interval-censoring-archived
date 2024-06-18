@@ -249,7 +249,6 @@ lik_fn2 <- function(d, params, inds) {
   # d <- dat_objs[[i]]
   # browser() # !!!!!
   
-  # !!!!! New code
   {
     
     # Precompute values
@@ -273,26 +272,63 @@ lik_fn2 <- function(d, params, inds) {
       return(c(f_x_00*f_y_0, f_x_01*f_y_1, f_x_11*f_y_1))
     })
     
-    f2 <- sum(unlist(lapply(d$X_i_set, function(x) {
-      if (length(x)==1) { # !!!!! This can be precomputed
-        x_prev <- 0
-      } else {
-        x_prev <- c(0,x[1:(length(x)-1)])
-      }
-      
-      return(prod(sapply(X=c(1:length(x)), FUN = function(j) {
-        x_prev_j <- x_prev[j]
-        x_j <- x[j]
-        if (x_prev_j==0 && x_j==0) {
-          return(f_xy_vals[1,j])
-        } else if (x_prev_j==0 && x_j==1) {
-          return(f_xy_vals[2,j])
-        } else if (x_prev_j==1 && x_j==1) {
-          return(f_xy_vals[3,j])
+    len <- length(d$X_i_set)
+    if (len>=7) {
+
+      f2_fnc <- function(x) {
+        if (length(x)==1) { # !!!!! This can be precomputed
+          x_prev <- 0
+        } else {
+          x_prev <- c(0,x[1:(length(x)-1)])
         }
+
+        return(prod(sapply(X=c(1:length(x)), FUN = function(j) {
+          x_prev_j <- x_prev[j]
+          x_j <- x[j]
+          if (x_prev_j==0 && x_j==0) {
+            return(f_xy_vals[1,j])
+          } else if (x_prev_j==0 && x_j==1) {
+            return(f_xy_vals[2,j])
+          } else if (x_prev_j==1 && x_j==1) {
+            return(f_xy_vals[3,j])
+          }
+        })))
+
+      }
+
+      f2_first <- f2_fnc(d$X_i_set[[1]])
+      f2_last <- f2_fnc(d$X_i_set[[len]])
+      f2_mid_1 <- f2_fnc(d$X_i_set[[2]])
+      f2_mid_2 <- f2_fnc(d$X_i_set[[round((len+1)/2)]])
+      f2_mid_3 <- f2_fnc(d$X_i_set[[len-1]])
+
+      simpson_sum <- (1/6)*(f2_mid_1+4*f2_mid_2+f2_mid_3)
+      f2 <- sum(f2_first+f2_last+(len-2)*simpson_sum)
+
+    } else {
+      
+      f2 <- sum(unlist(lapply(d$X_i_set, function(x) {
+        if (length(x)==1) { # !!!!! This can be precomputed
+          x_prev <- 0
+        } else {
+          x_prev <- c(0,x[1:(length(x)-1)])
+        }
+        
+        return(prod(sapply(X=c(1:length(x)), FUN = function(j) {
+          x_prev_j <- x_prev[j]
+          x_j <- x[j]
+          if (x_prev_j==0 && x_j==0) {
+            return(f_xy_vals[1,j])
+          } else if (x_prev_j==0 && x_j==1) {
+            return(f_xy_vals[2,j])
+          } else if (x_prev_j==1 && x_j==1) {
+            return(f_xy_vals[3,j])
+          }
+        })))
+        
       })))
       
-    })))
+    }
     
   }
   
