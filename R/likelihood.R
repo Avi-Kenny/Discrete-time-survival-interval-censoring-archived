@@ -78,16 +78,36 @@ transform_dataset <- function(dat, model_version=0, window_start) {
       x_ <- c(rep(0,d$t_i-d$s_i-j+2), rep(1,j-1))
       T_pm <- T_plusminus(s_i=d$s_i, t_i=d$t_i, x=x_, v=d$dat_i$v)
       case_i_ <- case(T_pm$T_minus, T_pm$T_plus)
+      uz_ <- d$dat_i$z
       if (case_i_!=9 &&
           all(d$dat_i$u==x_*d$dat_i$delta) &&
           all(d$dat_i$delta==g_delta(case=case_i_, s_i=d$s_i, t_i=d$t_i,
                                      T_minus=T_pm$T_minus, T_plus=T_pm$T_plus))
       ) {
-        d$X_i_set <- c(d$X_i_set, list(list(x=x_, z=999)))
+        if (length(x_)==1) {
+          x_prev <- 0
+        } else {
+          x_prev <- c(0,x_[1:(length(x_)-1)])
+        }
+        
+        spots <- sum(x_)
+        if (spots==0) {
+          z <- x_
+        } else {
+          z <- lapply(c((sum(uz_)+1):round(spots+1)), function(i) {
+            c(rep(0,round(length(x_)-i+1)), rep(1,i-1))
+          })
+        }
+        z_prev <- lapply(z, function(z_) {
+          if (length(z_)==1) {
+            return(0)
+          } else {
+            return(c(0,z_[1:(length(z_)-1)]))
+          }
+        })
+        d$X_i_set <- c(d$X_i_set, list(list(x=x_, x_prev=x_prev, z=z, z_prev=z_prev)))
       }
     }
-    
-    # browser() # !!!!!
     
     # # Convert to matrix
     # d$dat_i <- as.matrix(d$dat_i)
@@ -200,33 +220,36 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
 #' @note dat_objs is accessed globally
 lik_fn2 <- function(d, params, inds) {
 
-  # # print(paste0("i: ", i))
-  # # Extract data for individual i
-  # d <- dat_objs[[i]]
-
   # Compute the likelihood for individual i
   f2 <- sum(unlist(lapply(d$X_i_set, function(xz) {
-    d$dat_i$x <- xz$x
-    if (length(xz$x)==1) {
-      d$dat_i$x_prev <- 0
-    } else {
-      d$dat_i$x_prev <- c(0,xz$x[1:(length(xz$x)-1)]) # !!!!! This can be precomputed
-    }
-    return(prod(apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
-      x <- r[["x"]]
-      w_ij <- as.numeric(r[inds$w])
-      j <- r[["cal_time_sc"]]
-      spl_ij <- r[inds$spl]
-      return(
-        f_x(x=x, x_prev=r[["x_prev"]], w=w_ij, j=j,
-            s=r[["init_visit"]], spl=spl_ij, params=params) *
-          f_y(y=r[["y"]], x=x, w=w_ij, z=r[["z"]], j=j,
-              spl=spl_ij, params=params)
-      )
-    })))
-  })))
+    
+    lik_i <- 0
+    for (i in c(1:length(xz$z))) {
+      
+      d$dat_i$x <- xz$x
+      d$dat_i$x_prev <- xz$x_prev
+      d$dat_i$z <- xz$z[[i]]
+      d$dat_i$z_prev <- xz$z_prev[[i]]
 
-  # browser() # !!!!!
+      lik_i <- lik_i + prod(apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
+        x <- r[["x"]]
+        z <- r[["z"]]
+        w_ij <- as.numeric(r[inds$w])
+        j <- r[["cal_time_sc"]]
+        spl_ij <- r[inds$spl]
+        return(
+          f_x(x=x, x_prev=r[["x_prev"]], w=w_ij, j=j,
+              s=r[["init_visit"]], spl=spl_ij, params=params) *
+            f_y(y=r[["y"]], x=x, w=w_ij, z=z, j=j,
+                spl=spl_ij, params=params) *
+            f_z(z, r[["z_prev"]], x)
+        )
+      }))
+    }
+    
+    return(lik_i)
+    
+  })))
 
   if (f2<=0) {
     f2 <- 1e-10
@@ -869,7 +892,9 @@ if (cfg$model_version==21) {
       if (x==1) {
         prob <- 0.05 # !!!!! Need to revisit this choice.
       } else {
-        stop("Should not be summing over this set element.")
+        prob <- 0
+        # browser() # !!!!!
+        # stop("Should not be summing over this set element.")
       }
       
     }
