@@ -7,7 +7,7 @@ transform_dataset <- function(dat, model_version=0, window_start) {
   b2 <- construct_basis("age (13,20,30,60,90)")
   b3 <- construct_basis("age (13,30,60,75,90)")
   b4 <- construct_basis("year (00,05,10,15,20)", window_start=window_start)
-  b5 <- construct_basis("year (10,13,16,19,22)", window_start=window_start)
+  b5 <- construct_basis("year (10,13,17,20,23)", window_start=window_start)
   
   n <- attr(dat, "n")
   
@@ -57,7 +57,7 @@ transform_dataset <- function(dat, model_version=0, window_start) {
       d$dat_i$b4_2 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b4(j,2) }),4)
       d$dat_i$b4_3 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b4(j,3) }),4)
       d$dat_i$b4_4 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b4(j,4) }),4)
-    } else if (model_version==19) {
+    } else if (model_version %in% c(19,20)) {
       d$dat_i$b2_1 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,1) }),4)
       d$dat_i$b2_2 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,2) }),4)
       d$dat_i$b2_3 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,3) }),4)
@@ -152,10 +152,10 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
       params <- list(a_x=p[1], g_x=p[2:9], t_x=p[10:13], a_s=p[14], g_s=p[15:16], t_s=p[17:20], beta_x=p[21], beta_z=p[22], a_y=p[23], g_y=p[24:28], t_y=p[29:32])
     } else if (model_version==17) {
       params <- list(a_x=p[1], g_x=p[2:9], t_x=p[10:13], a_s=p[14], g_s=p[15:19], beta_x=p[20], beta_z=p[21], a_y=p[22], g_y=p[23:27], t_y=p[28:31])
-    } else if (model_version==18) {
+    } else if (model_version %in% c(18,19)) {
       params <- list(a_x=p[1], g_x=p[2:9], t_x=p[10:13], a_s=p[14], g_s=p[15:19], beta_x=p[20:21], beta_z=p[22:23], a_y=p[24], g_y=p[25:29], t_y=p[30:33])
-    } else if (model_version==19) {
-      params <- list(a_x=p[1], g_x=p[2:9], t_x=p[10:13], a_s=p[14], g_s=p[15:19], beta_x=p[20:21], beta_z=p[22:23], a_y=p[24], g_y=p[25:29], t_y=p[30:33])
+    } else if (model_version==20) {
+      params <- list(a_x=p[1], g_x=p[2:9], t_x=p[10:13], a_s=p[14], g_s=p[15:19], beta_x=p[20:23], beta_z=p[24:27], a_y=p[28], g_y=p[29:33], t_y=p[34:37])
     }
     
     # Compute the negative likelihood across individuals
@@ -577,7 +577,7 @@ if (cfg$model_version==0) {
     }
   }
   
-} else if (cfg$model_version==19) {
+} else if (cfg$model_version %in% c(19,20)) {
   
   f_x <- function(x, x_prev, w, j, s, spl, params) {
     if (s==0) {
@@ -762,6 +762,26 @@ if (cfg$model_version==0) {
       (params$beta_x[1]+params$beta_x[2]*j)*x*(1-z) +
         (params$beta_z[1]+params$beta_z[2]*j)*x*z + params$a_y +
         params$g_y[1]*w[1] + params$g_y[2]*spl[["b3_1"]] +
+        params$g_y[3]*spl[["b3_2"]] + params$g_y[4]*spl[["b3_3"]] +
+        params$g_y[5]*spl[["b3_4"]] + params$t_y[1]*spl[["b5_1"]] +
+        params$t_y[2]*spl[["b5_2"]] + params$t_y[3]*spl[["b5_3"]] +
+        params$t_y[4]*spl[["b5_4"]]
+    )
+    if (y==1) { return(prob) } else { return(1-prob) }
+  }
+  
+} else if (cfg$model_version==20) {
+  
+  f_y <- function(y, x, w, z, j, spl, params) {
+    prob <- icll(
+      x*(1-z)*(
+        params$beta_x[1]*spl[["b5_1"]] + params$beta_x[2]*spl[["b5_2"]] +
+          params$beta_x[3]*spl[["b5_3"]] + params$beta_x[4]*spl[["b5_4"]]
+      ) + x*z*(
+        params$beta_z[1]*spl[["b5_1"]] + params$beta_z[2]*spl[["b5_2"]] +
+          params$beta_z[3]*spl[["b5_3"]] + params$beta_z[4]*spl[["b5_4"]]
+      ) +
+        params$a_y + params$g_y[1]*w[1] + params$g_y[2]*spl[["b3_1"]] +
         params$g_y[3]*spl[["b3_2"]] + params$g_y[4]*spl[["b3_3"]] +
         params$g_y[5]*spl[["b3_4"]] + params$t_y[1]*spl[["b5_1"]] +
         params$t_y[2]*spl[["b5_2"]] + params$t_y[3]*spl[["b5_3"]] +

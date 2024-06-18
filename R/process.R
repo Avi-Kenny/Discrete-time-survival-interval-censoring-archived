@@ -194,12 +194,23 @@ prob <- function(type, m, j, w_1, w_2) {
     )
   } else if (m==19) {
     p <- list(
-      a_x=-9.088, g_x1=2.253, g_x2=-0.301, g_x3=2.574, g_x4=-5.358, g_x5=-0.954,
-      g_x6=-0.102, g_x7=9.014, g_x8=-2.098, t_x1=3.821, t_x2=-2.059,
-      t_x3=-4.684, t_x4=0.401, a_s=-3.040, g_s1=-0.406, g_s2=1.430, g_s3=-0.652,
-      g_s4=3.780, g_s5=-3.256, beta_x1=1.819, beta_x2=-1.302, beta_z1=3.743,
-      beta_z2=-3.832, a_y=-7.567, g_y1=0.574, g_y2=2.136, g_y3=3.802,
-      g_y4=6.921, g_y5=3.995, t_y1=-3.916, t_y2=-2.986, t_y3=-0.747, t_y4=-1.149
+      a_x=-8.567, g_x1=2.507, g_x2=-0.537, g_x3=-1.743, g_x4=-8.788,
+      g_x5=-1.952, g_x6=0.833, g_x7=6.446, g_x8=-4.131, t_x1=0.772, t_x2=-0.797,
+      t_x3=0.015, t_x4=-1.276, a_s=-2.914, g_s1=-0.455, g_s2=1.383, g_s3=-0.784,
+      g_s4=3.879, g_s5=-2.659, beta_x1=1.818, beta_x2=-1.261, beta_z1=3.829,
+      beta_z2=-4.027, a_y=-7.330, g_y1=0.568, g_y2=1.865, g_y3=3.614,
+      g_y4=6.156, g_y5=3.917, t_y1=-0.142, t_y2=0.151, t_y3=0.308, t_y4=-0.183
+    )
+  } else if (m==20) {
+    p <- list(
+      a_x=-8.536, g_x1=2.821, g_x2=-1.430, g_x3=3.236, g_x4=-1.316, g_x5=-0.782,
+      g_x6=-0.062, g_x7=7.308, g_x8=-2.492, t_x1=0.140, t_x2=-1.089,
+      t_x3=-0.109, t_x4=-1.501, a_s=-3.091, g_s1=-0.405, g_s2=1.427,
+      g_s3=-0.460, g_s4=3.556, g_s5=-3.865, beta_x1=0.701, beta_x2=-0.204,
+      beta_x3=1.971, beta_x4=-0.969, beta_z1=1.632, beta_z2=-1.914,
+      beta_z3=1.926, beta_z4=-4.433, a_y=-7.035, g_y1=0.553, g_y2=2.190,
+      g_y3=3.763, g_y4=7.070, g_y5=3.879, t_y1=-1.001, t_y2=0.122, t_y3=-1.034,
+      t_y4=-0.586
     )
   }
   
@@ -237,7 +248,7 @@ prob <- function(type, m, j, w_1, w_2) {
               p$g_x7*b2(w_2,3) + p$g_x8*b2(w_2,4)
           )
       )
-    } else if (m==19) {
+    } else if (m %in% c(19,20)) {
       prob <- icll(
         p$a_x + p$t_x1*b5(j,1) + p$t_x2*b5(j,2) + p$t_x3*b5(j,3) +
           p$t_x4*b5(j,4) + w_1*(
@@ -259,7 +270,7 @@ prob <- function(type, m, j, w_1, w_2) {
         p$a_s + p$t_s1*b4(j,1) + p$t_s2*b4(j,2) + p$t_s3*b4(j,3) +
           p$t_s4*b4(j,4) + p$g_s1*w_1 + p$g_s2*w_2
       )
-    } else if (m %in% c(17,18,19)) {
+    } else if (m %in% c(17:20)) {
       prob <- icll(
         p$a_s + p$g_s1*w_1 + p$g_s2*b3(w_2,1) + p$g_s3*b3(w_2,2) + 
           p$g_s4*b3(w_2,3) + p$g_s5*b3(w_2,4)
@@ -311,6 +322,19 @@ prob <- function(type, m, j, w_1, w_2) {
           p$g_y4*b3(w_2,3) + p$g_y5*b3(w_2,4) +
           (p$beta_x1+p$beta_x2*j)*x*(1-z) + (p$beta_z1+p$beta_z2*j)*x*z
       )
+    } else if (m==20) {
+      prob <- icll(
+        p$a_y + p$t_y1*b5(j,1) + p$t_y2*b5(j,2) + p$t_y3*b5(j,3) +
+          p$t_y4*b5(j,4) + p$g_y1*w_1 + p$g_y2*b3(w_2,1) + p$g_y3*b3(w_2,2) +
+          p$g_y4*b3(w_2,3) + p$g_y5*b3(w_2,4) +
+          x*(1-z)*(
+            p$beta_x1*b5(j,1) + p$beta_x2*b5(j,2) + p$beta_x3*b5(j,3) +
+              p$beta_x4*b5(j,4)
+          ) + x*z*(
+            p$beta_z1*b5(j,1) + p$beta_z2*b5(j,2) + p$beta_z3*b5(j,3) +
+              p$beta_z4*b5(j,4)
+          )
+      )
     }
     
   }
@@ -327,13 +351,13 @@ prob <- function(type, m, j, w_1, w_2) {
 plot_mod <- function(x_axis, type, m, w_start) {
   
   if (w_start==2000) {
-    j_vals <- c(0,10,20)
+    j_vals <- c(1,11,21) # This was formerly incorrectly set to c(0,10,20)
     j_labs <- c("2000","2010","2020")
-    grid <- seq(0,22,0.01)
+    grid <- seq(2000,2023,0.01) %>% (function(x) { x-(w_start-1) })
   } else if (w_start==2010) {
     j_vals <- c(1,6,11)
     j_labs <- c("2010","2015","2020")
-    grid <- seq(0,13,0.01)
+    grid <- seq(2010,2023,0.01) %>% (function(x) { x-(w_start-1) })
   }
   
   if (x_axis=="Age") {
@@ -402,13 +426,13 @@ plot_mod <- function(x_axis, type, m, w_start) {
 ##### VIZ: Plotting modeled probabilities #####
 ###############################################.
 
-m <- 19
+m <- 20
 w_start <- 2010
 b1 <- construct_basis("age (0-100), 4DF")
 b2 <- construct_basis("age (13,20,30,60,90)")
 b3 <- construct_basis("age (13,30,60,75,90)")
 b4 <- construct_basis("year (00,05,10,15,20)", window_start=w_start)
-b5 <- construct_basis("year (10,13,16,19,22)", window_start=w_start)
+b5 <- construct_basis("year (10,13,17,20,23)", window_start=w_start)
 
 # Seroconversion prob as a function of age
 p01 <- plot_mod(x_axis="Age", type="sero", m=m, w_start=w_start)

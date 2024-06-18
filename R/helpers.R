@@ -148,8 +148,8 @@ chk <- function(num, msg="") {
 construct_basis <- function(which, window_start=NA) {
   
   scale_age <- function(x) { x / 100 }
-  scale_year <- function(x) { (x-window_start)/10 }
-
+  scale_year <- function(x) { (x-window_start+1)/10 }
+  
   if (which=="age (0-100), 4DF") {
     grid <- seq(0,1, length.out=500)
     k <- c(0,0.25,0.5,0.75,1)
@@ -165,9 +165,9 @@ construct_basis <- function(which, window_start=NA) {
   } else if (which=="year (00,05,10,15,20)") {
     grid <- scale_year(seq(2000,2022, length.out=500))
     k <- scale_year(seq(2000,2020, length.out=5))
-  } else if (which=="year (10,13,16,19,22)") {
-    grid <- scale_year(seq(2010,2022, length.out=500))
-    k <- scale_year(seq(2010,2022, length.out=5))
+  } else if (which=="year (10,13,17,20,23)") {
+    grid <- scale_year(seq(2010,2023, length.out=500))
+    k <- scale_year(seq(2010,2023, length.out=5))
   }
   
   b <- Vectorize(function(x, i) {
