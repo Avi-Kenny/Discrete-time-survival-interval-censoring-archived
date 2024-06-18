@@ -57,7 +57,7 @@ transform_dataset <- function(dat, model_version=0, window_start) {
       d$dat_i$b4_2 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b4(j,2) }),4)
       d$dat_i$b4_3 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b4(j,3) }),4)
       d$dat_i$b4_4 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b4(j,4) }),4)
-    } else if (model_version %in% c(19,20)) {
+    } else if (model_version %in% c(19:21)) {
       d$dat_i$b2_1 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,1) }),4)
       d$dat_i$b2_2 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,2) }),4)
       d$dat_i$b2_3 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,3) }),4)
@@ -72,7 +72,7 @@ transform_dataset <- function(dat, model_version=0, window_start) {
       d$dat_i$b5_4 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b5(j,4) }),4)
     }
     
-    # Calculate the set X_i to sum over
+    # Calculate the set X_i to sum over (this now includes HIV status and ART status)
     d$X_i_set <- list()
     for (j in c(1:(d$t_i-d$s_i+2))) {
       x_ <- c(rep(0,d$t_i-d$s_i-j+2), rep(1,j-1))
@@ -83,9 +83,11 @@ transform_dataset <- function(dat, model_version=0, window_start) {
           all(d$dat_i$delta==g_delta(case=case_i_, s_i=d$s_i, t_i=d$t_i,
                                      T_minus=T_pm$T_minus, T_plus=T_pm$T_plus))
       ) {
-        d$X_i_set <- c(d$X_i_set, list(x_))
+        d$X_i_set <- c(d$X_i_set, list(list(x=x_, z=999)))
       }
     }
+    
+    # browser() # !!!!!
     
     # # Convert to matrix
     # d$dat_i <- as.matrix(d$dat_i)
@@ -155,6 +157,8 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
     } else if (model_version %in% c(18,19)) {
       params <- list(a_x=p[1], g_x=p[2:9], t_x=p[10:13], a_s=p[14], g_s=p[15:19], beta_x=p[20:21], beta_z=p[22:23], a_y=p[24], g_y=p[25:29], t_y=p[30:33])
     } else if (model_version==20) {
+      params <- list(a_x=p[1], g_x=p[2:9], t_x=p[10:13], a_s=p[14], g_s=p[15:19], beta_x=p[20:23], beta_z=p[24:27], a_y=p[28], g_y=p[29:33], t_y=p[34:37])
+    } else if (model_version==21) {
       params <- list(a_x=p[1], g_x=p[2:9], t_x=p[10:13], a_s=p[14], g_s=p[15:19], beta_x=p[20:23], beta_z=p[24:27], a_y=p[28], g_y=p[29:33], t_y=p[34:37])
     }
     
@@ -251,6 +255,11 @@ lik_fn2 <- function(d, params, inds) {
   
   {
     
+    # Precompute Z values; might need to move this later
+    f_z_00 <- f_z(z=0, z_prev=0, x=1)
+    f_z_01 <- f_z(z=1, z_prev=0, x=1)
+    f_z_11 <- f_z(z=1, z_prev=1, x=1)
+    
     # Precompute values
     f_xy_vals <- apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
       w_ij <- as.numeric(r[inds$w])
@@ -264,6 +273,7 @@ lik_fn2 <- function(d, params, inds) {
                     params=params)
       f_x_11 <- f_x(x=1, x_prev=1, w=w_ij, j=j, s=r[["init_visit"]], spl=spl_ij,
                     params=params)
+      
       f_y_0 <- f_y(y=r[["y"]], x=0, w=w_ij, z=r[["z"]], j=j, spl=spl_ij,
                    params=params)
       f_y_1 <- f_y(y=r[["y"]], x=1, w=w_ij, z=r[["z"]], j=j, spl=spl_ij,
@@ -272,51 +282,51 @@ lik_fn2 <- function(d, params, inds) {
       return(c(f_x_00*f_y_0, f_x_01*f_y_1, f_x_11*f_y_1))
     })
     
-    len <- length(d$X_i_set)
-    if (len>=7) {
-
-      f2_fnc <- function(x) {
-        if (length(x)==1) { # !!!!! This can be precomputed
-          x_prev <- 0
-        } else {
-          x_prev <- c(0,x[1:(length(x)-1)])
-        }
-
-        return(prod(sapply(X=c(1:length(x)), FUN = function(j) {
-          x_prev_j <- x_prev[j]
-          x_j <- x[j]
-          if (x_prev_j==0 && x_j==0) {
-            return(f_xy_vals[1,j])
-          } else if (x_prev_j==0 && x_j==1) {
-            return(f_xy_vals[2,j])
-          } else if (x_prev_j==1 && x_j==1) {
-            return(f_xy_vals[3,j])
-          }
-        })))
-
-      }
-
-      f2_first <- f2_fnc(d$X_i_set[[1]])
-      f2_last <- f2_fnc(d$X_i_set[[len]])
-      f2_mid_1 <- f2_fnc(d$X_i_set[[2]])
-      f2_mid_2 <- f2_fnc(d$X_i_set[[round((len+1)/2)]])
-      f2_mid_3 <- f2_fnc(d$X_i_set[[len-1]])
-
-      simpson_sum <- (1/6)*(f2_mid_1+4*f2_mid_2+f2_mid_3)
-      f2 <- sum(f2_first+f2_last+(len-2)*simpson_sum)
-
-    } else {
+    # len <- length(d$X_i_set$x)
+    # if (len>=7) {
+    # 
+    #   f2_fnc <- function(x) {
+    #     if (length(x)==1) { # !!!!! This can be precomputed
+    #       x_prev <- 0
+    #     } else {
+    #       x_prev <- c(0,x[1:(length(x)-1)])
+    #     }
+    # 
+    #     return(prod(sapply(X=c(1:length(x)), FUN = function(j) {
+    #       x_prev_j <- x_prev[j]
+    #       x_j <- x[j]
+    #       if (x_prev_j==0 && x_j==0) {
+    #         return(f_xy_vals[1,j])
+    #       } else if (x_prev_j==0 && x_j==1) {
+    #         return(f_xy_vals[2,j])
+    #       } else if (x_prev_j==1 && x_j==1) {
+    #         return(f_xy_vals[3,j])
+    #       }
+    #     })))
+    # 
+    #   }
+    # 
+    #   f2_first <- f2_fnc(d$X_i_set$x[[1]])
+    #   f2_last <- f2_fnc(d$X_i_set$x[[len]])
+    #   f2_mid_1 <- f2_fnc(d$X_i_set$x[[2]])
+    #   f2_mid_2 <- f2_fnc(d$X_i_set$x[[round((len+1)/2)]])
+    #   f2_mid_3 <- f2_fnc(d$X_i_set$x[[len-1]])
+    # 
+    #   simpson_sum <- (1/6)*(f2_mid_1+4*f2_mid_2+f2_mid_3)
+    #   f2 <- sum(f2_first+f2_last+(len-2)*simpson_sum)
+    # 
+    # } else {
       
-      f2 <- sum(unlist(lapply(d$X_i_set, function(x) {
-        if (length(x)==1) { # !!!!! This can be precomputed
+      f2 <- sum(unlist(lapply(d$X_i_set, function(xz) {
+        if (length(xz$x)==1) { # !!!!! This can be precomputed
           x_prev <- 0
         } else {
-          x_prev <- c(0,x[1:(length(x)-1)])
+          x_prev <- c(0,xz$x[1:(length(xz$x)-1)])
         }
         
-        return(prod(sapply(X=c(1:length(x)), FUN = function(j) {
+        return(prod(sapply(X=c(1:length(xz$x)), FUN = function(j) {
           x_prev_j <- x_prev[j]
-          x_j <- x[j]
+          x_j <- xz$x[j]
           if (x_prev_j==0 && x_j==0) {
             return(f_xy_vals[1,j])
           } else if (x_prev_j==0 && x_j==1) {
@@ -328,7 +338,7 @@ lik_fn2 <- function(d, params, inds) {
         
       })))
       
-    }
+    # }
     
   }
   
@@ -613,7 +623,7 @@ if (cfg$model_version==0) {
     }
   }
   
-} else if (cfg$model_version %in% c(19,20)) {
+} else if (cfg$model_version %in% c(19:21)) {
   
   f_x <- function(x, x_prev, w, j, s, spl, params) {
     if (s==0) {
@@ -806,7 +816,7 @@ if (cfg$model_version==0) {
     if (y==1) { return(prob) } else { return(1-prob) }
   }
   
-} else if (cfg$model_version==20) {
+} else if (cfg$model_version %in% c(20:21)) {
   
   f_y <- function(y, x, w, z, j, spl, params) {
     prob <- icll(
@@ -824,6 +834,42 @@ if (cfg$model_version==0) {
         params$t_y[4]*spl[["b5_4"]]
     )
     if (y==1) { return(prob) } else { return(1-prob) }
+  }
+  
+}
+
+
+
+#' Calculate likelihood component f_z
+#'
+#' @param z ART status indicator (time j)
+#' @param z_prev ART status indicator (time j-1)
+#' @param x HIV status indicator (time j)
+#' @return Numeric likelihood
+if (cfg$model_version==21) {
+  
+  f_z <- function(z, z_prev, x) {
+    
+    if (z_prev==1) {
+      
+      if (z==1) {
+        prob <- 1
+      } else (
+        stop("Once a patient starts ART, they remain on ART.")
+      )
+      
+    } else {
+      
+      if (x==1) {
+        prob <- 0.05 # !!!!! Need to revisit this choice.
+      } else {
+        stop("Should not be summing over this set element.")
+      }
+      
+    }
+    
+    if (z==1) { return(prob) } else { return(1-prob) }
+    
   }
   
 }
