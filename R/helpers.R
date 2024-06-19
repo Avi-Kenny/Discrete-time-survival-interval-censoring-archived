@@ -140,6 +140,15 @@ chk <- function(num, msg="") {
 }
 
 
+#' Create a vector of ones and zeros
+#' 
+#' @param len Length of vector to output
+#' @param num_ones Number of "1"s in the tail
+uncompress <- function(len, num_ones) {
+  c(rep(0,len-num_ones), rep(1,num_ones))
+}
+
+
 
 #' Create a natural cubic spline basis
 #' 

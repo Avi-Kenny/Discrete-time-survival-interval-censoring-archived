@@ -92,7 +92,7 @@ transform_dataset <- function(dat, model_version=0, window_start) {
         
         spots <- sum(x_)
         if (spots==0) {
-          z <- x_
+          z <- list(x_)
         } else {
           z <- lapply(c((sum(uz_)+1):round(spots+1)), function(i) {
             c(rep(0,round(length(x_)-i+1)), rep(1,i-1))
@@ -105,7 +105,14 @@ transform_dataset <- function(dat, model_version=0, window_start) {
             return(c(0,z_[1:(length(z_)-1)]))
           }
         })
-        d$X_i_set <- c(d$X_i_set, list(list(x=x_, x_prev=x_prev, z=z, z_prev=z_prev)))
+        
+        d$X_i_set <- c(d$X_i_set, list(list(
+          x = sum(x_),
+          x_prev = sum(x_prev),
+          z = sapply(z, sum),
+          z_prev = sapply(z_prev, sum)
+        )))
+        
       }
     }
     
@@ -219,19 +226,52 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
 #' @return Numeric likelihood
 #' @note dat_objs is accessed globally
 lik_fn2 <- function(d, params, inds) {
+  
+  if (F) {
+    # # Precompute values
+    # {
+    #   f_z_00 <- f_z(z=0, z_prev=0, x=1)
+    #   f_z_01 <- f_z(z=1, z_prev=0, x=1)
+    #   f_z_11 <- f_z(z=1, z_prev=1, x=1)
+    #   
+    #   f_xyz_vals <- apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
+    #     
+    #     w_ij <- as.numeric(r[inds$w])
+    #     spl_ij <- r[inds$spl]
+    #     
+    #     f_x_00 <- f_x(x=0, x_prev=0, w=w_ij, j=r[["cal_time_sc"]],
+    #                   s=r[["init_visit"]], spl=spl_ij, params=params)
+    #     f_x_01 <- f_x(x=1, x_prev=0, w=w_ij, j=r[["cal_time_sc"]],
+    #                   s=r[["init_visit"]], spl=spl_ij, params=params)
+    #     f_x_11 <- f_x(x=1, x_prev=1, w=w_ij, j=r[["cal_time_sc"]],
+    #                   s=r[["init_visit"]], spl=spl_ij, params=params)
+    #     
+    #     f_y_00 <- f_y(y=r[["y"]], x=0, w=w_ij, z=0, j=r[["cal_time_sc"]],
+    #                   spl=spl_ij, params=params)
+    #     f_y_10 <- f_y(y=r[["y"]], x=1, w=w_ij, z=0, j=r[["cal_time_sc"]],
+    #                   spl=spl_ij, params=params)
+    #     f_y_11 <- f_y(y=r[["y"]], x=1, w=w_ij, z=1, j=r[["cal_time_sc"]],
+    #                   spl=spl_ij, params=params)
+    #     
+    #   })
+    #   
+    # }
+  }
 
   # Compute the likelihood for individual i
-  f2 <- sum(unlist(lapply(d$X_i_set, function(xz) {
+  f2_fnc <- function(xz) {
     
-    lik_i <- 0
+    len <- round(d$t_i - d$s_i + 1)
+    d$dat_i$x <- uncompress(len, xz$x)
+    d$dat_i$x_prev <- uncompress(len, xz$x_prev)
+    
+    lik_i <- c()
     for (i in c(1:length(xz$z))) {
       
-      d$dat_i$x <- xz$x
-      d$dat_i$x_prev <- xz$x_prev
-      d$dat_i$z <- xz$z[[i]]
-      d$dat_i$z_prev <- xz$z_prev[[i]]
-
-      lik_i <- lik_i + prod(apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
+      d$dat_i$z <- uncompress(len, xz$z[i])
+      d$dat_i$z_prev <- uncompress(len, xz$z_prev[i])
+      
+      lik_i[i] <- prod(apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
         x <- r[["x"]]
         z <- r[["z"]]
         w_ij <- as.numeric(r[inds$w])
@@ -247,10 +287,28 @@ lik_fn2 <- function(d, params, inds) {
       }))
     }
     
-    return(lik_i)
+    return(sum(lik_i))
     
-  })))
+  }  
+  
+  len <- length(d$X_i_set)
+  if (len>=7) {
 
+    f2_first <- f2_fnc(d$X_i_set[[1]])
+    f2_last <- f2_fnc(d$X_i_set[[len]])
+    f2_mid_1 <- f2_fnc(d$X_i_set[[2]])
+    f2_mid_2 <- f2_fnc(d$X_i_set[[round((len+1)/2)]])
+    f2_mid_3 <- f2_fnc(d$X_i_set[[len-1]])
+
+    simpson_sum <- (1/6)*(f2_mid_1+4*f2_mid_2+f2_mid_3)
+    f2 <- sum(f2_first+f2_last+(len-2)*simpson_sum)
+
+  } else {
+    
+    f2 <- sum(unlist(lapply(d$X_i_set, f2_fnc)))
+    
+  }
+  
   if (f2<=0) {
     f2 <- 1e-10
     # warning("Likelihood of zero")
@@ -270,25 +328,26 @@ lik_fn2 <- function(d, params, inds) {
 #' #' @return Numeric likelihood
 #' #' @note dat_objs is accessed globally
 #' lik_fn2 <- function(d, params, inds) {
-#'   
+#' 
 #'   # print(paste0("i: ", i))
 #'   # Extract data for individual i
 #'   # d <- dat_objs[[i]]
 #'   # browser() # !!!!!
-#'   
+#' 
 #'   {
-#'     
+#' 
 #'     # Precompute Z values; might need to move this later
 #'     f_z_00 <- f_z(z=0, z_prev=0, x=1)
 #'     f_z_01 <- f_z(z=1, z_prev=0, x=1)
 #'     f_z_11 <- f_z(z=1, z_prev=1, x=1)
-#'     
+#' 
 #'     # Precompute values
-#'     f_xy_vals <- apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
+#'     f_xyz_vals <- apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
+#'       
 #'       w_ij <- as.numeric(r[inds$w])
 #'       j <- r[["cal_time_sc"]]
 #'       spl_ij <- r[inds$spl]
-#'       
+#' 
 #'       # browser() # !!!!!
 #'       f_x_00 <- f_x(x=0, x_prev=0, w=w_ij, j=j, s=r[["init_visit"]], spl=spl_ij,
 #'                     params=params)
@@ -296,31 +355,31 @@ lik_fn2 <- function(d, params, inds) {
 #'                     params=params)
 #'       f_x_11 <- f_x(x=1, x_prev=1, w=w_ij, j=j, s=r[["init_visit"]], spl=spl_ij,
 #'                     params=params)
-#'       
+#' 
 #'       f_y_00 <- f_y(y=r[["y"]], x=0, w=w_ij, z=0, j=j, spl=spl_ij,
 #'                    params=params)
 #'       f_y_01 <- f_y(y=r[["y"]], x=1, w=w_ij, z=0, j=j, spl=spl_ij,
 #'                    params=params)
 #'       f_y_11 <- f_y(y=r[["y"]], x=1, w=w_ij, z=1, j=j, spl=spl_ij,
 #'                    params=params)
-#'       
+#' 
 #'       r[["z"]]
-#'       
+#' 
 #'       return(c(f_x_00*f_y_0, f_x_01*f_y_1, f_x_11*f_y_1))
 #'       # !!!!! asdf
-#'       
+#' 
 #'     })
-#'     
+#' 
 #'     # len <- length(d$X_i_set$x)
 #'     # if (len>=7) {
-#'     # 
+#'     #
 #'     #   f2_fnc <- function(x) {
 #'     #     if (length(x)==1) { # !!!!! This can be precomputed
 #'     #       x_prev <- 0
 #'     #     } else {
 #'     #       x_prev <- c(0,x[1:(length(x)-1)])
 #'     #     }
-#'     # 
+#'     #
 #'     #     return(prod(sapply(X=c(1:length(x)), FUN = function(j) {
 #'     #       x_prev_j <- x_prev[j]
 #'     #       x_j <- x[j]
@@ -332,28 +391,30 @@ lik_fn2 <- function(d, params, inds) {
 #'     #         return(f_xy_vals[3,j])
 #'     #       }
 #'     #     })))
-#'     # 
+#'     #
 #'     #   }
-#'     # 
+#'     #
 #'     #   f2_first <- f2_fnc(d$X_i_set$x[[1]])
 #'     #   f2_last <- f2_fnc(d$X_i_set$x[[len]])
 #'     #   f2_mid_1 <- f2_fnc(d$X_i_set$x[[2]])
 #'     #   f2_mid_2 <- f2_fnc(d$X_i_set$x[[round((len+1)/2)]])
 #'     #   f2_mid_3 <- f2_fnc(d$X_i_set$x[[len-1]])
-#'     # 
+#'     #
 #'     #   simpson_sum <- (1/6)*(f2_mid_1+4*f2_mid_2+f2_mid_3)
 #'     #   f2 <- sum(f2_first+f2_last+(len-2)*simpson_sum)
-#'     # 
+#'     #
 #'     # } else {
-#'       
+#' 
 #'       f2 <- sum(unlist(lapply(d$X_i_set, function(xz) {
-#'         if (length(xz$x)==1) { # !!!!! This can be precomputed
+#'         
+#'         if (length(xz$x)==1) {
 #'           x_prev <- 0
 #'         } else {
 #'           x_prev <- c(0,xz$x[1:(length(xz$x)-1)])
 #'         }
-#'         
+#' 
 #'         return(prod(sapply(X=c(1:length(xz$x)), FUN = function(j) {
+#'           
 #'           x_prev_j <- x_prev[j]
 #'           x_j <- xz$x[j]
 #'           if (x_prev_j==0 && x_j==0) {
@@ -363,14 +424,15 @@ lik_fn2 <- function(d, params, inds) {
 #'           } else if (x_prev_j==1 && x_j==1) {
 #'             return(f_xy_vals[3,j])
 #'           }
+#'           
 #'         })))
-#'         
+#' 
 #'       })))
-#'       
+#' 
 #'     # }
-#'     
+#' 
 #'   }
-#'   
+#' 
 #'   # if (is.na(f2) || is.nan(f2)) {
 #'   #   browser()
 #'   # } # Debugging
@@ -378,9 +440,9 @@ lik_fn2 <- function(d, params, inds) {
 #'     f2 <- 1e-10
 #'     # warning("Likelihood of zero")
 #'   }
-#'   
+#' 
 #'   return(f2)
-#'   
+#' 
 #' }
 
 
@@ -879,27 +941,17 @@ if (cfg$model_version==21) {
   
   f_z <- function(z, z_prev, x) {
     
-    if (z_prev==1) {
-      
-      if (z==1) {
-        prob <- 1
-      } else (
-        stop("Once a patient starts ART, they remain on ART.")
-      )
-      
-    } else {
-      
-      if (x==1) {
-        prob <- 0.05 # !!!!! Need to revisit this choice.
-      } else {
-        prob <- 0
-        # browser() # !!!!!
-        # stop("Should not be summing over this set element.")
-      }
-      
+    prob <- 0.05 # !!!!! Need to revisit this choice.
+    if (z_prev==1 && z==1) { return(1) }
+    if (z_prev==0) {
+      if (z==1) { return(prob) } else { return(1-prob) }
     }
-    
-    if (z==1) { return(prob) } else { return(1-prob) }
+    if (z_prev==1 && z==0) {
+      stop("Once a patient starts ART, they remain on ART.")
+    }
+    if (x==0 && z==1) {
+      stop("Model does not allow individuals to be HIV-ART+.")
+    }
     
   }
   
