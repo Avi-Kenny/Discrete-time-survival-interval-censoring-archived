@@ -187,6 +187,8 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
       params <- list(a_x=p[1], g_x=p[2:9], t_x=p[10:13], a_s=p[14], g_s=p[15:19], beta_x=p[20:23], beta_z=p[24:27], a_y=p[28], g_y=p[29:33], t_y=p[34:37])
     } else if (model_version==21) {
       params <- list(a_x=p[1], g_x=p[2:9], t_x=p[10:13], a_s=p[14], g_s=p[15:19], beta_x=p[20:23], beta_z=p[24:27], a_y=p[28], g_y=p[29:33], t_y=p[34:37])
+    } else if (model_version==22) {
+      params <- list(a_x=p[1], g_x=p[2:3], t_x=p[4], a_s=p[5], g_s=p[6:7], beta_x=p[8], beta_z=p[9], a_y=p[10], g_y=p[11:12], t_y=p[13])
     }
     
     # Compute the negative likelihood across individuals
@@ -292,7 +294,8 @@ lik_fn2 <- function(d, params, inds) {
   }  
   
   len <- length(d$X_i_set)
-  if (len>=7) {
+  use_simpson_approx <- F # !!!!!
+  if (use_simpson_approx && len>=7) {
 
     f2_first <- f2_fnc(d$X_i_set[[1]])
     f2_last <- f2_fnc(d$X_i_set[[len]])
@@ -746,6 +749,22 @@ if (cfg$model_version==0) {
     }
   }
   
+} else if (cfg$model_version==22) {
+  
+  f_x <- function(x, x_prev, w, j, s, spl, params) {
+    if (s==0) {
+      if (x==1 && x_prev==1) {
+        return(1)
+      } else {
+        prob <- icll(params$a_x + params$t_x*j + sum(params$g_x*w))
+        if (x==1) { return(prob) } else { return(1-prob) }
+      }
+    } else {
+      prob <- icll(params$a_s + sum(params$g_s*w))
+      if (x==1) { return(prob) } else { return(1-prob) }
+    }
+  }
+  
 }
 
 
@@ -927,6 +946,16 @@ if (cfg$model_version==0) {
     if (y==1) { return(prob) } else { return(1-prob) }
   }
   
+} else if (cfg$model_version==22) {
+  
+  f_y <- function(y, x, w, z, j, spl, params) {
+    prob <- icll(
+      params$a_y + params$t_y*j + sum(params$g_y*w) + params$beta_x*x*(1-z) +
+        params$beta_z*x*z
+    )
+    if (y==1) { return(prob) } else { return(1-prob) }
+  }
+  
 }
 
 
@@ -937,7 +966,7 @@ if (cfg$model_version==0) {
 #' @param z_prev ART status indicator (time j-1)
 #' @param x HIV status indicator (time j)
 #' @return Numeric likelihood
-if (cfg$model_version==21) {
+if (cfg$model_version %in% c(21,22)) {
   
   f_z <- function(z, z_prev, x) {
     
