@@ -183,17 +183,27 @@ if (cfg2$use_simulated_dataset) {
       hiv_pos_dts = ifelse(HIVResult=="P", year, NA),
       hiv_pos_dts = ifelse(is.na(hiv_pos_dts), 9999, hiv_pos_dts),
       hiv_neg_dts = ifelse(HIVResult=="N", year, NA),
-      hiv_neg_dts = ifelse(is.na(hiv_neg_dts), 0, hiv_neg_dts)
+      hiv_neg_dts = ifelse(is.na(hiv_neg_dts), 0, hiv_neg_dts),
+      art_pos_dts = ifelse(ART_status==1, year, NA),
+      art_pos_dts = ifelse(is.na(art_pos_dts), 9999, art_pos_dts)
     )
     dat_prc %<>% dplyr::mutate(
       first_hiv_pos_dt = min(hiv_pos_dts),
       first_hiv_pos_dt = ifelse(first_hiv_pos_dt==9999, NA, first_hiv_pos_dt),
       last_hiv_neg_dt = max(hiv_neg_dts),
       last_hiv_neg_dt = ifelse(last_hiv_neg_dt==0, NA, last_hiv_neg_dt),
+      first_art_pos_dt = min(art_pos_dts),
       .by = id
     )
     dat_prc[["hiv_pos_dts"]] <- NULL
     dat_prc[["hiv_neg_dts"]] <- NULL
+    dat_prc[["art_pos_dts"]] <- NULL
+    
+    # Create ART status variable
+    dat_prc %<>% dplyr::mutate(
+      ART_status_new = ifelse(year>=first_art_pos_dt, 1, 0),
+      .by = id
+    )    
     
     # Filter out records with a negative test after a positive test
     nrow(dat_prc)
@@ -210,10 +220,19 @@ if (cfg2$use_simulated_dataset) {
     dat_prc %<>% dplyr::rename(
       "w_1" = sex,
       "y" = died,
-      "z" = ART_status,
+      "z" = ART_status_new,
+      # "z_old" = ART_status, # !!!!! TEMP
       # "t_start" = year_prev,
       "t_end" = year
     )
+    
+    # # Drop records with ART start date before HIV start date
+    # nrow(dat_prc)
+    # prob_ids <- unique(
+    #   dplyr::filter(dat_prc, first_art_pos_dt<first_hiv_pos_dt)$id
+    # )
+    # dat_prc %<>% dplyr::filter(!(id %in% prob_ids))
+    # nrow(dat_prc)
     
     # Create grouped dataset
     dat_grp <- dat_prc %>% dplyr::group_by(id) %>%
@@ -243,14 +262,6 @@ if (cfg2$use_simulated_dataset) {
     
     # !!!!! Check that `first_hiv_pos_dt` and `last_hiv_neg_dt` lie within `t_start` and `t_end`
     
-    # Make sure this step is done after dropping rows
-    dat_prc %<>% dplyr::mutate(id=as.integer(factor(id)))
-    
-    # Set data attributes
-    attr(dat_prc, "n") <- as.integer(max(dat_prc$id))
-    attr(dat_prc, "s_i") <- dat_grp$s_i
-    attr(dat_prc, "t_i") <- dat_grp$t_i
-
     # Drop rows with duplicate time
     # !!!!! Maybe move this above
     nrow(dat_prc)
@@ -264,6 +275,14 @@ if (cfg2$use_simulated_dataset) {
     # Drop rows with DOB > t_start
     # !!!!! TO DO
 
+    # Renumber IDs
+    dat_prc %<>% dplyr::mutate(id=as.integer(factor(id)))
+    
+    # Set data attributes
+    attr(dat_prc, "n") <- as.integer(max(dat_prc$id))
+    attr(dat_prc, "s_i") <- dat_grp$s_i
+    attr(dat_prc, "t_i") <- dat_grp$t_i
+    
     # Generate delta column
     delta <- rep(NA, nrow(dat_prc))
     for (id in c(1:attr(dat_prc, "n"))) {
@@ -301,7 +320,6 @@ if (cfg2$use_simulated_dataset) {
     attr(dat_prc, "t_i") <- (attr(dat_prc, "t_i") - cfg2$window_start) + 1
     
     # Create (scaled) age variable
-    # !!!!! Consider rounding w_2 as well (for memoising)
     dat_prc %<>% dplyr::mutate(w_2 = (t_end-dob)/100)
     
     # DQA
@@ -329,7 +347,8 @@ if (cfg2$use_simulated_dataset) {
     cols_to_drop <- c(
       "dob", "dod", "age", "ResultDate", "HIVResult", "hiv_result_fill",
       "VisitDate", "ReceivedHIVTestResult", "CurrentlyOnART", "HIV_status",
-      "HadPosHIVResult", "first_hiv_pos_dt", "last_hiv_neg_dt"
+      "HadPosHIVResult", "first_hiv_pos_dt", "last_hiv_neg_dt", "ART_status",
+      "first_art_pos_dt"
     )
     for (col in cols_to_drop) { dat[[col]] <- NULL }
     
