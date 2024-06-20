@@ -181,14 +181,14 @@ if (cfg2$use_simulated_dataset) {
     # Add `first_hiv_pos_dt` and `last_hiv_neg_dt`
     dat_prc %<>% dplyr::mutate(
       hiv_pos_dts = ifelse(HIVResult=="P", year, NA),
-      hiv_neg_dts = ifelse(HIVResult=="N", year, NA),
       hiv_pos_dts = ifelse(is.na(hiv_pos_dts), 9999, hiv_pos_dts),
+      hiv_neg_dts = ifelse(HIVResult=="N", year, NA),
       hiv_neg_dts = ifelse(is.na(hiv_neg_dts), 0, hiv_neg_dts)
     )
     dat_prc %<>% dplyr::mutate(
       first_hiv_pos_dt = min(hiv_pos_dts),
-      last_hiv_neg_dt = max(hiv_neg_dts),
       first_hiv_pos_dt = ifelse(first_hiv_pos_dt==9999, NA, first_hiv_pos_dt),
+      last_hiv_neg_dt = max(hiv_neg_dts),
       last_hiv_neg_dt = ifelse(last_hiv_neg_dt==0, NA, last_hiv_neg_dt),
       .by = id
     )
