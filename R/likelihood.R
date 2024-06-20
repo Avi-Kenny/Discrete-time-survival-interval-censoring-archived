@@ -75,16 +75,30 @@ transform_dataset <- function(dat, model_version=0, window_start) {
     # Calculate the set X_i to sum over
     d$X_i_set <- list()
     for (j in c(1:(d$t_i-d$s_i+2))) {
+      
       x_ <- c(rep(0,d$t_i-d$s_i-j+2), rep(1,j-1))
       T_pm <- T_plusminus(s_i=d$s_i, t_i=d$t_i, x=x_, v=d$dat_i$v)
       case_i_ <- case(T_pm$T_minus, T_pm$T_plus)
+      
       if (case_i_!=9 &&
           all(d$dat_i$u==x_*d$dat_i$delta) &&
           all(d$dat_i$delta==g_delta(case=case_i_, s_i=d$s_i, t_i=d$t_i,
                                      T_minus=T_pm$T_minus, T_plus=T_pm$T_plus))
       ) {
-        d$X_i_set <- c(d$X_i_set, list(x_))
+
+        if (length(x_)==1) {
+          x_prev <- 0
+        } else {
+          x_prev <- c(0,x_[1:(length(x_)-1)])
+        }
+        
+        d$X_i_set <- c(d$X_i_set, list(list(
+          x = sum(x_),
+          x_prev = max(sum(x_)-1,0)
+        )))
+        
       }
+      
     }
     
     # # Convert to matrix
@@ -272,61 +286,42 @@ lik_fn2 <- function(d, params, inds) {
       return(c(f_x_00*f_y_0, f_x_01*f_y_1, f_x_11*f_y_1))
     })
     
-    len <- length(d$X_i_set)
-    if (len>=7) {
-
-      f2_fnc <- function(x) {
-        if (length(x)==1) { # !!!!! This can be precomputed
-          x_prev <- 0
-        } else {
-          x_prev <- c(0,x[1:(length(x)-1)])
+    len_obs <- round(d$t_i - d$s_i + 1)
+    
+    f2_fnc <- function(x_obj) {
+      
+      x <- uncompress(len_obs, x_obj$x)
+      x_prev <- uncompress(len_obs, x_obj$x_prev)
+      
+      return(prod(sapply(X=c(1:length(x)), FUN = function(j) {
+        x_prev_j <- x_prev[j]
+        x_j <- x[j]
+        if (x_prev_j==0 && x_j==0) {
+          return(f_xy_vals[1,j])
+        } else if (x_prev_j==0 && x_j==1) {
+          return(f_xy_vals[2,j])
+        } else if (x_prev_j==1 && x_j==1) {
+          return(f_xy_vals[3,j])
         }
-
-        return(prod(sapply(X=c(1:length(x)), FUN = function(j) {
-          x_prev_j <- x_prev[j]
-          x_j <- x[j]
-          if (x_prev_j==0 && x_j==0) {
-            return(f_xy_vals[1,j])
-          } else if (x_prev_j==0 && x_j==1) {
-            return(f_xy_vals[2,j])
-          } else if (x_prev_j==1 && x_j==1) {
-            return(f_xy_vals[3,j])
-          }
-        })))
-
-      }
+      })))
+      
+    }
+    
+    len_set <- length(d$X_i_set)
+    if (len_set>=7) {
 
       f2_first <- f2_fnc(d$X_i_set[[1]])
-      f2_last <- f2_fnc(d$X_i_set[[len]])
+      f2_last <- f2_fnc(d$X_i_set[[len_set]])
       f2_mid_1 <- f2_fnc(d$X_i_set[[2]])
-      f2_mid_2 <- f2_fnc(d$X_i_set[[round((len+1)/2)]])
-      f2_mid_3 <- f2_fnc(d$X_i_set[[len-1]])
+      f2_mid_2 <- f2_fnc(d$X_i_set[[round((len_set+1)/2)]])
+      f2_mid_3 <- f2_fnc(d$X_i_set[[len_set-1]])
 
       simpson_sum <- (1/6)*(f2_mid_1+4*f2_mid_2+f2_mid_3)
-      f2 <- sum(f2_first+f2_last+(len-2)*simpson_sum)
+      f2 <- sum(f2_first+f2_last+(len_set-2)*simpson_sum)
 
     } else {
       
-      f2 <- sum(unlist(lapply(d$X_i_set, function(x) {
-        if (length(x)==1) { # !!!!! This can be precomputed
-          x_prev <- 0
-        } else {
-          x_prev <- c(0,x[1:(length(x)-1)])
-        }
-        
-        return(prod(sapply(X=c(1:length(x)), FUN = function(j) {
-          x_prev_j <- x_prev[j]
-          x_j <- x[j]
-          if (x_prev_j==0 && x_j==0) {
-            return(f_xy_vals[1,j])
-          } else if (x_prev_j==0 && x_j==1) {
-            return(f_xy_vals[2,j])
-          } else if (x_prev_j==1 && x_j==1) {
-            return(f_xy_vals[3,j])
-          }
-        })))
-        
-      })))
+      f2 <- sum(unlist(lapply(d$X_i_set, f2_fnc)))
       
     }
     
