@@ -557,7 +557,8 @@ if (cfg2$run_analysis) {
     })
     dat_objs_wrapper <- lapply(batches, function(i) { dat_objs[i] }) # !!!!! New
     cl <- parallel::makeCluster(cfg$sim_n_cores)
-    objs_to_export <- c("f_x", "f_y", "icll", "lik_fn2", "inds", "batches")
+    objs_to_export <- c("f_x", "f_y", "icll", "lik_fn2", "inds", "batches",
+                        "uncompress")
     parallel::clusterExport(cl, objs_to_export, envir=.GlobalEnv)
     
     # parallel::clusterExport(cl, ls(.GlobalEnv))
@@ -685,6 +686,8 @@ if (cfg2$run_analysis) {
     par_init <- c(a_x=-8.725, g_x1=3.414, g_x2=-0.561, g_x3=0.040, g_x4=-6.618, g_x5=-0.058, g_x6=0.498, g_x7=6.534, g_x8=-4.481, t_x1=-1.146, t_x2=-1.745, t_x3=-0.895, t_x4=-2.134, a_s=-2.914, g_s1=-0.435, g_s2=1.418, g_s3=-0.779, g_s4=3.834, g_s5=-2.681, beta_x1=1.813, beta_x2=-1.234, beta_z1=3.826, beta_z2=-3.966, a_y=-7.504, g_y1=0.598, g_y2=2.118, g_y3=3.794, g_y4=6.900, g_y5=4.007, t_y1=0.303, t_y2=-0.594, t_y3=-1.262, t_y4=-1.038)
   } else if (cfg$model_version==20) {
     par_init <- c(a_x=-8.182, g_x1=3.290, g_x2=-1.767, g_x3=2.711, g_x4=-2.527, g_x5=-0.778, g_x6=0.247, g_x7=7.216, g_x8=-3.587, t_x1=-0.226, t_x2=-1.011, t_x3=-1.618, t_x4=-1.725, a_s=-3.047, g_s1=-0.430, g_s2=1.355, g_s3=-0.465, g_s4=3.651, g_s5=-3.644, beta_x1=0.693, beta_x2=-0.017, beta_x3=2.102, beta_x4=-1.032, beta_z1=1.920, beta_z2=-0.819, beta_z3=1.866, beta_z4=-5.010, a_y=-7.120, g_y1=0.575, g_y2=2.194, g_y3=3.795, g_y4=7.084, g_y5=3.862, t_y1=-0.804, t_y2=-0.073, t_y3=-0.903, t_y4=-0.350)
+  } else if (cfg$model_version==21) {
+    par_init <- c(a_x=-8.416, g_x1=3.267, g_x2=-4.804, g_x3=2.036, g_x4=-0.286, g_x5=-2.404, g_x6=0.043, g_x7=7.351, g_x8=-2.296, t_x1=0.482, t_x2=-1.714, t_x3=0.389, t_x4=-0.572, a_s=-3.098, g_s1=-0.448, g_s2=1.403, g_s3=-0.417, g_s4=3.518, g_s5=-4.021, beta_x1=0.479, beta_x2=-0.315, beta_x3=1.545, beta_x4=-0.902, a_y=-6.977, g_y1=0.547, g_y2=2.327, g_y3=3.630, g_y4=7.219, g_y5=3.897, t_y1=-0.957, t_y2=0.184, t_y3=-1.456, t_y4=-0.870)
   }
   
   # par_true <- c(

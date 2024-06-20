@@ -170,6 +170,8 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
       params <- list(a_x=p[1], g_x=p[2:9], t_x=p[10:13], a_s=p[14], g_s=p[15:19], beta_x=p[20:21], beta_z=p[22:23], a_y=p[24], g_y=p[25:29], t_y=p[30:33])
     } else if (model_version==20) {
       params <- list(a_x=p[1], g_x=p[2:9], t_x=p[10:13], a_s=p[14], g_s=p[15:19], beta_x=p[20:23], beta_z=p[24:27], a_y=p[28], g_y=p[29:33], t_y=p[34:37])
+    } else if (model_version==21) {
+      params <- list(a_x=p[1], g_x=p[2:9], t_x=p[10:13], a_s=p[14], g_s=p[15:19], beta_x=p[20:23], a_y=p[24], g_y=p[25:29], t_y=p[30:33])
     }
     
     # Compute the negative likelihood across individuals
@@ -608,7 +610,7 @@ if (cfg$model_version==0) {
     }
   }
   
-} else if (cfg$model_version %in% c(19,20)) {
+} else if (cfg$model_version %in% c(19:21)) {
   
   f_x <- function(x, x_prev, w, j, s, spl, params) {
     if (s==0) {
@@ -811,6 +813,23 @@ if (cfg$model_version==0) {
       ) + x*z*(
         params$beta_z[1]*spl[["b5_1"]] + params$beta_z[2]*spl[["b5_2"]] +
           params$beta_z[3]*spl[["b5_3"]] + params$beta_z[4]*spl[["b5_4"]]
+      ) +
+        params$a_y + params$g_y[1]*w[1] + params$g_y[2]*spl[["b3_1"]] +
+        params$g_y[3]*spl[["b3_2"]] + params$g_y[4]*spl[["b3_3"]] +
+        params$g_y[5]*spl[["b3_4"]] + params$t_y[1]*spl[["b5_1"]] +
+        params$t_y[2]*spl[["b5_2"]] + params$t_y[3]*spl[["b5_3"]] +
+        params$t_y[4]*spl[["b5_4"]]
+    )
+    if (y==1) { return(prob) } else { return(1-prob) }
+  }
+  
+} else if (cfg$model_version==21) {
+  
+  f_y <- function(y, x, w, z, j, spl, params) {
+    prob <- icll(
+      x*(
+        params$beta_x[1]*spl[["b5_1"]] + params$beta_x[2]*spl[["b5_2"]] +
+          params$beta_x[3]*spl[["b5_3"]] + params$beta_x[4]*spl[["b5_4"]]
       ) +
         params$a_y + params$g_y[1]*w[1] + params$g_y[2]*spl[["b3_1"]] +
         params$g_y[3]*spl[["b3_2"]] + params$g_y[4]*spl[["b3_3"]] +
