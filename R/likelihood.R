@@ -309,23 +309,23 @@ lik_fn2 <- function(d, params, inds) {
       
     }
     
-    len_set <- length(d$X_i_set)
-    if (len_set>=7) {
-
-      f2_first <- f2_fnc(d$X_i_set[[1]])
-      f2_last <- f2_fnc(d$X_i_set[[len_set]])
-      f2_mid_1 <- f2_fnc(d$X_i_set[[2]])
-      f2_mid_2 <- f2_fnc(d$X_i_set[[round((len_set+1)/2)]])
-      f2_mid_3 <- f2_fnc(d$X_i_set[[len_set-1]])
-
-      simpson_sum <- (1/6)*(f2_mid_1+4*f2_mid_2+f2_mid_3)
-      f2 <- sum(f2_first+f2_last+(len_set-2)*simpson_sum)
-
-    } else {
+    # len_set <- length(d$X_i_set)
+    # if (len_set>=7) {
+    # 
+    #   f2_first <- f2_fnc(d$X_i_set[[1]])
+    #   f2_last <- f2_fnc(d$X_i_set[[len_set]])
+    #   f2_mid_1 <- f2_fnc(d$X_i_set[[2]])
+    #   f2_mid_2 <- f2_fnc(d$X_i_set[[round((len_set+1)/2)]])
+    #   f2_mid_3 <- f2_fnc(d$X_i_set[[len_set-1]])
+    # 
+    #   simpson_sum <- (1/6)*(f2_mid_1+4*f2_mid_2+f2_mid_3)
+    #   f2 <- sum(f2_first+f2_last+(len_set-2)*simpson_sum)
+    # 
+    # } else {
       
       f2 <- sum(unlist(lapply(d$X_i_set, f2_fnc)))
       
-    }
+    # }
     
   }
   

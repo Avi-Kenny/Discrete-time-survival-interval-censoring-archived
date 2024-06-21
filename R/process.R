@@ -122,7 +122,8 @@ prob <- function(type, m, j, w_1, w_2) {
   } else if (m==20) {
     p <- list(a_x=-8.416, g_x1=3.267, g_x2=-4.804, g_x3=2.036, g_x4=-0.286, g_x5=-2.404, g_x6=0.043, g_x7=7.351, g_x8=-2.296, t_x1=0.482, t_x2=-1.714, t_x3=0.389, t_x4=-0.572, a_s=-3.098, g_s1=-0.448, g_s2=1.403, g_s3=-0.417, g_s4=3.518, g_s5=-4.021, beta_x1=0.479, beta_x2=-0.315, beta_x3=1.545, beta_x4=-0.902, beta_z1=0.050, beta_z2=-1.719, beta_z3=2.602, beta_z4=-4.326, a_y=-6.977, g_y1=0.547, g_y2=2.327, g_y3=3.630, g_y4=7.219, g_y5=3.897, t_y1=-0.957, t_y2=0.184, t_y3=-1.456, t_y4=-0.870)
   } else if (m==21) {
-    p <- list(a_x=-9.836, g_x1=6.197, g_x2=5.766, g_x3=5.027, g_x4=-7.555, g_x5=6.230, g_x6=-1.397, g_x7=10.180, g_x8=3.478, t_x1=8.411, t_x2=-1.006, t_x3=-19.510, t_x4=-4.292, a_s=-2.861, g_s1=-0.844, g_s2=0.726, g_s3=0.671, g_s4=1.717, g_s5=-6.365, beta_x1=0.414, beta_x2=-0.825, beta_x3=2.028, beta_x4=-1.055, a_y=-9.044, g_y1=0.566, g_y2=3.173, g_y3=4.359, g_y4=8.954, g_y5=3.645, t_y1=-0.132, t_y2=1.369, t_y3=1.116, t_y4=-0.952)
+    # p <- list(a_x=-9.836, g_x1=6.197, g_x2=5.766, g_x3=5.027, g_x4=-7.555, g_x5=6.230, g_x6=-1.397, g_x7=10.180, g_x8=3.478, t_x1=8.411, t_x2=-1.006, t_x3=-19.510, t_x4=-4.292, a_s=-2.861, g_s1=-0.844, g_s2=0.726, g_s3=0.671, g_s4=1.717, g_s5=-6.365, beta_x1=0.414, beta_x2=-0.825, beta_x3=2.028, beta_x4=-1.055, a_y=-9.044, g_y1=0.566, g_y2=3.173, g_y3=4.359, g_y4=8.954, g_y5=3.645, t_y1=-0.132, t_y2=1.369, t_y3=1.116, t_y4=-0.952)
+    p <- list(a_x=-8.416, g_x1=3.267, g_x2=-4.804, g_x3=2.036, g_x4=-0.286, g_x5=-2.404, g_x6=0.043, g_x7=7.351, g_x8=-2.296, t_x1=0.482, t_x2=-1.714, t_x3=0.389, t_x4=-0.572, a_s=-3.098, g_s1=-0.448, g_s2=1.403, g_s3=-0.417, g_s4=3.518, g_s5=-4.021, beta_x1=0.479, beta_x2=-0.315, beta_x3=1.545, beta_x4=-0.902, beta_z1=0.050, beta_z2=-1.719, beta_z3=2.602, beta_z4=-4.326, a_y=-6.977, g_y1=0.547, g_y2=2.327, g_y3=3.630, g_y4=7.219, g_y5=3.897, t_y1=-0.957, t_y2=0.184, t_y3=-1.456, t_y4=-0.870)
   }
   
   j <- j/10
@@ -159,7 +160,7 @@ prob <- function(type, m, j, w_1, w_2) {
               p$g_x7*b2(w_2,3) + p$g_x8*b2(w_2,4)
           )
       )
-    } else if (m %in% c(19,20)) {
+    } else if (m %in% c(19:21)) {
       prob <- icll(
         p$a_x + p$t_x1*b5(j,1) + p$t_x2*b5(j,2) + p$t_x3*b5(j,3) +
           p$t_x4*b5(j,4) + w_1*(
@@ -181,7 +182,7 @@ prob <- function(type, m, j, w_1, w_2) {
         p$a_s + p$t_s1*b4(j,1) + p$t_s2*b4(j,2) + p$t_s3*b4(j,3) +
           p$t_s4*b4(j,4) + p$g_s1*w_1 + p$g_s2*w_2
       )
-    } else if (m %in% c(17:20)) {
+    } else if (m %in% c(17:21)) {
       prob <- icll(
         p$a_s + p$g_s1*w_1 + p$g_s2*b3(w_2,1) + p$g_s3*b3(w_2,2) + 
           p$g_s4*b3(w_2,3) + p$g_s5*b3(w_2,4)
@@ -246,6 +247,16 @@ prob <- function(type, m, j, w_1, w_2) {
               p$beta_z4*b5(j,4)
           )
       )
+    } else if (m==21) {
+      prob <- icll(
+        p$a_y + p$t_y1*b5(j,1) + p$t_y2*b5(j,2) + p$t_y3*b5(j,3) +
+          p$t_y4*b5(j,4) + p$g_y1*w_1 + p$g_y2*b3(w_2,1) + p$g_y3*b3(w_2,2) +
+          p$g_y4*b3(w_2,3) + p$g_y5*b3(w_2,4) +
+          x*(
+            p$beta_x1*b5(j,1) + p$beta_x2*b5(j,2) + p$beta_x3*b5(j,3) +
+              p$beta_x4*b5(j,4)
+          )
+      )
     }
     
   }
@@ -258,8 +269,9 @@ prob <- function(type, m, j, w_1, w_2) {
 #' @param x One of c("Year", "Age"); the variable to go on the X-axis
 #' @param type One of c("sero", "init", "mort")
 #' @param m An integer representing the model version number
+#' @param y_max Maximum Y value for the plot
 #' @return ggplot2 object
-plot_mod <- function(x_axis, type, m, w_start) {
+plot_mod <- function(x_axis, type, m, w_start, y_max) {
   
   if (w_start==2000) {
     j_vals <- c(1,11,21) # This was formerly incorrectly set to c(0,10,20)
@@ -324,6 +336,7 @@ plot_mod <- function(x_axis, type, m, w_start) {
         linetype=Sex)
   ) +
     geom_line() +
+    ylim(0, y_max) +
     labs(title=title, x=x_axis, color=color) +
     theme(plot.background = element_rect(color="black"))
   
@@ -337,8 +350,9 @@ plot_mod <- function(x_axis, type, m, w_start) {
 ##### VIZ: Plotting modeled probabilities #####
 ###############################################.
 
-m <- 20
+m <- 21
 w_start <- 2010
+y_max <- c(0.06, 0.8, 0.8)
 b1 <- construct_basis("age (0-100), 4DF")
 b2 <- construct_basis("age (13,20,30,60,90)")
 b3 <- construct_basis("age (13,30,60,75,90)")
@@ -346,31 +360,31 @@ b4 <- construct_basis("year (00,05,10,15,20)", window_start=w_start)
 b5 <- construct_basis("year (10,13,17,20,23)", window_start=w_start)
 
 # Seroconversion prob as a function of age
-p01 <- plot_mod(x_axis="Age", type="sero", m=m, w_start=w_start)
+p01 <- plot_mod(x_axis="Age", type="sero", m=m, w_start=w_start, y_max=y_max[1])
 
 # Seroconversion prob as a function of calendar time
-p02 <- plot_mod(x_axis="Year", type="sero", m=m, w_start=w_start)
+p02 <- plot_mod(x_axis="Year", type="sero", m=m, w_start=w_start, y_max=y_max[1])
 
 # HIV+ initial status as a function of age
-p03 <- plot_mod(x_axis="Age", type="init", m=m, w_start=w_start)
+p03 <- plot_mod(x_axis="Age", type="init", m=m, w_start=w_start, y_max=y_max[2])
 
 # HIV+ initial status as a function of calendar time
-p04 <- plot_mod(x_axis="Year", type="init", m=m, w_start=w_start)
+p04 <- plot_mod(x_axis="Year", type="init", m=m, w_start=w_start, y_max=y_max[2])
 
 # Mortality prob as a function of age
-p05 <- plot_mod(x_axis="Age", type="mort (HIV-)", m=m, w_start=w_start)
-p06 <- plot_mod(x_axis="Age", type="mort (HIV+ART-)", m=m, w_start=w_start)
-p07 <- plot_mod(x_axis="Age", type="mort (HIV+ART+)", m=m, w_start=w_start)
+p05 <- plot_mod(x_axis="Age", type="mort (HIV-)", m=m, w_start=w_start, y_max=y_max[3])
+p06 <- plot_mod(x_axis="Age", type="mort (HIV+ART-)", m=m, w_start=w_start, y_max=y_max[3])
+p07 <- plot_mod(x_axis="Age", type="mort (HIV+ART+)", m=m, w_start=w_start, y_max=y_max[3])
 
 # Mortality prob as a function of calendar time
-p08 <- plot_mod(x_axis="Year", type="mort (HIV-)", m=m, w_start=w_start)
-p09 <- plot_mod(x_axis="Year", type="mort (HIV+ART-)", m=m, w_start=w_start)
-p10 <- plot_mod(x_axis="Year", type="mort (HIV+ART+)", m=m, w_start=w_start)
+p08 <- plot_mod(x_axis="Year", type="mort (HIV-)", m=m, w_start=w_start, y_max=y_max[3])
+p09 <- plot_mod(x_axis="Year", type="mort (HIV+ART-)", m=m, w_start=w_start, y_max=y_max[3])
+p10 <- plot_mod(x_axis="Year", type="mort (HIV+ART+)", m=m, w_start=w_start, y_max=y_max[3])
 
 print(ggpubr::ggarrange(p01, p02)) # Export 10"x5"
 print(ggpubr::ggarrange(p03, p04)) # Export 10"x5"
-# print(ggpubr::ggarrange(p05, p08, p06, p09)) # Export 10"x10"
-print(ggpubr::ggarrange(p05, p06, p07, p08, p09, p10, ncol=3, nrow=2)) # Export 15"x10"
+print(ggpubr::ggarrange(p05, p08, p06, p09)) # Export 10"x10"
+# print(ggpubr::ggarrange(p05, p06, p07, p08, p09, p10, ncol=3, nrow=2)) # Export 15"x10"
 
 
 
