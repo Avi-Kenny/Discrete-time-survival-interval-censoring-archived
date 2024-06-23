@@ -161,17 +161,20 @@ construct_basis <- function(which, window_start=NA) {
   scale_year <- function(x) { (x-window_start+1)/10 }
   
   if (which=="age (0-100), 4DF") {
-    grid <- seq(0,1, length.out=500)
-    k <- c(0,0.25,0.5,0.75,1)
+    grid <- scale_age(seq(0,100, length.out=500))
+    k <- scale_age(c(0,25,50,75,100))
   } else if (which=="age (13,20,30,60,90)") {
-    grid <- seq(0.13,0.90, length.out=500)
-    k <- c(0.13, 0.2, 0.3, 0.6, 0.9)
+    grid <- scale_age(seq(13,90, length.out=500))
+    k <- scale_age(c(13, 20, 30, 60, 90))
   } else if (which=="age (13,30,60,75,90)") {
-    grid <- seq(0.13,0.90, length.out=500)
-    k <- c(0.13, 0.3, 0.6, 0.75, 0.9)
+    grid <- scale_age(seq(13,90, length.out=500))
+    k <- scale_age(c(13, 30, 60, 75, 90))
   } else if (which=="age (13,32,52,71,90)") {
-    grid <- seq(0.13,0.90, length.out=500)
+    grid <- scale_age(seq(13,90, length.out=500))
     k <- scale_age(seq(13,90, length.out=5))
+  } else if (which=="age (15,30,45,60,75)") {
+    grid <- scale_age(seq(15,75, length.out=500))
+    k <- scale_age(seq(15,75, length.out=5))
   } else if (which=="year (00,05,10,15,20)") {
     grid <- scale_year(seq(2000,2022, length.out=500))
     k <- scale_year(seq(2000,2020, length.out=5))

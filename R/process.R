@@ -2,81 +2,86 @@
 ##### VIZ: All params (one model) #####
 #######################################.
 
-sim <- readRDS("sim.rds")
-
-# p_names should match those used by negloglik()
-p_names <- c("a_x", "g_x1", "g_x2", "a_y", "g_y1", "g_y2", "beta_x", "beta_z",
-            "t_x", "t_y", "a_s", "t_s", "g_s1", "g_s2")
-# true_vals <- log(c(0.005,1.3,1.2,0.003,1.2,1.1,1.5,0.7,1,1,0.05,1,2,1.5)) # Monthly
-true_vals <- log(c(0.05,1.3,1.2,0.03,1.2,1.1,1.5,0.7,1,1,0.05,1,2,1.5)) # Yearly
-
-# prm_sim <- sim$levels$params[[1]]
-# true_vals2 <- c(prm_sim$a_x, prm_sim$g_x[1], prm_sim$g_x[2], prm_sim$a_y,
-#                prm_sim$g_y[1], prm_sim$g_y[2], prm_sim$beta_x, prm_sim$beta_z,
-#                # prm_sim$t_x, prm_sim$t_y,
-#                prm_sim$a_s, prm_sim$t_s,
-#                prm_sim$g_s[1], prm_sim$g_s[2])
-
-v <- paste0("lik_M_",p_names,"_est")
-r <- filter(sim$results, params=="70pct testing")
-x <- unlist(lapply(v, function(col) { r[,col] }))
-df_true <- data.frame(
-  which = factor(v, levels=v),
-  val = true_vals
-)
-df_plot <- data.frame(
-  x = x,
-  y = rep(0, length(x)),
-  which = rep(factor(v, levels=v), each=round(length(x)/length(v)))
-)
-
-# Export 8" x 5"
-ggplot(df_plot, aes(x=x, y=y, color=which)) +
-  geom_jitter(width=0, height=1, alpha=0.3, size=3) +
-  geom_vline(aes(xintercept=val), df_true, alpha=0.5, linetype="dashed") +
-  facet_wrap(~which, ncol=1, strip.position="left") + # scales="free_x"
-  labs(y=NULL, title="70% testing") +
-  ylim(-2,2) +
-  # xlim(-3,3) +
-  theme(axis.text.y=element_blank(),
-        axis.ticks.y=element_blank(),
-        panel.grid.major.y = element_blank(),
-        panel.grid.minor.y = element_blank(),
-        strip.text.y.left = element_text(angle=0),
-        legend.position="none")
-
-# Summary stats
-summ_mean <- summ_sd <- summ_cov <- list()
-for (i in c(1:length(p_names))) {
-  p <- p_names[i]
-  summ_mean[[i]] <- list(stat="mean",
-                         name=paste0(p,"__sd_est"),
-                         x=paste0("lik_M_",p,"_se"))
-  summ_sd[[i]] <- list(stat="sd", name=paste0(p,"__sd_actual"),
-                       x=paste0("lik_M_",p,"_est"))
-  summ_cov[[i]] <- list(stat="coverage", name=paste0(p,"__cov"),
-                        truth=true_vals[i],
-                        estimate=paste0("lik_M_",p,"_est"),
-                        se=paste0("lik_M_",p,"_se"), na.rm=T)
-}
-summ <- do.call(SimEngine::summarize, c(list(sim), summ_mean, summ_sd, summ_cov))
-l_id <- 1
-summ2 <- summ[summ$level_id==l_id]
-df_results <- data.frame(
-  "param" = character(),
-  "sd_est" = double(),
-  "sd_actual" = double(),
-  "coverage" = double()
-)
-for (p in p_names) {
-  df_results[nrow(df_results)+1,] <- c(
-    p,
-    round(summ[[paste0(p,"__sd_actual")]], 3),
-    round(summ[[paste0(p,"__sd_est")]], 3),
-    round(summ[[paste0(p,"__cov")]], 3)
+if (F) {
+  
+  sim <- readRDS("sim.rds")
+  
+  # p_names should match those used by negloglik()
+  p_names <- c("a_x", "g_x1", "g_x2", "a_y", "g_y1", "g_y2", "beta_x", "beta_z",
+               "t_x", "t_y", "a_s", "t_s", "g_s1", "g_s2")
+  # true_vals <- log(c(0.005,1.3,1.2,0.003,1.2,1.1,1.5,0.7,1,1,0.05,1,2,1.5)) # Monthly
+  true_vals <- log(c(0.05,1.3,1.2,0.03,1.2,1.1,1.5,0.7,1,1,0.05,1,2,1.5)) # Yearly
+  
+  # prm_sim <- sim$levels$params[[1]]
+  # true_vals2 <- c(prm_sim$a_x, prm_sim$g_x[1], prm_sim$g_x[2], prm_sim$a_y,
+  #                prm_sim$g_y[1], prm_sim$g_y[2], prm_sim$beta_x, prm_sim$beta_z,
+  #                # prm_sim$t_x, prm_sim$t_y,
+  #                prm_sim$a_s, prm_sim$t_s,
+  #                prm_sim$g_s[1], prm_sim$g_s[2])
+  
+  v <- paste0("lik_M_",p_names,"_est")
+  r <- filter(sim$results, params=="70pct testing")
+  x <- unlist(lapply(v, function(col) { r[,col] }))
+  df_true <- data.frame(
+    which = factor(v, levels=v),
+    val = true_vals
   )
+  df_plot <- data.frame(
+    x = x,
+    y = rep(0, length(x)),
+    which = rep(factor(v, levels=v), each=round(length(x)/length(v)))
+  )
+  
+  # Export 8" x 5"
+  ggplot(df_plot, aes(x=x, y=y, color=which)) +
+    geom_jitter(width=0, height=1, alpha=0.3, size=3) +
+    geom_vline(aes(xintercept=val), df_true, alpha=0.5, linetype="dashed") +
+    facet_wrap(~which, ncol=1, strip.position="left") + # scales="free_x"
+    labs(y=NULL, title="70% testing") +
+    ylim(-2,2) +
+    # xlim(-3,3) +
+    theme(axis.text.y=element_blank(),
+          axis.ticks.y=element_blank(),
+          panel.grid.major.y = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          strip.text.y.left = element_text(angle=0),
+          legend.position="none")
+  
+  # Summary stats
+  summ_mean <- summ_sd <- summ_cov <- list()
+  for (i in c(1:length(p_names))) {
+    p <- p_names[i]
+    summ_mean[[i]] <- list(stat="mean",
+                           name=paste0(p,"__sd_est"),
+                           x=paste0("lik_M_",p,"_se"))
+    summ_sd[[i]] <- list(stat="sd", name=paste0(p,"__sd_actual"),
+                         x=paste0("lik_M_",p,"_est"))
+    summ_cov[[i]] <- list(stat="coverage", name=paste0(p,"__cov"),
+                          truth=true_vals[i],
+                          estimate=paste0("lik_M_",p,"_est"),
+                          se=paste0("lik_M_",p,"_se"), na.rm=T)
+  }
+  summ <- do.call(SimEngine::summarize, c(list(sim), summ_mean, summ_sd, summ_cov))
+  l_id <- 1
+  summ2 <- summ[summ$level_id==l_id]
+  df_results <- data.frame(
+    "param" = character(),
+    "sd_est" = double(),
+    "sd_actual" = double(),
+    "coverage" = double()
+  )
+  for (p in p_names) {
+    df_results[nrow(df_results)+1,] <- c(
+      p,
+      round(summ[[paste0(p,"__sd_actual")]], 3),
+      round(summ[[paste0(p,"__sd_est")]], 3),
+      round(summ[[paste0(p,"__cov")]], 3)
+    )
+  }
+  print(df_results)
+  
 }
-print(df_results)
+
 
 
 
@@ -85,8 +90,8 @@ print(df_results)
 #######################################################.
 
 #' Return modeled probability
-#' @param type One of c("sero", "init", "mort (HIV-)", "mort (HIV+ART-)",
-#'     "mort (HIV+ART+)")
+#' @param type One of c("sero", "init", "mort (HIV-)", "mort (HIV+)",
+#'     "mort (HIV+ART-)", "mort (HIV+ART+)")
 #' @param j Calendar time (in years, starting at 1, where 1 represents the
 #'     first year in the dataset)
 #' @param w_1 Sex (0=female, 1=male)
@@ -120,10 +125,12 @@ prob <- function(type, m, j, w_1, w_2) {
   } else if (m==19) {
     p <- list(a_x=-8.567, g_x1=2.507, g_x2=-0.537, g_x3=-1.743, g_x4=-8.788, g_x5=-1.952, g_x6=0.833, g_x7=6.446, g_x8=-4.131, t_x1=0.772, t_x2=-0.797, t_x3=0.015, t_x4=-1.276, a_s=-2.914, g_s1=-0.455, g_s2=1.383, g_s3=-0.784, g_s4=3.879, g_s5=-2.659, beta_x1=1.818, beta_x2=-1.261, beta_z1=3.829, beta_z2=-4.027, a_y=-7.330, g_y1=0.568, g_y2=1.865, g_y3=3.614, g_y4=6.156, g_y5=3.917, t_y1=-0.142, t_y2=0.151, t_y3=0.308, t_y4=-0.183)
   } else if (m==20) {
-    p <- list(a_x=-8.416, g_x1=3.267, g_x2=-4.804, g_x3=2.036, g_x4=-0.286, g_x5=-2.404, g_x6=0.043, g_x7=7.351, g_x8=-2.296, t_x1=0.482, t_x2=-1.714, t_x3=0.389, t_x4=-0.572, a_s=-3.098, g_s1=-0.448, g_s2=1.403, g_s3=-0.417, g_s4=3.518, g_s5=-4.021, beta_x1=0.479, beta_x2=-0.315, beta_x3=1.545, beta_x4=-0.902, beta_z1=0.050, beta_z2=-1.719, beta_z3=2.602, beta_z4=-4.326, a_y=-6.977, g_y1=0.547, g_y2=2.327, g_y3=3.630, g_y4=7.219, g_y5=3.897, t_y1=-0.957, t_y2=0.184, t_y3=-1.456, t_y4=-0.870)
+    p <- list(a_x=-8.020, g_x1=2.288, g_x2=-1.682, g_x3=2.458, g_x4=-2.482, g_x5=-1.755, g_x6=1.293, g_x7=7.403, g_x8=-3.002, t_x1=-0.367, t_x2=-1.639, t_x3=-0.807, t_x4=-1.199, a_s=-3.130, g_s1=-0.435, g_s2=1.359, g_s3=-0.208, g_s4=3.285, g_s5=-4.575, beta_x1=0.024, beta_x2=-0.338, beta_x3=2.098, beta_x4=-1.204, beta_z1=0.549, beta_z2=-0.332, beta_z3=2.451, beta_z4=-1.659, a_y=-6.999, g_y1=0.582, g_y2=2.339, g_y3=3.775, g_y4=7.476, g_y5=3.943, t_y1=-0.835, t_y2=0.060, t_y3=-1.958, t_y4=-0.761)
   } else if (m==21) {
-    # p <- list(a_x=-9.836, g_x1=6.197, g_x2=5.766, g_x3=5.027, g_x4=-7.555, g_x5=6.230, g_x6=-1.397, g_x7=10.180, g_x8=3.478, t_x1=8.411, t_x2=-1.006, t_x3=-19.510, t_x4=-4.292, a_s=-2.861, g_s1=-0.844, g_s2=0.726, g_s3=0.671, g_s4=1.717, g_s5=-6.365, beta_x1=0.414, beta_x2=-0.825, beta_x3=2.028, beta_x4=-1.055, a_y=-9.044, g_y1=0.566, g_y2=3.173, g_y3=4.359, g_y4=8.954, g_y5=3.645, t_y1=-0.132, t_y2=1.369, t_y3=1.116, t_y4=-0.952)
-    p <- list(a_x=-8.416, g_x1=3.267, g_x2=-4.804, g_x3=2.036, g_x4=-0.286, g_x5=-2.404, g_x6=0.043, g_x7=7.351, g_x8=-2.296, t_x1=0.482, t_x2=-1.714, t_x3=0.389, t_x4=-0.572, a_s=-3.098, g_s1=-0.448, g_s2=1.403, g_s3=-0.417, g_s4=3.518, g_s5=-4.021, beta_x1=0.479, beta_x2=-0.315, beta_x3=1.545, beta_x4=-0.902, beta_z1=0.050, beta_z2=-1.719, beta_z3=2.602, beta_z4=-4.326, a_y=-6.977, g_y1=0.547, g_y2=2.327, g_y3=3.630, g_y4=7.219, g_y5=3.897, t_y1=-0.957, t_y2=0.184, t_y3=-1.456, t_y4=-0.870)
+    p <- list(a_x=-8.106, g_x1=2.437, g_x2=-1.533, g_x3=2.540, g_x4=-2.320, g_x5=-1.679, g_x6=1.008, g_x7=7.416, g_x8=-2.923, t_x1=-0.284, t_x2=-1.655, t_x3=-0.782, t_x4=-1.090, a_s=-3.130, g_s1=-0.443, g_s2=1.369, g_s3=-0.218, g_s4=3.286, g_s5=-4.564, beta_x1=0.119, beta_x2=-0.316, beta_x3=2.065, beta_x4=-1.207, a_y=-6.998, g_y1=0.559, g_y2=2.351, g_y3=3.749, g_y4=7.466, g_y5=3.935, t_y1=-0.824, t_y2=0.082, t_y3=-1.909, t_y4=-0.774) # Before removing 75+ year olds
+    p <- list(a_x=-8.255, g_x1=3.370, g_x2=-3.520, g_x3=2.301, g_x4=-0.685, g_x5=-1.084, g_x6=0.012, g_x7=7.442, g_x8=-1.853, t_x1=0.325, t_x2=-2.542, t_x3=-0.288, t_x4=-0.498, a_s=-3.068, g_s1=-0.466, g_s2=1.208, g_s3=0.093, g_s4=3.367, g_s5=-4.529, beta_x1=0.369, beta_x2=-0.390, beta_x3=1.893, beta_x4=-1.047, a_y=-6.839, g_y1=0.493, g_y2=2.066, g_y3=4.414, g_y4=7.743, g_y5=3.549, t_y1=-1.175, t_y2=-0.015, t_y3=-2.257, t_y4=-0.998) # After removing 75+ year olds
+  } else if (m==22) {
+    stop()
   }
   
   j <- j/10
@@ -171,6 +178,17 @@ prob <- function(type, m, j, w_1, w_2) {
               p$g_x7*b2(w_2,3) + p$g_x8*b2(w_2,4)
           )
       )
+    } else if (m==22) {
+      prob <- icll(
+        p$a_x + p$t_x1*b5(j,1) + p$t_x2*b5(j,2) + p$t_x3*b5(j,3) +
+          p$t_x4*b5(j,4) + w_1*(
+            p$g_x1*b6(w_2,1) + p$g_x2*b6(w_2,2) +
+              p$g_x3*b6(w_2,3) + p$g_x4*b6(w_2,4)
+          ) + (1-w_1)*(
+            p$g_x5*b6(w_2,1) + p$g_x6*b6(w_2,2) +
+              p$g_x7*b6(w_2,3) + p$g_x8*b6(w_2,4)
+          )
+      )
     }
     
   } else if (type=="init") {
@@ -187,11 +205,17 @@ prob <- function(type, m, j, w_1, w_2) {
         p$a_s + p$g_s1*w_1 + p$g_s2*b3(w_2,1) + p$g_s3*b3(w_2,2) + 
           p$g_s4*b3(w_2,3) + p$g_s5*b3(w_2,4)
       )
+    } else if (m==22) {
+      prob <- icll(
+        p$a_s + p$g_s1*w_1 + p$g_s2*b6(w_2,1) + p$g_s3*b6(w_2,2) + 
+          p$g_s4*b6(w_2,3) + p$g_s5*b6(w_2,4)
+      )
     }
     
   } else {
     
     if (type=="mort (HIV-)") { x <- 0; z <- 0;}
+    if (type=="mort (HIV+)") { x <- 1; z <- NA;}
     if (type=="mort (HIV+ART-)") { x <- 1; z <- 0;}
     if (type=="mort (HIV+ART+)") { x <- 1; z <- 1;}
     
@@ -252,10 +276,16 @@ prob <- function(type, m, j, w_1, w_2) {
         p$a_y + p$t_y1*b5(j,1) + p$t_y2*b5(j,2) + p$t_y3*b5(j,3) +
           p$t_y4*b5(j,4) + p$g_y1*w_1 + p$g_y2*b3(w_2,1) + p$g_y3*b3(w_2,2) +
           p$g_y4*b3(w_2,3) + p$g_y5*b3(w_2,4) +
-          x*(
-            p$beta_x1*b5(j,1) + p$beta_x2*b5(j,2) + p$beta_x3*b5(j,3) +
-              p$beta_x4*b5(j,4)
-          )
+          x*(p$beta_x1*b5(j,1) + p$beta_x2*b5(j,2) + p$beta_x3*b5(j,3) +
+               p$beta_x4*b5(j,4))
+      )
+    } else if (m==22) {
+      prob <- icll(
+        p$a_y + p$t_y1*b5(j,1) + p$t_y2*b5(j,2) + p$t_y3*b5(j,3) +
+          p$t_y4*b5(j,4) + p$g_y1*w_1 + p$g_y2*b6(w_2,1) + p$g_y3*b6(w_2,2) +
+          p$g_y4*b6(w_2,3) + p$g_y5*b6(w_2,4) +
+          x*(p$beta_x1*b5(j,1) + p$beta_x2*b5(j,2) + p$beta_x3*b5(j,3) +
+               p$beta_x4*b5(j,4))
       )
     }
     
@@ -267,7 +297,8 @@ prob <- function(type, m, j, w_1, w_2) {
 
 #' Return plot of modeled probabilities
 #' @param x One of c("Year", "Age"); the variable to go on the X-axis
-#' @param type One of c("sero", "init", "mort")
+#' @param type One of c("sero", "init", "mort (HIV-)", "mort (HIV+)",
+#'     "mort (HIV+ART-)", "mort (HIV+ART+)")
 #' @param m An integer representing the model version number
 #' @param y_max Maximum Y value for the plot
 #' @return ggplot2 object
@@ -284,7 +315,7 @@ plot_mod <- function(x_axis, type, m, w_start, y_max) {
   }
   
   if (x_axis=="Age") {
-    grid <- seq(13,90,0.1)
+    grid <- seq(13,75,0.1)
     color <- "Year"
     plot_data <- data.frame(
       x = rep(grid,6),
@@ -324,6 +355,8 @@ plot_mod <- function(x_axis, type, m, w_start, y_max) {
     title = "Prob an individial's initial status is HIV+; model"
   } else if (type=="mort (HIV-)") {
     title = "Mortality prob among HIV- (per year); model"
+  } else if (type=="mort (HIV+)") {
+    title = "Mortality prob among HIV+ (per year); model"
   } else if (type=="mort (HIV+ART-)") {
     title = "Mortality prob among HIV+ART- (per year); model"
   } else if (type=="mort (HIV+ART+)") {
@@ -352,12 +385,14 @@ plot_mod <- function(x_axis, type, m, w_start, y_max) {
 
 m <- 21
 w_start <- 2010
-y_max <- c(0.06, 0.8, 0.8)
+hivart <- "HIV" # One of c("HIV", "HIV+ART")
+y_max <- c(0.06, 0.8, 0.2, 0.05)
 b1 <- construct_basis("age (0-100), 4DF")
 b2 <- construct_basis("age (13,20,30,60,90)")
 b3 <- construct_basis("age (13,30,60,75,90)")
 b4 <- construct_basis("year (00,05,10,15,20)", window_start=w_start)
 b5 <- construct_basis("year (10,13,17,20,23)", window_start=w_start)
+b6 <- construct_basis("age (15,30,45,60,75)", window_start=w_start)
 
 # Seroconversion prob as a function of age
 p01 <- plot_mod(x_axis="Age", type="sero", m=m, w_start=w_start, y_max=y_max[1])
@@ -371,20 +406,38 @@ p03 <- plot_mod(x_axis="Age", type="init", m=m, w_start=w_start, y_max=y_max[2])
 # HIV+ initial status as a function of calendar time
 p04 <- plot_mod(x_axis="Year", type="init", m=m, w_start=w_start, y_max=y_max[2])
 
-# Mortality prob as a function of age
-p05 <- plot_mod(x_axis="Age", type="mort (HIV-)", m=m, w_start=w_start, y_max=y_max[3])
-p06 <- plot_mod(x_axis="Age", type="mort (HIV+ART-)", m=m, w_start=w_start, y_max=y_max[3])
-p07 <- plot_mod(x_axis="Age", type="mort (HIV+ART+)", m=m, w_start=w_start, y_max=y_max[3])
+# HIV only
+if (hivart=="HIV") {
+  
+  # Mortality prob as a function of age
+  p05 <- plot_mod(x_axis="Age", type="mort (HIV-)", m=m, w_start=w_start, y_max=y_max[3])
+  p06 <- plot_mod(x_axis="Age", type="mort (HIV+)", m=m, w_start=w_start, y_max=y_max[3])
 
-# Mortality prob as a function of calendar time
-p08 <- plot_mod(x_axis="Year", type="mort (HIV-)", m=m, w_start=w_start, y_max=y_max[3])
-p09 <- plot_mod(x_axis="Year", type="mort (HIV+ART-)", m=m, w_start=w_start, y_max=y_max[3])
-p10 <- plot_mod(x_axis="Year", type="mort (HIV+ART+)", m=m, w_start=w_start, y_max=y_max[3])
+  # Mortality prob as a function of calendar time
+  p08 <- plot_mod(x_axis="Year", type="mort (HIV-)", m=m, w_start=w_start, y_max=y_max[4])
+  p09 <- plot_mod(x_axis="Year", type="mort (HIV+)", m=m, w_start=w_start, y_max=y_max[4])
+
+} else if (hivart=="HIV+ART") {
+  
+  # Mortality prob as a function of age
+  p05 <- plot_mod(x_axis="Age", type="mort (HIV-)", m=m, w_start=w_start, y_max=y_max[3])
+  p06 <- plot_mod(x_axis="Age", type="mort (HIV+ART-)", m=m, w_start=w_start, y_max=y_max[3])
+  p07 <- plot_mod(x_axis="Age", type="mort (HIV+ART+)", m=m, w_start=w_start, y_max=y_max[3])
+  
+  # Mortality prob as a function of calendar time
+  p08 <- plot_mod(x_axis="Year", type="mort (HIV-)", m=m, w_start=w_start, y_max=y_max[4])
+  p09 <- plot_mod(x_axis="Year", type="mort (HIV+ART-)", m=m, w_start=w_start, y_max=y_max[4])
+  p10 <- plot_mod(x_axis="Year", type="mort (HIV+ART+)", m=m, w_start=w_start, y_max=y_max[4])
+  
+}
 
 print(ggpubr::ggarrange(p01, p02)) # Export 10"x5"
 print(ggpubr::ggarrange(p03, p04)) # Export 10"x5"
-print(ggpubr::ggarrange(p05, p08, p06, p09)) # Export 10"x10"
-# print(ggpubr::ggarrange(p05, p06, p07, p08, p09, p10, ncol=3, nrow=2)) # Export 15"x10"
+if (hivart=="HIV") {
+  print(ggpubr::ggarrange(p05, p08, p06, p09)) # Export 10"x10"
+} else if (hivart=="HIV+ART") {
+  print(ggpubr::ggarrange(p05, p06, p07, p08, p09, p10, ncol=3, nrow=2)) # Export 15"x10"
+}
 
 
 
