@@ -8,7 +8,7 @@ transform_dataset <- function(dat, model_version=0, window_start) {
   b3 <- construct_basis("age (13,30,60,75,90)")
   b4 <- construct_basis("year (00,05,10,15,20)", window_start=window_start)
   b5 <- construct_basis("year (10,13,17,20,23)", window_start=window_start)
-  b6 <- construct_basis("age (15,30,45,60,75)")
+  b6 <- construct_basis("age (13,28,44,60,75)")
   
   n <- attr(dat, "n")
   

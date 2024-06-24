@@ -172,9 +172,9 @@ construct_basis <- function(which, window_start=NA) {
   } else if (which=="age (13,32,52,71,90)") {
     grid <- scale_age(seq(13,90, length.out=500))
     k <- scale_age(seq(13,90, length.out=5))
-  } else if (which=="age (15,30,45,60,75)") {
-    grid <- scale_age(seq(15,75, length.out=500))
-    k <- scale_age(seq(15,75, length.out=5))
+  } else if (which=="age (13,28,44,60,75)") {
+    grid <- scale_age(seq(13,75, length.out=500))
+    k <- scale_age(round(seq(13,75, length.out=5)))
   } else if (which=="year (00,05,10,15,20)") {
     grid <- scale_year(seq(2000,2022, length.out=500))
     k <- scale_year(seq(2000,2020, length.out=5))

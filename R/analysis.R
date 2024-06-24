@@ -748,6 +748,7 @@ if (cfg2$run_analysis) {
   
   chk(5, "hessian: END")
   parallel::stopCluster(cl)
+  saveRDS(list(opt=opt, hessian_inv=hessian_inv), "ests.rds")
   
   # if (cfg2$parallelize) { stopCluster(cl) }
   

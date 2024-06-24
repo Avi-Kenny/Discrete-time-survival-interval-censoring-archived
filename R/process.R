@@ -127,10 +127,10 @@ prob <- function(type, m, j, w_1, w_2) {
   } else if (m==20) {
     p <- list(a_x=-8.020, g_x1=2.288, g_x2=-1.682, g_x3=2.458, g_x4=-2.482, g_x5=-1.755, g_x6=1.293, g_x7=7.403, g_x8=-3.002, t_x1=-0.367, t_x2=-1.639, t_x3=-0.807, t_x4=-1.199, a_s=-3.130, g_s1=-0.435, g_s2=1.359, g_s3=-0.208, g_s4=3.285, g_s5=-4.575, beta_x1=0.024, beta_x2=-0.338, beta_x3=2.098, beta_x4=-1.204, beta_z1=0.549, beta_z2=-0.332, beta_z3=2.451, beta_z4=-1.659, a_y=-6.999, g_y1=0.582, g_y2=2.339, g_y3=3.775, g_y4=7.476, g_y5=3.943, t_y1=-0.835, t_y2=0.060, t_y3=-1.958, t_y4=-0.761)
   } else if (m==21) {
-    p <- list(a_x=-8.106, g_x1=2.437, g_x2=-1.533, g_x3=2.540, g_x4=-2.320, g_x5=-1.679, g_x6=1.008, g_x7=7.416, g_x8=-2.923, t_x1=-0.284, t_x2=-1.655, t_x3=-0.782, t_x4=-1.090, a_s=-3.130, g_s1=-0.443, g_s2=1.369, g_s3=-0.218, g_s4=3.286, g_s5=-4.564, beta_x1=0.119, beta_x2=-0.316, beta_x3=2.065, beta_x4=-1.207, a_y=-6.998, g_y1=0.559, g_y2=2.351, g_y3=3.749, g_y4=7.466, g_y5=3.935, t_y1=-0.824, t_y2=0.082, t_y3=-1.909, t_y4=-0.774) # Before removing 75+ year olds
+    # p <- list(a_x=-8.106, g_x1=2.437, g_x2=-1.533, g_x3=2.540, g_x4=-2.320, g_x5=-1.679, g_x6=1.008, g_x7=7.416, g_x8=-2.923, t_x1=-0.284, t_x2=-1.655, t_x3=-0.782, t_x4=-1.090, a_s=-3.130, g_s1=-0.443, g_s2=1.369, g_s3=-0.218, g_s4=3.286, g_s5=-4.564, beta_x1=0.119, beta_x2=-0.316, beta_x3=2.065, beta_x4=-1.207, a_y=-6.998, g_y1=0.559, g_y2=2.351, g_y3=3.749, g_y4=7.466, g_y5=3.935, t_y1=-0.824, t_y2=0.082, t_y3=-1.909, t_y4=-0.774) # Before removing 75+ year olds
     p <- list(a_x=-8.255, g_x1=3.370, g_x2=-3.520, g_x3=2.301, g_x4=-0.685, g_x5=-1.084, g_x6=0.012, g_x7=7.442, g_x8=-1.853, t_x1=0.325, t_x2=-2.542, t_x3=-0.288, t_x4=-0.498, a_s=-3.068, g_s1=-0.466, g_s2=1.208, g_s3=0.093, g_s4=3.367, g_s5=-4.529, beta_x1=0.369, beta_x2=-0.390, beta_x3=1.893, beta_x4=-1.047, a_y=-6.839, g_y1=0.493, g_y2=2.066, g_y3=4.414, g_y4=7.743, g_y5=3.549, t_y1=-1.175, t_y2=-0.015, t_y3=-2.257, t_y4=-0.998) # After removing 75+ year olds
   } else if (m==22) {
-    stop()
+    p <- list(a_x=-6.178, g_x1=0.765, g_x2=-3.338, g_x3=-0.189, g_x4=2.038, g_x5=-4.625, g_x6=-3.122, g_x7=3.845, g_x8=0.439, t_x1=1.059, t_x2=-3.059, t_x3=0.667, t_x4=-0.553, a_s=-2.691, g_s1=-0.479, g_s2=2.436, g_s3=0.452, g_s4=3.034, g_s5=-2.493, beta_x1=0.823, beta_x2=-0.597, beta_x3=1.522, beta_x4=-0.883, a_y=-6.832, g_y1=0.540, g_y2=2.164, g_y3=2.574, g_y4=6.637, g_y5=3.349, t_y1=-1.427, t_y2=0.005, t_y3=-2.253, t_y4=-1.182)
   }
   
   j <- j/10
@@ -383,7 +383,7 @@ plot_mod <- function(x_axis, type, m, w_start, y_max) {
 ##### VIZ: Plotting modeled probabilities #####
 ###############################################.
 
-m <- 21
+m <- 22
 w_start <- 2010
 hivart <- "HIV" # One of c("HIV", "HIV+ART")
 y_max <- c(0.06, 0.8, 0.2, 0.05)
@@ -392,7 +392,7 @@ b2 <- construct_basis("age (13,20,30,60,90)")
 b3 <- construct_basis("age (13,30,60,75,90)")
 b4 <- construct_basis("year (00,05,10,15,20)", window_start=w_start)
 b5 <- construct_basis("year (10,13,17,20,23)", window_start=w_start)
-b6 <- construct_basis("age (15,30,45,60,75)", window_start=w_start)
+b6 <- construct_basis("age (13,28,44,60,75)", window_start=w_start)
 
 # Seroconversion prob as a function of age
 p01 <- plot_mod(x_axis="Age", type="sero", m=m, w_start=w_start, y_max=y_max[1])
