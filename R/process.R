@@ -132,7 +132,7 @@ prob <- function(type, m, j, w_1, w_2) {
   } else if (m==22) {
     p <- list(a_x=-5.974, g_x1=-0.153, g_x2=-0.892, g_x3=1.491, g_x4=1.431, g_x5=-6.335, g_x6=-0.520, g_x7=4.633, g_x8=-1.664, t_x1=-0.122, t_x2=-2.452, t_x3=-0.125, t_x4=-0.539, a_s=-2.965, g_s1=-0.516, g_s2=3.010, g_s3=0.457, g_s4=3.360, g_s5=-2.050, beta_x1=0.854, beta_x2=-0.511, beta_x3=1.923, beta_x4=-0.401, a_y=-7.149, g_y1=0.554, g_y2=2.471, g_y3=2.540, g_y4=6.911, g_y5=3.670, t_y1=-1.368, t_y2=0.105, t_y3=-2.186, t_y4=-1.376)
   } else if (m==23) {
-    p <- list(g_x1=1.378, g_x2=0.652, g_x3=-0.220, g_x4=-1.242, g_x5=3.564, g_x6=2.113, g_x7=-2.053, g_x8=-0.294, g_x9=-0.560, g_x10=-2.843, t_x1=-2.248, t_x2=-5.615, t_x3=-15.796, t_x4=0.996, a_s=-3.074, g_s1=-0.461, g_s2=3.276, g_s3=0.252, g_s4=4.272, g_s5=-0.583, beta_x1=2.756, beta_x2=-1.410, beta_x3=2.523, beta_x4=1.812, beta_x5=0.851, a_y=-8.222, g_y1=0.657, g_y2=1.982, g_y3=3.492, g_y4=8.479, g_y5=3.900, t_y1=-0.883, t_y2=-0.201, t_y3=-1.170, t_y4=-1.428)
+    p <- list(g_x1=-0.910, g_x2=-2.011, g_x3=-3.631, g_x4=-6.558, g_x5=3.616, g_x6=0.794, g_x7=-7.711, g_x8=-1.332, g_x9=-5.759, g_x10=-2.867, t_x1=-1.540, t_x2=-3.725, t_x3=-7.201, t_x4=-0.503, a_s=-3.237, g_s1=-0.464, g_s2=3.165, g_s3=0.668, g_s4=4.614, g_s5=-0.984, beta_x1=4.179, beta_x2=-2.787, beta_x3=5.994, beta_x4=2.654, beta_x5=2.419, a_y=-8.861, g_y1=0.688, g_y2=1.874, g_y3=4.026, g_y4=9.866, g_y5=3.957, t_y1=-0.964, t_y2=-0.105, t_y3=-1.033, t_y4=-1.499)
   }
   
   j <- j/10
@@ -471,23 +471,21 @@ if (hivart=="HIV") {
 if (F) {
   
   w_start <- 2010
-  p <- list(beta_x1=0.854, beta_x2=-0.511, beta_x3=1.923, beta_x4=-0.401)
-  b5 <- construct_basis("year (10,13,17,20,23)", window_start=w_start)
+  p <- list(beta_x1=4.179, beta_x2=-2.787, beta_x3=5.994, beta_x4=2.654,
+            beta_x5=2.419)
+  b7 <- construct_basis("year (10,13,17,20,23) +i", window_start=w_start)
   
   hr <- function(j) {
-    p$beta_x1*b5(j,1) + p$beta_x2*b5(j,2) + p$beta_x3*b5(j,3) +
-      p$beta_x4*b5(j,4)
+    exp(p$beta_x1*b7(j,1) + p$beta_x2*b7(j,2) + p$beta_x3*b7(j,3) +
+          p$beta_x4*b7(j,4) + p$beta_x5*b7(j,5))
   }
   
   grid <- seq(1,14,0.01)/10
   df_plot <- data.frame(
     x = grid,
     y = sapply(grid, hr),
-    ci_lo = sapply(grid, hr),
-    ci_up = sapply(grid, hr)
-    # y = sapply(grid, function(x) { x^2 }),
-    # ci_lo = sapply(grid, function(x) { x^2 - x }),
-    # ci_up = sapply(grid, function(x) { x^2 + x })
+    ci_lo = sapply(grid, hr), # !!!!! TO DO
+    ci_up = sapply(grid, hr) # !!!!! TO DO
   )
   
   ggplot(
