@@ -172,22 +172,30 @@ construct_basis <- function(which, window_start=NA) {
   } else if (which=="age (13,32,52,71,90)") {
     grid <- scale_age(seq(13,90, length.out=500))
     k <- scale_age(seq(13,90, length.out=5))
-  } else if (which=="age (13,28,44,60,75)") {
+  } else if (which %in% c("age (13,28,44,60,75)", "age (13,28,44,60,75) +i")) {
     grid <- scale_age(seq(13,75, length.out=500))
     k <- scale_age(round(seq(13,75, length.out=5)))
   } else if (which=="year (00,05,10,15,20)") {
     grid <- scale_year(seq(2000,2022, length.out=500))
     k <- scale_year(seq(2000,2020, length.out=5))
-  } else if (which=="year (10,13,17,20,23)") {
+  } else if (which %in% c("year (10,13,17,20,23)", "year (10,13,17,20,23) +i")) {
     grid <- scale_year(seq(2010,2023, length.out=500))
     k <- scale_year(seq(2010,2023, length.out=5))
   }
   
+  if (substr(which, nchar(which)-1, nchar(which))=="+i") {
+    num_df <- 5
+    int <- TRUE
+  } else {
+    num_df <- 4
+    int <- FALSE
+  }
+  
   b <- Vectorize(function(x, i) {
-    splines::ns(x=x, knots=k[2:4], Boundary.knots=k[c(1,5)])[i]
+    splines::ns(x=x, knots=k[2:4], intercept=int, Boundary.knots=k[c(1,5)])[i]
   }, vectorize.args="x")
-  y <- matrix(NA, nrow=length(grid), ncol=4)
-  for (i in c(1:4)) { y[,i] <- sapply(grid, function(x) { b(x, i=i) }) }
+  y <- matrix(NA, nrow=length(grid), ncol=num_df)
+  for (i in c(1:num_df)) { y[,i] <- sapply(grid, function(x) { b(x, i=i) }) }
   rm(b)
   
   return(function(x=NA, i=NA) {

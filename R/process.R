@@ -130,7 +130,9 @@ prob <- function(type, m, j, w_1, w_2) {
     # p <- list(a_x=-8.106, g_x1=2.437, g_x2=-1.533, g_x3=2.540, g_x4=-2.320, g_x5=-1.679, g_x6=1.008, g_x7=7.416, g_x8=-2.923, t_x1=-0.284, t_x2=-1.655, t_x3=-0.782, t_x4=-1.090, a_s=-3.130, g_s1=-0.443, g_s2=1.369, g_s3=-0.218, g_s4=3.286, g_s5=-4.564, beta_x1=0.119, beta_x2=-0.316, beta_x3=2.065, beta_x4=-1.207, a_y=-6.998, g_y1=0.559, g_y2=2.351, g_y3=3.749, g_y4=7.466, g_y5=3.935, t_y1=-0.824, t_y2=0.082, t_y3=-1.909, t_y4=-0.774) # Before removing 75+ year olds
     p <- list(a_x=-8.255, g_x1=3.370, g_x2=-3.520, g_x3=2.301, g_x4=-0.685, g_x5=-1.084, g_x6=0.012, g_x7=7.442, g_x8=-1.853, t_x1=0.325, t_x2=-2.542, t_x3=-0.288, t_x4=-0.498, a_s=-3.068, g_s1=-0.466, g_s2=1.208, g_s3=0.093, g_s4=3.367, g_s5=-4.529, beta_x1=0.369, beta_x2=-0.390, beta_x3=1.893, beta_x4=-1.047, a_y=-6.839, g_y1=0.493, g_y2=2.066, g_y3=4.414, g_y4=7.743, g_y5=3.549, t_y1=-1.175, t_y2=-0.015, t_y3=-2.257, t_y4=-0.998) # After removing 75+ year olds
   } else if (m==22) {
-    p <- list(a_x=-6.178, g_x1=0.765, g_x2=-3.338, g_x3=-0.189, g_x4=2.038, g_x5=-4.625, g_x6=-3.122, g_x7=3.845, g_x8=0.439, t_x1=1.059, t_x2=-3.059, t_x3=0.667, t_x4=-0.553, a_s=-2.691, g_s1=-0.479, g_s2=2.436, g_s3=0.452, g_s4=3.034, g_s5=-2.493, beta_x1=0.823, beta_x2=-0.597, beta_x3=1.522, beta_x4=-0.883, a_y=-6.832, g_y1=0.540, g_y2=2.164, g_y3=2.574, g_y4=6.637, g_y5=3.349, t_y1=-1.427, t_y2=0.005, t_y3=-2.253, t_y4=-1.182)
+    p <- list(a_x=-5.974, g_x1=-0.153, g_x2=-0.892, g_x3=1.491, g_x4=1.431, g_x5=-6.335, g_x6=-0.520, g_x7=4.633, g_x8=-1.664, t_x1=-0.122, t_x2=-2.452, t_x3=-0.125, t_x4=-0.539, a_s=-2.965, g_s1=-0.516, g_s2=3.010, g_s3=0.457, g_s4=3.360, g_s5=-2.050, beta_x1=0.854, beta_x2=-0.511, beta_x3=1.923, beta_x4=-0.401, a_y=-7.149, g_y1=0.554, g_y2=2.471, g_y3=2.540, g_y4=6.911, g_y5=3.670, t_y1=-1.368, t_y2=0.105, t_y3=-2.186, t_y4=-1.376)
+  } else if (m==23) {
+    p <- list(g_x1=1.378, g_x2=0.652, g_x3=-0.220, g_x4=-1.242, g_x5=3.564, g_x6=2.113, g_x7=-2.053, g_x8=-0.294, g_x9=-0.560, g_x10=-2.843, t_x1=-2.248, t_x2=-5.615, t_x3=-15.796, t_x4=0.996, a_s=-3.074, g_s1=-0.461, g_s2=3.276, g_s3=0.252, g_s4=4.272, g_s5=-0.583, beta_x1=2.756, beta_x2=-1.410, beta_x3=2.523, beta_x4=1.812, beta_x5=0.851, a_y=-8.222, g_y1=0.657, g_y2=1.982, g_y3=3.492, g_y4=8.479, g_y5=3.900, t_y1=-0.883, t_y2=-0.201, t_y3=-1.170, t_y4=-1.428)
   }
   
   j <- j/10
@@ -189,6 +191,17 @@ prob <- function(type, m, j, w_1, w_2) {
               p$g_x7*b6(w_2,3) + p$g_x8*b6(w_2,4)
           )
       )
+    } else if (m==23) {
+      prob <- icll(
+        p$t_x1*b5(j,1) + p$t_x2*b5(j,2) + p$t_x3*b5(j,3) + p$t_x4*b5(j,4) +
+          w_1*(
+            p$g_x1*b8(w_2,1) + p$g_x2*b8(w_2,2) + p$g_x3*b8(w_2,3) +
+              p$g_x4*b8(w_2,4) + p$g_x5*b8(w_2,5)
+          ) + (1-w_1)*(
+            p$g_x6*b8(w_2,1) + p$g_x7*b8(w_2,2) + p$g_x8*b8(w_2,3) +
+              p$g_x9*b8(w_2,4) + p$g_x10*b8(w_2,5)
+          )
+      )
     }
     
   } else if (type=="init") {
@@ -205,7 +218,7 @@ prob <- function(type, m, j, w_1, w_2) {
         p$a_s + p$g_s1*w_1 + p$g_s2*b3(w_2,1) + p$g_s3*b3(w_2,2) + 
           p$g_s4*b3(w_2,3) + p$g_s5*b3(w_2,4)
       )
-    } else if (m==22) {
+    } else if (m %in% c(22:23)) {
       prob <- icll(
         p$a_s + p$g_s1*w_1 + p$g_s2*b6(w_2,1) + p$g_s3*b6(w_2,2) + 
           p$g_s4*b6(w_2,3) + p$g_s5*b6(w_2,4)
@@ -286,6 +299,14 @@ prob <- function(type, m, j, w_1, w_2) {
           p$g_y4*b6(w_2,3) + p$g_y5*b6(w_2,4) +
           x*(p$beta_x1*b5(j,1) + p$beta_x2*b5(j,2) + p$beta_x3*b5(j,3) +
                p$beta_x4*b5(j,4))
+      )
+    } else if (m==23) {
+      prob <- icll(
+        p$a_y + p$t_y1*b5(j,1) + p$t_y2*b5(j,2) + p$t_y3*b5(j,3) +
+          p$t_y4*b5(j,4) + p$g_y1*w_1 + p$g_y2*b6(w_2,1) + p$g_y3*b6(w_2,2) +
+          p$g_y4*b6(w_2,3) + p$g_y5*b6(w_2,4) +
+          x*(p$beta_x1*b7(j,1) + p$beta_x2*b7(j,2) + p$beta_x3*b7(j,3) +
+               p$beta_x4*b7(j,4) + p$beta_x5*b7(j,5))
       )
     }
     
@@ -383,7 +404,7 @@ plot_mod <- function(x_axis, type, m, w_start, y_max) {
 ##### VIZ: Plotting modeled probabilities #####
 ###############################################.
 
-m <- 22
+m <- 23
 w_start <- 2010
 hivart <- "HIV" # One of c("HIV", "HIV+ART")
 y_max <- c(0.06, 0.8, 0.2, 0.05)
@@ -393,6 +414,8 @@ b3 <- construct_basis("age (13,30,60,75,90)")
 b4 <- construct_basis("year (00,05,10,15,20)", window_start=w_start)
 b5 <- construct_basis("year (10,13,17,20,23)", window_start=w_start)
 b6 <- construct_basis("age (13,28,44,60,75)", window_start=w_start)
+b7 <- construct_basis("year (10,13,17,20,23) +i", window_start=w_start)
+b8 <- construct_basis("age (13,28,44,60,75) +i", window_start=w_start)
 
 # Seroconversion prob as a function of age
 p01 <- plot_mod(x_axis="Age", type="sero", m=m, w_start=w_start, y_max=y_max[1])
@@ -441,22 +464,40 @@ if (hivart=="HIV") {
 
 
 
-# !!!!! 3D plot
+##################################################.
+##### VIZ: HR as a function of calendar time #####
+##################################################.
+
 if (F) {
-  library(plotly)
-  len <- 50
-  age_vec <- seq(13,90, length.out=len)
-  year_vec <- seq(0,22, length.out=len)
-  prob_mtx <- matrix(NA, nrow=len, ncol=len)
-  for (row in c(1:len)) {
-    for (col in c(1:len)) {
-      age <- age_vec[row]
-      year <- year_vec[col]
-      prob_mtx[row,col] <- prob(type="sero", m=15, j=year, w_1=0, w_2=age)
-    }
+  
+  w_start <- 2010
+  p <- list(beta_x1=0.854, beta_x2=-0.511, beta_x3=1.923, beta_x4=-0.401)
+  b5 <- construct_basis("year (10,13,17,20,23)", window_start=w_start)
+  
+  hr <- function(j) {
+    p$beta_x1*b5(j,1) + p$beta_x2*b5(j,2) + p$beta_x3*b5(j,3) +
+      p$beta_x4*b5(j,4)
   }
-  year_vec_display <- year_vec + 1999
-  fig <- plot_ly(x=age_vec, y=year_vec_display, z=prob_mtx)
-  fig <- fig %>% add_surface()
-  fig
+  
+  grid <- seq(1,14,0.01)/10
+  df_plot <- data.frame(
+    x = grid,
+    y = sapply(grid, hr),
+    ci_lo = sapply(grid, hr),
+    ci_up = sapply(grid, hr)
+    # y = sapply(grid, function(x) { x^2 }),
+    # ci_lo = sapply(grid, function(x) { x^2 - x }),
+    # ci_up = sapply(grid, function(x) { x^2 + x })
+  )
+  
+  ggplot(
+    data = df_plot,
+    aes(x=x, y=y)) +
+    geom_line() +
+    geom_ribbon(
+      aes(ymin=ci_lo, ymax=ci_up),
+      alpha = 0.2,
+      linetype = "dotted"
+    )
+  
 }
