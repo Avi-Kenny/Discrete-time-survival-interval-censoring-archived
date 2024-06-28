@@ -41,5 +41,6 @@ sim.rds
 SimEngine.out
 Misc
 io
+objs
 dat.rds
 dat_objs.rds
