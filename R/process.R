@@ -483,11 +483,11 @@ if (process_analysis) {
   
   d <- format(Sys.time(), "%Y-%m-%d")
   plot_01 <- ggpubr::ggarrange(p01, p02)
-  plot_02 <- print(ggpubr::ggarrange(p03, p04))
+  plot_02 <- ggpubr::ggarrange(p03, p04)
   if (hivart=="HIV") {
-    plot_03 <- print(ggpubr::ggarrange(p05, p08, p06, p09)) # Export 10"x10"
+    plot_03 <- ggpubr::ggarrange(p05, p08, p06, p09)
   } else if (hivart=="HIV+ART") {
-    plot_04 <- print(ggpubr::ggarrange(p05, p06, p07, p08, p09, p10, ncol=3, nrow=2)) # Export 15"x10"
+    plot_04 <- ggpubr::ggarrange(p05, p06, p07, p08, p09, p10, ncol=3, nrow=2)
   }
   
   ggsave(
@@ -523,7 +523,7 @@ if (process_analysis) {
   
   # User-supplied config
   m <- 24
-  obj_path <- "ests_24.rds"
+  obj_name <- "ests_24.rds"
   w_start <- 2010
   log <- F
   
@@ -532,11 +532,13 @@ if (process_analysis) {
   b7 <- construct_basis("year (10,13,17,20,23) +i", window_start=w_start)
   b8 <- construct_basis("age (13,28,44,60,75) +i", window_start=w_start)
   
-  # graphs <- c("HR_mortality_hiv_cal",
-  #             "HR_sero_cal",
-  #             "HR of seroconversion among males (age)",
-  #             "HR of seroconversion among females (age)")
-  plot_names <- c("HR_mortality_hiv_cal")
+  # Extract estimates and SEs
+  ests <- readRDS(paste0("objs/", obj_name))
+  
+  plot_names <- c("HR_mortality_hiv_cal",
+                  "HR_sero_cal",
+                  "HR_sero_male_age",
+                  "HR_sero_female_age")
   for (plot_name in plot_names) {
     
     # Set graph-specific variables
@@ -545,94 +547,101 @@ if (process_analysis) {
       if (m %in% c(23:24)) {
         indices <- which(substr(names(ests$opt$par),1,4)=="beta")
       }
-      A <- function(j) {
-        t(matrix(c(b7(j,1), b7(j,2), b7(j,3), b7(j,4), b7(j,5))))
-      }
+      A <- function(j) { t(matrix(c(b7(j,1),b7(j,2),b7(j,3),b7(j,4),b7(j,5)))) }
       x_axis <- "cal time"
     } else if (plot_name=="HR_sero_cal") {
       title <- "HR of seroconversion (calendar time)"
-      if (m==23) {
-        indices <- c(11:14)
-      } else if (m==24) {
-        # indices <- c(21:25)
+      if (m %in% c(23:24)) {
+        indices <- which(substr(names(ests$opt$par),1,3)=="t_x")
       }
-      A <- function(j) {
-        t(matrix(c(b5(j,1), b5(j,2), b5(j,3), b5(j,4))))
-      }
+      A <- function(j) { t(matrix(c(b5(j,1),b5(j,2),b5(j,3),b5(j,4)))) }
       x_axis <- "cal time"
     } else if (plot_name=="HR_sero_male_age") {
       title <- "HR of seroconversion among males (age)"
       if (m==23) {
-        indices <- c(1:5)
+        indices <- which(
+          names(ests$opt$par) %in% c("g_x1", "g_x2", "g_x3", "g_x4", "g_x5")
+        )
+        A <- function(w_2) {
+          t(matrix(c(b8(w_2,1), b8(w_2,2), b8(w_2,3), b8(w_2,4), b8(w_2,5))))
+        }
       } else if (m==24) {
-        # indices <- c(21:25)
-      }
-      A <- function(w_2) {
-        t(matrix(c(b8(w_2,1), b8(w_2,2), b8(w_2,3), b8(w_2,4), b8(w_2,5))))
+        indices <- which(
+          names(ests$opt$par) %in% c("g_x1", "g_x2", "g_x3", "g_x4")
+        )
+        A <- function(w_2) {
+          t(matrix(c(b6(w_2,1), b6(w_2,2), b6(w_2,3), b6(w_2,4))))
+        }
       }
       x_axis <- "age"
-    } else if (plot_name=="HR of seroconversion among females (age)") {
+    } else if (plot_name=="HR_sero_female_age") {
+      title <- "HR of seroconversion among females (age)"
       if (m==23) {
-        indices <- c(6:10)
+        indices <- which(
+          names(ests$opt$par) %in% c("g_x6", "g_x7", "g_x8", "g_x9", "g_x10")
+        )
+        A <- function(w_2) {
+          t(matrix(c(b8(w_2,1), b8(w_2,2), b8(w_2,3), b8(w_2,4), b8(w_2,5))))
+        }
       } else if (m==24) {
-        # indices <- c(21:25)
-      }
-      A <- function(w_2) {
-        t(matrix(c(b8(w_2,1), b8(w_2,2), b8(w_2,3), b8(w_2,4), b8(w_2,5))))
+        indices <- which(
+          names(ests$opt$par) %in% c("g_x5", "g_x6", "g_x7", "g_x8")
+        )
+        A <- function(w_2) {
+          t(matrix(c(b6(w_2,1), b6(w_2,2), b6(w_2,3), b6(w_2,4))))
+        }
       }
       x_axis <- "age"
     }
     
-  }
-  
-  # Extract estimates and SEs
-  ests <- readRDS(paste0("objs/", obj_path))
-  beta <- matrix(ests$opt$par[indices])
-  Sigma <- ests$hessian_inv[indices,indices]
-  
-  hr <- function(x, log=F) {
-    est <- c(A(x) %*% beta)
-    se <- c(sqrt(A(x) %*% Sigma %*% t(A(x))))
-    if (log) {
-      return(est + c(0,-1.96,1.96)*se)
-    } else {
-      return(exp(est + c(0,-1.96,1.96)*se))
+    beta <- matrix(ests$opt$par[indices])
+    Sigma <- ests$hessian_inv[indices,indices]
+    
+    hr <- function(x, log=F) {
+      est <- c(A(x) %*% beta)
+      se <- c(sqrt(A(x) %*% Sigma %*% t(A(x))))
+      if (log) {
+        return(est + c(0,-1.96,1.96)*se)
+      } else {
+        return(exp(est + c(0,-1.96,1.96)*se))
+      }
     }
+    
+    if (x_axis=="cal time") {
+      x_grid <- seq(w_start,2023,0.1)
+      grid <- sapply(x_grid, function(x) { (x-w_start+1)/10 })
+    } else if (x_axis=="age") {
+      x_grid <- seq(13,75,0.1)
+      grid <- sapply(x_grid, function(x) { x / 100 })
+    }
+    df_plot <- data.frame(
+      x = x_grid,
+      y = sapply(grid, function(x) { hr(x, log=log)[1] }),
+      ci_lo = sapply(grid, function(x) { hr(x, log=log)[2] }),
+      ci_up = sapply(grid, function(x) { hr(x, log=log)[3] })
+    )
+    
+    plot <- ggplot(
+      data = df_plot,
+      aes(x=x, y=y)) +
+      geom_line() +
+      geom_ribbon(
+        aes(ymin=ci_lo, ymax=ci_up),
+        alpha = 0.2,
+        linetype = "dotted"
+      ) +
+      labs(
+        x = ifelse(x_axis=="cal time", "Year", "Age"),
+        y = ifelse(log, "Log hazard ratio", "Hazard Ratio"),
+        title = title
+      ) +
+      scale_y_continuous(breaks=seq(0,10,1))
+    
+    ggsave(
+      filename = paste0("../Figures + Tables/", plot_name, ".pdf"),
+      plot=plot, device="pdf", width=6, height=4
+    )
+    
   }
-  
-  if (x_axis=="cal time") {
-    x_grid <- seq(w_start,2023,0.1)
-    grid <- sapply(x_grid, function(x) { (x-w_start+1)/10 })
-  } else if (x_axis=="age") {
-    x_grid <- seq(13,75,0.1)
-    grid <- sapply(x_grid, function(x) { x / 100 })
-  }
-  df_plot <- data.frame(
-    x = x_grid,
-    y = sapply(grid, function(x) { hr(x, log=log)[1] }),
-    ci_lo = sapply(grid, function(x) { hr(x, log=log)[2] }),
-    ci_up = sapply(grid, function(x) { hr(x, log=log)[3] })
-  )
-  
-  plot <- ggplot(
-    data = df_plot,
-    aes(x=x, y=y)) +
-    geom_line() +
-    geom_ribbon(
-      aes(ymin=ci_lo, ymax=ci_up),
-      alpha = 0.2,
-      linetype = "dotted"
-    ) +
-    labs(
-      x = ifelse(x_axis=="cal time", "Year", "Age"),
-      y = ifelse(log, "Log hazard ratio", "Hazard Ratio"),
-      title = plot
-    ) +
-    scale_y_continuous(breaks=seq(0,10,1))
-  
-  ggsave(
-    filename = "../Figures + Tables/", plot_name, ".pdf",
-    plot=plot, device="pdf", width=6, height=4
-  )
   
 }
