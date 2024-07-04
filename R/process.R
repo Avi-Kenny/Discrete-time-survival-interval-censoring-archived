@@ -1,11 +1,31 @@
+#################.
+##### Setup #####
+#################.
+
+cfg2 <- list(
+  process_sims = F,
+  process_analysis = T,
+  m = 24,
+  w_start = 2010
+)
+
+# COnstruct spline bases
+b1 <- construct_basis("age (0-100), 4DF")
+b2 <- construct_basis("age (13,20,30,60,90)")
+b3 <- construct_basis("age (13,30,60,75,90)")
+b4 <- construct_basis("year (00,05,10,15,20)", window_start=cfg2$w_start)
+b5 <- construct_basis("year (10,13,17,20,23)", window_start=cfg2$w_start)
+b6 <- construct_basis("age (13,28,44,60,75)")
+b7 <- construct_basis("year (10,13,17,20,23) +i", window_start=cfg2$w_start)
+b8 <- construct_basis("age (13,28,44,60,75) +i")
+
+
+
 #####################################################.
 ##### VIZ (simulations): all params (one model) #####
 #####################################################.
 
-process_sims <- T
-process_analysis <- T
-
-if (process_sims) {
+if (cfg2$process_sims) {
   
   sim <- readRDS(paste0("SimEngine.out/sim_20231017 (v8, added time trend to b",
                         "aseline model).rds"))
@@ -109,8 +129,9 @@ if (process_sims) {
 #' @param w_1 Sex (0=female, 1=male)
 #' @param w_2 Age (in years)
 #' @param m An integer representing the model version number
+#' @param which One of c("est", "ci_lo", "ci_up")
 #' @return Numeric probability
-prob <- function(type, m, j, w_1, w_2) {
+prob <- function(type, m, j, w_1, w_2, which="est") {
   
   if (m==7) {
     p <- list(a_x=-3.5607, g_x1=-0.3244, g_x2=-0.2809, a_y=-5.7446, g_y1=0.3544, g_y2=4.4057, beta_x=1.8096, beta_z=1.8153, t_x=-0.786, t_y=-0.7826, a_s=-2.87, t_s=0.6349, g_s1=-0.3768, g_s2=0.6409)
@@ -139,7 +160,6 @@ prob <- function(type, m, j, w_1, w_2) {
   } else if (m==20) {
     p <- list(a_x=-8.020, g_x1=2.288, g_x2=-1.682, g_x3=2.458, g_x4=-2.482, g_x5=-1.755, g_x6=1.293, g_x7=7.403, g_x8=-3.002, t_x1=-0.367, t_x2=-1.639, t_x3=-0.807, t_x4=-1.199, a_s=-3.130, g_s1=-0.435, g_s2=1.359, g_s3=-0.208, g_s4=3.285, g_s5=-4.575, beta_x1=0.024, beta_x2=-0.338, beta_x3=2.098, beta_x4=-1.204, beta_z1=0.549, beta_z2=-0.332, beta_z3=2.451, beta_z4=-1.659, a_y=-6.999, g_y1=0.582, g_y2=2.339, g_y3=3.775, g_y4=7.476, g_y5=3.943, t_y1=-0.835, t_y2=0.060, t_y3=-1.958, t_y4=-0.761)
   } else if (m==21) {
-    # p <- list(a_x=-8.106, g_x1=2.437, g_x2=-1.533, g_x3=2.540, g_x4=-2.320, g_x5=-1.679, g_x6=1.008, g_x7=7.416, g_x8=-2.923, t_x1=-0.284, t_x2=-1.655, t_x3=-0.782, t_x4=-1.090, a_s=-3.130, g_s1=-0.443, g_s2=1.369, g_s3=-0.218, g_s4=3.286, g_s5=-4.564, beta_x1=0.119, beta_x2=-0.316, beta_x3=2.065, beta_x4=-1.207, a_y=-6.998, g_y1=0.559, g_y2=2.351, g_y3=3.749, g_y4=7.466, g_y5=3.935, t_y1=-0.824, t_y2=0.082, t_y3=-1.909, t_y4=-0.774) # Before removing 75+ year olds
     p <- list(a_x=-8.255, g_x1=3.370, g_x2=-3.520, g_x3=2.301, g_x4=-0.685, g_x5=-1.084, g_x6=0.012, g_x7=7.442, g_x8=-1.853, t_x1=0.325, t_x2=-2.542, t_x3=-0.288, t_x4=-0.498, a_s=-3.068, g_s1=-0.466, g_s2=1.208, g_s3=0.093, g_s4=3.367, g_s5=-4.529, beta_x1=0.369, beta_x2=-0.390, beta_x3=1.893, beta_x4=-1.047, a_y=-6.839, g_y1=0.493, g_y2=2.066, g_y3=4.414, g_y4=7.743, g_y5=3.549, t_y1=-1.175, t_y2=-0.015, t_y3=-2.257, t_y4=-0.998) # After removing 75+ year olds
   } else if (m==22) {
     p <- list(a_x=-5.974, g_x1=-0.153, g_x2=-0.892, g_x3=1.491, g_x4=1.431, g_x5=-6.335, g_x6=-0.520, g_x7=4.633, g_x8=-1.664, t_x1=-0.122, t_x2=-2.452, t_x3=-0.125, t_x4=-0.539, a_s=-2.965, g_s1=-0.516, g_s2=3.010, g_s3=0.457, g_s4=3.360, g_s5=-2.050, beta_x1=0.854, beta_x2=-0.511, beta_x3=1.923, beta_x4=-0.401, a_y=-7.149, g_y1=0.554, g_y2=2.471, g_y3=2.540, g_y4=6.911, g_y5=3.670, t_y1=-1.368, t_y2=0.105, t_y3=-2.186, t_y4=-1.376)
@@ -326,13 +346,38 @@ prob <- function(type, m, j, w_1, w_2) {
                p$beta_x4*b5(j,4))
       )
     } else if (m %in% c(23:24)) {
-      prob <- icll(
-        x*(p$beta_x1*b7(j,1) + p$beta_x2*b7(j,2) + p$beta_x3*b7(j,3) +
-             p$beta_x4*b7(j,4) + p$beta_x5*b7(j,5)) +
-          p$a_y + p$g_y1*w_1 + p$g_y2*b6(w_2,1) + p$g_y3*b6(w_2,2) +
-          p$g_y4*b6(w_2,3) + p$g_y5*b6(w_2,4) + p$t_y1*b5(j,1) +
-          p$t_y2*b5(j,2) + p$t_y3*b5(j,3) + p$t_y4*b5(j,4)
+      # prob <- icll(
+      #   x*(p$beta_x1*b7(j,1) + p$beta_x2*b7(j,2) + p$beta_x3*b7(j,3) +
+      #        p$beta_x4*b7(j,4) + p$beta_x5*b7(j,5)) +
+      #     p$a_y + p$g_y1*w_1 + p$g_y2*b6(w_2,1) + p$g_y3*b6(w_2,2) +
+      #     p$g_y4*b6(w_2,3) + p$g_y5*b6(w_2,4) + p$t_y1*b5(j,1) +
+      #     p$t_y2*b5(j,2) + p$t_y3*b5(j,3) + p$t_y4*b5(j,4)
+      # )
+      A <- function(j,w_2) { t(matrix(c(
+        x*b7(j,1), x*b7(j,2), x*b7(j,3), x*b7(j,4), x*b7(j,5), 1, w_1,
+        b6(w_2,1), b6(w_2,2), b6(w_2,3), b6(w_2,4), b5(j,1), b5(j,2), b5(j,3),
+        b5(j,4)
+      ))) }
+      p2 <- c(
+        "beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "a_y", "g_y1",
+        "g_y2", "g_y3", "g_y4", "g_y5", "t_y1", "t_y2", "t_y3",
+        "t_y4"
       )
+      indices <- as.numeric(sapply(p2, function(p) {
+        which(names(ests$opt$par)==p)
+      }))
+      beta <- matrix(ests$opt$par[indices])
+      Sigma <- ests$hessian_inv[indices,indices]
+      if (which=="est") {
+        fac <- 0
+      } else if (which=="ci_lo") {
+        fac <- -1.96
+      } else if (which=="ci_up") {
+        fac <- 1.96
+      }
+      est <- c(A(j,w_2) %*% beta)
+      se <- c(sqrt(A(j,w_2) %*% Sigma %*% t(A(j,w_2))))
+      prob <- icll(est+fac*se)
     }
     
   }
@@ -341,11 +386,15 @@ prob <- function(type, m, j, w_1, w_2) {
   
 }
 
+
+
 #' Return plot of modeled probabilities
-#' @param x One of c("Year", "Age"); the variable to go on the X-axis
+#' @param x_axis One of c("Year", "Age"); the variable to go on the X-axis
 #' @param type One of c("sero", "init", "mort (HIV-)", "mort (HIV+)",
 #'     "mort (HIV+ART-)", "mort (HIV+ART+)")
+#'     
 #' @param m An integer representing the model version number
+#' @param w_start An integer representing the window start calendar year
 #' @param y_max Maximum Y value for the plot
 #' @return ggplot2 object
 plot_mod <- function(x_axis, type, m, w_start, y_max) {
@@ -415,9 +464,105 @@ plot_mod <- function(x_axis, type, m, w_start, y_max) {
         linetype=Sex)
   ) +
     geom_line() +
-    ylim(0, y_max) +
+    coord_cartesian(ylim=c(0,y_max)) +
     labs(title=title, x=x_axis, color=color) +
     theme(plot.background = element_rect(color="black"))
+  
+  return(plot)
+  
+}
+
+
+
+#' Return plot of modeled mortality probabilities (HIV- vs. HIV+) with CIs
+#' @param m An integer representing the model version number
+#' @param w_start An integer representing the window start calendar year
+#' @param y_max Maximum Y value for the plot
+#' @param title Boolean; if F, title is suppressed
+#' @return ggplot2 object
+plot_mort3 <- function(m, w_start, y_max=NA, title=T) {
+  
+  if (w_start==2000) {
+    grid <- seq(2000,2023,0.01) %>% (function(x) { x-(w_start-1) })
+    breaks <- seq(2000,2022, length.out=5)
+  } else if (w_start==2010) {
+    grid <- seq(2010,2023,0.01) %>% (function(x) { x-(w_start-1) })
+    breaks <- seq(2010,2022, length.out=5)
+  }
+  
+  init <- T
+  for (age in c(20,35,50)) {
+    for (sex in c(0,1)) {
+      plot_data <- data.frame(
+        x = rep(grid,2) + (w_start-1),
+        Probability = 1000 * c(
+          sapply(grid, function(j) {
+            prob(type="mort (HIV-)", m=m, j=j, w_1=sex, w_2=age, which="est")
+          }),
+          sapply(grid, function(j) {
+            prob(type="mort (HIV+)", m=m, j=j, w_1=sex, w_2=age, which="est")
+          })
+        ),
+        ci_lo = 1000 * c(
+          sapply(grid, function(j) {
+            prob(type="mort (HIV-)", m=m, j=j, w_1=sex, w_2=age, which="ci_lo")
+          }),
+          sapply(grid, function(j) {
+            prob(type="mort (HIV+)", m=m, j=j, w_1=sex, w_2=age, which="ci_lo")
+          })
+        ),
+        ci_up = 1000 * c(
+          sapply(grid, function(j) {
+            prob(type="mort (HIV-)", m=m, j=j, w_1=sex, w_2=age, which="ci_up")
+          }),
+          sapply(grid, function(j) {
+            prob(type="mort (HIV+)", m=m, j=j, w_1=sex, w_2=age, which="ci_up")
+          })
+        ),
+        color = rep(c("HIV-","HIV+"), each=length(grid)),
+        age = paste0("Age: ", age),
+        sex = ifelse(sex, "Male", "Female")
+      )
+      if (init) {
+        plot_data2 <- plot_data
+        init <- F
+      } else {
+        plot_data2 <- rbind(plot_data2, plot_data)
+      }
+    }
+  }
+  
+  if (title) {
+    title <- "Conditional mortality rates by HIV status, over calendar time"
+  } else {
+    title <- NULL
+  }
+  
+  plot <- ggplot(
+    plot_data2,
+    aes(x=x, y=Probability, color=color)
+  ) +
+    geom_line() +
+    geom_ribbon(
+      aes(ymin=ci_lo, ymax=ci_up, fill=color),
+      alpha = 0.2,
+      linetype = "dotted"
+    ) +
+    facet_grid(rows=dplyr::vars(sex), cols=dplyr::vars(age)) +
+    coord_cartesian(ylim=c(0,y_max)) +
+    labs(
+      title = title,
+      x = "Year",
+      color = "HIV Status",
+      fill = "HIV Status",
+      y = "Deaths per 1,000 person-years"
+    ) +
+    theme(
+      legend.position = "bottom"
+    ) +
+    scale_x_continuous(breaks=breaks) +
+    scale_color_manual(values=c("forestgreen", "#56B4E9")) +
+    scale_fill_manual(values=c("forestgreen", "#56B4E9"))
   
   return(plot)
   
@@ -429,55 +574,45 @@ plot_mod <- function(x_axis, type, m, w_start, y_max) {
 ##### VIZ: Plotting modeled probabilities #####
 ###############################################.
 
-if (process_analysis) {
+if (cfg2$process_analysis) {
   
-  m <- 24
-  w_start <- 2010
   hivart <- "HIV" # One of c("HIV", "HIV+ART")
   y_max <- c(0.06, 0.8, 0.2, 0.05)
-  b1 <- construct_basis("age (0-100), 4DF")
-  b2 <- construct_basis("age (13,20,30,60,90)")
-  b3 <- construct_basis("age (13,30,60,75,90)")
-  b4 <- construct_basis("year (00,05,10,15,20)", window_start=w_start)
-  b5 <- construct_basis("year (10,13,17,20,23)", window_start=w_start)
-  b6 <- construct_basis("age (13,28,44,60,75)", window_start=w_start)
-  b7 <- construct_basis("year (10,13,17,20,23) +i", window_start=w_start)
-  b8 <- construct_basis("age (13,28,44,60,75) +i", window_start=w_start)
   
   # Seroconversion prob as a function of age
-  p01 <- plot_mod(x_axis="Age", type="sero", m=m, w_start=w_start, y_max=y_max[1])
+  p01 <- plot_mod(x_axis="Age", type="sero", m=cfg2$m, w_start=cfg2$w_start, y_max=y_max[1])
   
   # Seroconversion prob as a function of calendar time
-  p02 <- plot_mod(x_axis="Year", type="sero", m=m, w_start=w_start, y_max=y_max[1])
+  p02 <- plot_mod(x_axis="Year", type="sero", m=cfg2$m, w_start=cfg2$w_start, y_max=y_max[1])
   
   # HIV+ initial status as a function of age
-  p03 <- plot_mod(x_axis="Age", type="init", m=m, w_start=w_start, y_max=y_max[2])
+  p03 <- plot_mod(x_axis="Age", type="init", m=cfg2$m, w_start=cfg2$w_start, y_max=y_max[2])
   
   # HIV+ initial status as a function of calendar time
-  p04 <- plot_mod(x_axis="Year", type="init", m=m, w_start=w_start, y_max=y_max[2])
+  p04 <- plot_mod(x_axis="Year", type="init", m=cfg2$m, w_start=cfg2$w_start, y_max=y_max[2])
   
   # HIV only
   if (hivart=="HIV") {
     
     # Mortality prob as a function of age
-    p05 <- plot_mod(x_axis="Age", type="mort (HIV-)", m=m, w_start=w_start, y_max=y_max[3])
-    p06 <- plot_mod(x_axis="Age", type="mort (HIV+)", m=m, w_start=w_start, y_max=y_max[3])
+    p05 <- plot_mod(x_axis="Age", type="mort (HIV-)", m=cfg2$m, w_start=cfg2$w_start, y_max=y_max[3])
+    p06 <- plot_mod(x_axis="Age", type="mort (HIV+)", m=cfg2$m, w_start=cfg2$w_start, y_max=y_max[3])
     
     # Mortality prob as a function of calendar time
-    p08 <- plot_mod(x_axis="Year", type="mort (HIV-)", m=m, w_start=w_start, y_max=y_max[4])
-    p09 <- plot_mod(x_axis="Year", type="mort (HIV+)", m=m, w_start=w_start, y_max=y_max[4])
+    p08 <- plot_mod(x_axis="Year", type="mort (HIV-)", m=cfg2$m, w_start=cfg2$w_start, y_max=y_max[4])
+    p09 <- plot_mod(x_axis="Year", type="mort (HIV+)", m=cfg2$m, w_start=cfg2$w_start, y_max=y_max[4])
     
   } else if (hivart=="HIV+ART") {
     
     # Mortality prob as a function of age
-    p05 <- plot_mod(x_axis="Age", type="mort (HIV-)", m=m, w_start=w_start, y_max=y_max[3])
-    p06 <- plot_mod(x_axis="Age", type="mort (HIV+ART-)", m=m, w_start=w_start, y_max=y_max[3])
-    p07 <- plot_mod(x_axis="Age", type="mort (HIV+ART+)", m=m, w_start=w_start, y_max=y_max[3])
+    p05 <- plot_mod(x_axis="Age", type="mort (HIV-)", m=cfg2$m, w_start=cfg2$w_start, y_max=y_max[3])
+    p06 <- plot_mod(x_axis="Age", type="mort (HIV+ART-)", m=cfg2$m, w_start=cfg2$w_start, y_max=y_max[3])
+    p07 <- plot_mod(x_axis="Age", type="mort (HIV+ART+)", m=cfg2$m, w_start=cfg2$w_start, y_max=y_max[3])
     
     # Mortality prob as a function of calendar time
-    p08 <- plot_mod(x_axis="Year", type="mort (HIV-)", m=m, w_start=w_start, y_max=y_max[4])
-    p09 <- plot_mod(x_axis="Year", type="mort (HIV+ART-)", m=m, w_start=w_start, y_max=y_max[4])
-    p10 <- plot_mod(x_axis="Year", type="mort (HIV+ART+)", m=m, w_start=w_start, y_max=y_max[4])
+    p08 <- plot_mod(x_axis="Year", type="mort (HIV-)", m=cfg2$m, w_start=cfg2$w_start, y_max=y_max[4])
+    p09 <- plot_mod(x_axis="Year", type="mort (HIV+ART-)", m=cfg2$m, w_start=cfg2$w_start, y_max=y_max[4])
+    p10 <- plot_mod(x_axis="Year", type="mort (HIV+ART+)", m=cfg2$m, w_start=cfg2$w_start, y_max=y_max[4])
     
   }
   
@@ -492,23 +627,32 @@ if (process_analysis) {
   
   ggsave(
     filename = paste0("../Figures + Tables/", d, " p1 (seroconversion) - model",
-                      " ", m, " .pdf"),
+                      " ", cfg2$m, ".pdf"),
     plot = plot_01, device="pdf", width=10, height=5
   )
   ggsave(
     filename = paste0("../Figures + Tables/", d, " p2 (HIV initial status) - m",
-                      "odel ", m, " .pdf"),
+                      "odel ", cfg2$m, ".pdf"),
     plot = plot_02, device="pdf", width=10, height=5
   )
   if (hivart=="HIV") {
     ggsave(
       filename = paste0("../Figures + Tables/", d, " p3 (mortality) - model ",
-                        m, " .pdf"),
+                        cfg2$m, ".pdf"),
       plot = plot_03, device="pdf", width=10, height=10
     )
   } else if (hivart=="HIV+ART") {
     stop("TO DO")
   }
+  
+  # Plots with CIs
+  y_max <- 50
+  plot_05 <- plot_mort3(m=cfg2$m, w_start=cfg2$w_start, y_max=y_max, title=F)
+  ggsave(
+    filename = paste0("../Figures + Tables/", d, " p5 (mort CIs) - m",
+                      "odel ", cfg2$m, ".pdf"),
+    plot = plot_05, device="pdf", width=8, height=5
+  )
   
 }
 
@@ -519,18 +663,11 @@ if (process_analysis) {
 ##### VIZ: HR as a function of calendar time #####
 ##################################################.
 
-if (process_analysis) {
+if (cfg2$process_analysis) {
   
   # User-supplied config
-  m <- 24
   obj_name <- "ests_24.rds"
-  w_start <- 2010
   log <- F
-  
-  # Setup
-  b5 <- construct_basis("year (10,13,17,20,23)", window_start=w_start)
-  b7 <- construct_basis("year (10,13,17,20,23) +i", window_start=w_start)
-  b8 <- construct_basis("age (13,28,44,60,75) +i", window_start=w_start)
   
   # Extract estimates and SEs
   ests <- readRDS(paste0("objs/", obj_name))
@@ -544,28 +681,28 @@ if (process_analysis) {
     # Set graph-specific variables
     if (plot_name=="HR_mortality_hiv_cal") {
       title <- "HR of mortality, HIV+ vs. HIV- individuals (calendar time)"
-      if (m %in% c(23:24)) {
+      if (cfg2$m %in% c(23:24)) {
         indices <- which(substr(names(ests$opt$par),1,4)=="beta")
       }
       A <- function(j) { t(matrix(c(b7(j,1),b7(j,2),b7(j,3),b7(j,4),b7(j,5)))) }
       x_axis <- "cal time"
     } else if (plot_name=="HR_sero_cal") {
       title <- "HR of seroconversion (calendar time)"
-      if (m %in% c(23:24)) {
+      if (cfg2$m %in% c(23:24)) {
         indices <- which(substr(names(ests$opt$par),1,3)=="t_x")
       }
       A <- function(j) { t(matrix(c(b5(j,1),b5(j,2),b5(j,3),b5(j,4)))) }
       x_axis <- "cal time"
     } else if (plot_name=="HR_sero_male_age") {
       title <- "HR of seroconversion among males (age)"
-      if (m==23) {
+      if (cfg2$m==23) {
         indices <- which(
           names(ests$opt$par) %in% c("g_x1", "g_x2", "g_x3", "g_x4", "g_x5")
         )
         A <- function(w_2) {
           t(matrix(c(b8(w_2,1), b8(w_2,2), b8(w_2,3), b8(w_2,4), b8(w_2,5))))
         }
-      } else if (m==24) {
+      } else if (cfg2$m==24) {
         indices <- which(
           names(ests$opt$par) %in% c("g_x1", "g_x2", "g_x3", "g_x4")
         )
@@ -576,14 +713,14 @@ if (process_analysis) {
       x_axis <- "age"
     } else if (plot_name=="HR_sero_female_age") {
       title <- "HR of seroconversion among females (age)"
-      if (m==23) {
+      if (cfg2$m==23) {
         indices <- which(
           names(ests$opt$par) %in% c("g_x6", "g_x7", "g_x8", "g_x9", "g_x10")
         )
         A <- function(w_2) {
           t(matrix(c(b8(w_2,1), b8(w_2,2), b8(w_2,3), b8(w_2,4), b8(w_2,5))))
         }
-      } else if (m==24) {
+      } else if (cfg2$m==24) {
         indices <- which(
           names(ests$opt$par) %in% c("g_x5", "g_x6", "g_x7", "g_x8")
         )
@@ -608,8 +745,8 @@ if (process_analysis) {
     }
     
     if (x_axis=="cal time") {
-      x_grid <- seq(w_start,2023,0.1)
-      grid <- sapply(x_grid, function(x) { (x-w_start+1)/10 })
+      x_grid <- seq(cfg2$w_start,2023,0.1)
+      grid <- sapply(x_grid, function(x) { (x-cfg2$w_start+1)/10 })
     } else if (x_axis=="age") {
       x_grid <- seq(13,75,0.1)
       grid <- sapply(x_grid, function(x) { x / 100 })

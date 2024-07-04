@@ -1,3 +1,90 @@
+#############################.
+##### Old plotting code #####
+#############################.
+
+if (F) {
+  
+  #' Return plot of modeled mortality probabilities (HIV- vs. HIV+) with CIs
+  #' @param sex Boolean integer; male=1, female=0
+  #' @param age An integer; calendar year
+  #' @param m An integer representing the model version number
+  #' @param w_start An integer representing the window start calendar year
+  #' @param y_max Maximum Y value for the plot
+  #' @return ggplot2 object
+  plot_mort2 <- function(sex, age, m, w_start, y_max) {
+    
+    if (w_start==2000) {
+      grid <- seq(2000,2023,0.01) %>% (function(x) { x-(w_start-1) })
+    } else if (w_start==2010) {
+      grid <- seq(2010,2023,0.01) %>% (function(x) { x-(w_start-1) })
+    }
+    
+    plot_data <- data.frame(
+      x = rep(grid,2) + (w_start-1),
+      Probability = 1000 * c(
+        sapply(grid, function(j) { prob(type="mort (HIV-)", m=m, j=j, w_1=sex, w_2=age, which="est") }),
+        sapply(grid, function(j) { prob(type="mort (HIV+)", m=m, j=j, w_1=sex, w_2=age, which="est") })
+      ),
+      ci_lo = 1000 * c(
+        sapply(grid, function(j) { prob(type="mort (HIV-)", m=m, j=j, w_1=sex, w_2=age, which="ci_lo") }),
+        sapply(grid, function(j) { prob(type="mort (HIV+)", m=m, j=j, w_1=sex, w_2=age, which="ci_lo") })
+      ),
+      ci_up = 1000 * c(
+        sapply(grid, function(j) { prob(type="mort (HIV-)", m=m, j=j, w_1=sex, w_2=age, which="ci_up") }),
+        sapply(grid, function(j) { prob(type="mort (HIV+)", m=m, j=j, w_1=sex, w_2=age, which="ci_up") })
+      ),
+      color = rep(c("HIV-","HIV+"), each=length(grid))
+    )
+    
+    if (sex==0) {
+      title <- paste0("Mortality rate among females aged ", age, "; model")
+    } else if (sex==1) {
+      title <- paste0("Mortality rate among males aged ", age, "; model")
+    }
+    title <- paste0(title, " v", m)
+    
+    plot <- ggplot(
+      plot_data,
+      aes(x=x, y=Probability, color=color)
+    ) +
+      geom_line() +
+      geom_ribbon(
+        aes(ymin=ci_lo, ymax=ci_up, fill=color),
+        alpha = 0.2,
+        linetype = "dotted"
+      ) +
+      coord_cartesian(ylim=c(0,y_max)) +
+      labs(title=title, x="Year", color="HIV Status", fill="HIV Status",
+           y="Deaths per 1,000 person-years") +
+      theme(
+        plot.background = element_rect(color="black"),
+        legend.position = "bottom"
+      ) +
+      scale_color_manual(values=c("forestgreen", "#56B4E9")) +
+      scale_fill_manual(values=c("forestgreen", "#56B4E9"))
+    
+    return(plot)
+    
+  }
+  
+  p11 <- plot_mort2(sex=0, age=20, m=m, w_start=w_start, y_max=y_max)
+  p12 <- plot_mort2(sex=0, age=35, m=m, w_start=w_start, y_max=y_max)
+  p13 <- plot_mort2(sex=0, age=50, m=m, w_start=w_start, y_max=y_max)
+  p14 <- plot_mort2(sex=1, age=20, m=m, w_start=w_start, y_max=y_max)
+  p15 <- plot_mort2(sex=1, age=35, m=m, w_start=w_start, y_max=y_max)
+  p16 <- plot_mort2(sex=1, age=50, m=m, w_start=w_start, y_max=y_max)
+  plot_05 <- ggpubr::ggarrange(
+    p11, p12, p13, p14, p15, p16,
+    ncol = 3,
+    nrow = 2,
+    legend = "bottom",
+    common.legend = T
+  )
+  
+}
+
+
+
 ##################################.
 ##### Old negloglik function #####
 ##################################.
