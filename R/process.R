@@ -581,7 +581,6 @@ plot_mort3 <- function(x_axis, m, w_start, y_max=NA, title=T) {
 
 
 #' Return plot of modeled mortality probabilities (HIV- vs. HIV+) with CIs
-#' @param x_axis One of c("Year", "Age"); the variable to go on the X-axis
 #' @param m An integer representing the model version number
 #' @param w_start An integer representing the window start calendar year
 #' @param y_max Maximum Y value for the plot
@@ -649,7 +648,7 @@ plot_sero3 <- function(m, w_start, y_max=NA, title=T) {
     coord_cartesian(ylim=c(0,y_max)) +
     labs(
       title = title,
-      x = x_axis,
+      x = "Age",
       y = "Probability of seroconversion (in one year)"
     ) +
     theme(legend.position = "bottom") +
