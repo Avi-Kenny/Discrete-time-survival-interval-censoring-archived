@@ -19,6 +19,7 @@ b5 <- construct_basis("year (10,13,17,20,23)", window_start=cfg2$w_start)
 b6 <- construct_basis("age (13,28,44,60,75)")
 b7 <- construct_basis("year (10,13,17,20,23) +i", window_start=cfg2$w_start)
 b8 <- construct_basis("age (13,28,44,60,75) +i")
+b9 <- construct_basis("age (13,20,30,40,60)")
 
 # Get current date
 cfg2$d <- format(Sys.time(), "%Y-%m-%d")
@@ -168,7 +169,7 @@ prob <- function(type, m, j, w_1, w_2, which="est") {
   } else if (m==23) {
     p <- list(g_x1=2.320, g_x2=-1.314, g_x3=-3.709, g_x4=-8.004, g_x5=7.655, g_x6=2.610, g_x7=-8.068, g_x8=0.399, g_x9=-3.308, g_x10=-2.569, t_x1=-1.323, t_x2=-5.764, t_x3=-11.607, t_x4=-0.073, a_s=-3.095, g_s1=-0.514, g_s2=3.104, g_s3=0.499, g_s4=4.633, g_s5=-0.516, beta_x1=1.054, beta_x2=0.747, beta_x3=-0.315, beta_x4=2.192, beta_x5=-0.820, a_y=-8.450, g_y1=0.527, g_y2=2.843, g_y3=3.086, g_y4=8.093, g_y5=3.746, t_y1=-0.530, t_y2=0.400, t_y3=-0.635, t_y4=-0.973)
   } else if (m==24) {
-    p <- list(a_x=-5.421, g_x1=-1.690, g_x2=-2.412, g_x3=1.663, g_x4=1.349, g_x5=-10.755, g_x6=-0.610, g_x7=3.350, g_x8=-4.869, t_x1=-0.318, t_x2=-2.969, t_x3=-1.602, t_x4=-1.104, a_s=-3.274, g_s1=-0.448, g_s2=3.195, g_s3=0.805, g_s4=4.478, g_s5=-1.428, beta_x1=1.348, beta_x2=1.082, beta_x3=-0.713, beta_x4=2.348, beta_x5=-0.680, a_y=-8.170, g_y1=0.577, g_y2=2.514, g_y3=2.838, g_y4=7.372, g_y5=3.795, t_y1=-0.605, t_y2=0.681, t_y3=-0.760, t_y4=-0.964)
+    # p <- list(a_x=-5.421, g_x1=-1.690, g_x2=-2.412, g_x3=1.663, g_x4=1.349, g_x5=-10.755, g_x6=-0.610, g_x7=3.350, g_x8=-4.869, t_x1=-0.318, t_x2=-2.969, t_x3=-1.602, t_x4=-1.104, a_s=-3.274, g_s1=-0.448, g_s2=3.195, g_s3=0.805, g_s4=4.478, g_s5=-1.428, beta_x1=1.348, beta_x2=1.082, beta_x3=-0.713, beta_x4=2.348, beta_x5=-0.680, a_y=-8.170, g_y1=0.577, g_y2=2.514, g_y3=2.838, g_y4=7.372, g_y5=3.795, t_y1=-0.605, t_y2=0.681, t_y3=-0.760, t_y4=-0.964)
   }
   
   j <- j/10
@@ -239,44 +240,13 @@ prob <- function(type, m, j, w_1, w_2, which="est") {
           )
       )
     } else if (m==24) {
-      # prob <- icll(
-      #   p$a_x + p$t_x1*b5(j,1) + p$t_x2*b5(j,2) + p$t_x3*b5(j,3) +
-      #     p$t_x4*b5(j,4) +
-      #     
-      #     (
-      #       p$g_x1* + p$g_x2*b6(w_2,2) +
-      #         p$g_x3*b6(w_2,3) + p$g_x4*b6(w_2,4)
-      #     ) +
-      #     
-      #     (
-      #       p$g_x5* + p$g_x6*b6(w_2,2) +
-      #         p$g_x7*b6(w_2,3) + p$g_x8*b6(w_2,4)
-      #     )
-      # )
       A <- function(j,w_2) { t(matrix(c(
         1, b5(j,1), b5(j,2), b5(j,3), b5(j,4), w_1*b6(w_2,1), w_1*b6(w_2,2),
         w_1*b6(w_2,3), w_1*b6(w_2,4), (1-w_1)*b6(w_2,1), (1-w_1)*b6(w_2,2),
         (1-w_1)*b6(w_2,3), (1-w_1)*b6(w_2,4)
       ))) }
-      p2 <- c(
-        "a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3", "g_x4",
-        "g_x5", "g_x6", "g_x7", "g_x8"
-      )
-      indices <- as.numeric(sapply(p2, function(p) {
-        which(names(cfg2$ests$opt$par)==p)
-      }))
-      beta <- matrix(cfg2$ests$opt$par[indices])
-      Sigma <- cfg2$ests$hessian_inv[indices,indices]
-      if (which=="est") {
-        fac <- 0
-      } else if (which=="ci_lo") {
-        fac <- -1.96
-      } else if (which=="ci_up") {
-        fac <- 1.96
-      }
-      est <- c(A(j,w_2) %*% beta)
-      se <- c(sqrt(A(j,w_2) %*% Sigma %*% t(A(j,w_2))))
-      prob <- icll(est+fac*se)
+      p2 <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3",
+              "g_x4", "g_x5", "g_x6", "g_x7", "g_x8")
     }
     
   } else if (type=="init") {
@@ -293,11 +263,16 @@ prob <- function(type, m, j, w_1, w_2, which="est") {
         p$a_s + p$g_s1*w_1 + p$g_s2*b3(w_2,1) + p$g_s3*b3(w_2,2) + 
           p$g_s4*b3(w_2,3) + p$g_s5*b3(w_2,4)
       )
-    } else if (m %in% c(22:24)) {
+    } else if (m %in% c(22:23)) {
       prob <- icll(
         p$a_s + p$g_s1*w_1 + p$g_s2*b6(w_2,1) + p$g_s3*b6(w_2,2) + 
           p$g_s4*b6(w_2,3) + p$g_s5*b6(w_2,4)
       )
+    } else if (m==24) {
+      A <- function(j,w_2) { t(matrix(c(
+        1, w_1, b6(w_2,1), b6(w_2,2), b6(w_2,3), b6(w_2,4)
+      ))) }
+      p2 <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4", "g_s5")
     }
     
   } else {
@@ -381,30 +356,29 @@ prob <- function(type, m, j, w_1, w_2, which="est") {
         b6(w_2,1), b6(w_2,2), b6(w_2,3), b6(w_2,4), b5(j,1), b5(j,2), b5(j,3),
         b5(j,4)
       ))) }
-      p2 <- c(
-        "beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "a_y", "g_y1",
-        "g_y2", "g_y3", "g_y4", "g_y5", "t_y1", "t_y2", "t_y3",
-        "t_y4"
-      )
-      indices <- as.numeric(sapply(p2, function(p) {
-        which(names(cfg2$ests$opt$par)==p)
-      }))
-      beta <- matrix(cfg2$ests$opt$par[indices])
-      Sigma <- cfg2$ests$hessian_inv[indices,indices]
-      if (which=="est") {
-        fac <- 0
-      } else if (which=="ci_lo") {
-        fac <- -1.96
-      } else if (which=="ci_up") {
-        fac <- 1.96
-      }
-      est <- c(A(j,w_2) %*% beta)
-      se <- c(sqrt(A(j,w_2) %*% Sigma %*% t(A(j,w_2))))
-      prob <- icll(est+fac*se)
+      p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "a_y",
+              "g_y1", "g_y2", "g_y3", "g_y4", "g_y5", "t_y1", "t_y2", "t_y3",
+              "t_y4")
     }
     
   }
-
+  
+  indices <- as.numeric(sapply(p2, function(p) {
+    which(names(cfg2$ests$opt$par)==p)
+  }))
+  beta <- matrix(cfg2$ests$opt$par[indices])
+  Sigma <- cfg2$ests$hessian_inv[indices,indices]
+  if (which=="est") {
+    fac <- 0
+  } else if (which=="ci_lo") {
+    fac <- -1.96
+  } else if (which=="ci_up") {
+    fac <- 1.96
+  }
+  est <- c(A(j,w_2) %*% beta)
+  se <- c(sqrt(A(j,w_2) %*% Sigma %*% t(A(j,w_2))))
+  prob <- icll(est+fac*se)
+  
   return(prob)
   
 }

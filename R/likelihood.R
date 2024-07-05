@@ -11,7 +11,8 @@ transform_dataset <- function(dat, model_version=0, window_start) {
   b6 <- construct_basis("age (13,28,44,60,75)")
   b7 <- construct_basis("year (10,13,17,20,23) +i", window_start=window_start)
   b8 <- construct_basis("age (13,28,44,60,75) +i")
-  
+  b9 <- construct_basis("age (13,20,30,40,60)")
+
   n <- attr(dat, "n")
   
   # This procedure assumes the dataset is sorted by id
@@ -48,18 +49,18 @@ transform_dataset <- function(dat, model_version=0, window_start) {
     # Apply spline bases to dataframe
     # !!!!! This section can be sped up by modifying construct_basis()
     # !!!!! Eventually, remove the bases that are not needed
-    d$dat_i$b2_1 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,1) }),4)
-    d$dat_i$b2_2 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,2) }),4)
-    d$dat_i$b2_3 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,3) }),4)
-    d$dat_i$b2_4 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,4) }),4)
-    d$dat_i$b3_1 <- signif(sapply(d$dat_i$w_2, function(w_2) { b3(w_2,1) }),4)
-    d$dat_i$b3_2 <- signif(sapply(d$dat_i$w_2, function(w_2) { b3(w_2,2) }),4)
-    d$dat_i$b3_3 <- signif(sapply(d$dat_i$w_2, function(w_2) { b3(w_2,3) }),4)
-    d$dat_i$b3_4 <- signif(sapply(d$dat_i$w_2, function(w_2) { b3(w_2,4) }),4)
-    d$dat_i$b4_1 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b4(j,1) }),4)
-    d$dat_i$b4_2 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b4(j,2) }),4)
-    d$dat_i$b4_3 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b4(j,3) }),4)
-    d$dat_i$b4_4 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b4(j,4) }),4)
+    # d$dat_i$b2_1 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,1) }),4)
+    # d$dat_i$b2_2 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,2) }),4)
+    # d$dat_i$b2_3 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,3) }),4)
+    # d$dat_i$b2_4 <- signif(sapply(d$dat_i$w_2, function(w_2) { b2(w_2,4) }),4)
+    # d$dat_i$b3_1 <- signif(sapply(d$dat_i$w_2, function(w_2) { b3(w_2,1) }),4)
+    # d$dat_i$b3_2 <- signif(sapply(d$dat_i$w_2, function(w_2) { b3(w_2,2) }),4)
+    # d$dat_i$b3_3 <- signif(sapply(d$dat_i$w_2, function(w_2) { b3(w_2,3) }),4)
+    # d$dat_i$b3_4 <- signif(sapply(d$dat_i$w_2, function(w_2) { b3(w_2,4) }),4)
+    # d$dat_i$b4_1 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b4(j,1) }),4)
+    # d$dat_i$b4_2 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b4(j,2) }),4)
+    # d$dat_i$b4_3 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b4(j,3) }),4)
+    # d$dat_i$b4_4 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b4(j,4) }),4)
     d$dat_i$b5_1 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b5(j,1) }),4)
     d$dat_i$b5_2 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b5(j,2) }),4)
     d$dat_i$b5_3 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b5(j,3) }),4)
@@ -78,6 +79,10 @@ transform_dataset <- function(dat, model_version=0, window_start) {
     d$dat_i$b8_3 <- signif(sapply(d$dat_i$w_2, function(w_2) { b8(w_2,3) }),4)
     d$dat_i$b8_4 <- signif(sapply(d$dat_i$w_2, function(w_2) { b8(w_2,4) }),4)
     d$dat_i$b8_5 <- signif(sapply(d$dat_i$w_2, function(w_2) { b8(w_2,5) }),4)
+    d$dat_i$b9_1 <- signif(sapply(d$dat_i$w_2, function(w_2) { b9(w_2,1) }),4)
+    d$dat_i$b9_2 <- signif(sapply(d$dat_i$w_2, function(w_2) { b9(w_2,2) }),4)
+    d$dat_i$b9_3 <- signif(sapply(d$dat_i$w_2, function(w_2) { b9(w_2,3) }),4)
+    d$dat_i$b9_4 <- signif(sapply(d$dat_i$w_2, function(w_2) { b9(w_2,4) }),4)
     
     # Calculate the set X_i to sum over
     d$X_i_set <- list()
@@ -181,7 +186,7 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
       params <- list(a_x=p[1], g_x=p[2:9], t_x=p[10:13], a_s=p[14], g_s=p[15:19], beta_x=p[20:23], a_y=p[24], g_y=p[25:29], t_y=p[30:33])
     } else if (model_version==23) {
       params <- list(g_x=p[1:10], t_x=p[11:14], a_s=p[15], g_s=p[16:20], beta_x=p[21:25], a_y=p[26], g_y=p[27:31], t_y=p[32:35])
-    } else if (model_version==24) {
+    } else if (model_version %in% c(24:25)) {
       params <- list(a_x=p[1], g_x=p[2:9], t_x=p[10:13], a_s=p[14], g_s=p[15:19], beta_x=p[20:24], a_y=p[25], g_y=p[26:30], t_y=p[31:34])
     }
     
@@ -750,6 +755,38 @@ if (cfg$model_version==0) {
     }
   }
   
+} else if (cfg$model_version==25) {
+  
+  f_x <- function(x, x_prev, w, j, s, spl, params) {
+    if (s==0) {
+      if (x==1 && x_prev==1) {
+        return(1)
+      } else {
+        prob <- icll(
+          params$a_x + params$t_x[1]*spl[["b5_1"]] +
+            params$t_x[2]*spl[["b5_2"]] + params$t_x[3]*spl[["b5_3"]] +
+            params$t_x[4]*spl[["b5_4"]] +
+            w[1]*(
+              params$g_x[1]*spl[["b9_1"]] + params$g_x[2]*spl[["b9_2"]] +
+                params$g_x[3]*spl[["b9_3"]] + params$g_x[4]*spl[["b9_4"]]
+            ) +
+            (1-w[1])*(
+              params$g_x[5]*spl[["b9_1"]] + params$g_x[6]*spl[["b9_2"]] +
+                params$g_x[7]*spl[["b9_3"]] + params$g_x[8]*spl[["b9_4"]]
+            )
+        )
+        if (x==1) { return(prob) } else { return(1-prob) }
+      }
+    } else {
+      prob <- icll(
+        params$a_s + params$g_s[1]*w[1] + params$g_s[2]*spl[["b9_1"]] +
+          params$g_s[3]*spl[["b9_2"]] + params$g_s[4]*spl[["b9_3"]] + 
+          params$g_s[5]*spl[["b9_4"]]
+      )
+      if (x==1) { return(prob) } else { return(1-prob) }
+    }
+  }
+  
 }
 
 
@@ -977,6 +1014,24 @@ if (cfg$model_version==0) {
         params$a_y + params$g_y[1]*w[1] + params$g_y[2]*spl[["b6_1"]] +
         params$g_y[3]*spl[["b6_2"]] + params$g_y[4]*spl[["b6_3"]] +
         params$g_y[5]*spl[["b6_4"]] + params$t_y[1]*spl[["b5_1"]] +
+        params$t_y[2]*spl[["b5_2"]] + params$t_y[3]*spl[["b5_3"]] +
+        params$t_y[4]*spl[["b5_4"]]
+    )
+    if (y==1) { return(prob) } else { return(1-prob) }
+  }
+  
+} else if (cfg$model_version==25) {
+  
+  f_y <- function(y, x, w, z, j, spl, params) {
+    prob <- icll(
+      x*(
+        params$beta_x[1]*spl[["b7_1"]] + params$beta_x[2]*spl[["b7_2"]] +
+          params$beta_x[3]*spl[["b7_3"]] + params$beta_x[4]*spl[["b7_4"]] +
+          params$beta_x[5]*spl[["b7_5"]]
+      ) +
+        params$a_y + params$g_y[1]*w[1] + params$g_y[2]*spl[["b9_1"]] +
+        params$g_y[3]*spl[["b9_2"]] + params$g_y[4]*spl[["b9_3"]] +
+        params$g_y[5]*spl[["b9_4"]] + params$t_y[1]*spl[["b5_1"]] +
         params$t_y[2]*spl[["b5_2"]] + params$t_y[3]*spl[["b5_3"]] +
         params$t_y[4]*spl[["b5_4"]]
     )

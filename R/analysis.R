@@ -21,7 +21,8 @@ cfg2 <- list(
   opt_maxit = 5000,
   opt_r = 2,
   opt_reltol = 1e-5,
-  window_start = 2010
+  window_start = 2010, # Spline bases for year must reflect this
+  age_end = 60 # Spline bases for age must reflect this
   # temp = T
 )
 
@@ -129,20 +130,9 @@ if (cfg2$use_simulated_dataset) {
     dat_prc %<>% dplyr::filter(age>=13)
     nrow(dat_prc)
     
-    # Filter out adults with tests after age 75
-    # !!!!! Temporary
+    # Remove all data after age cfg2$age_end
     nrow(dat_prc)
-    adults75_with_tests <- dplyr::filter(
-      dat_prc, age>75 & ResultDate!=""
-    )$id
-    if (length(adults75_with_tests)>0) {
-      dat_prc %<>% dplyr::filter(!(id %in% adults75_with_tests))
-    }
-    nrow(dat_prc)
-    
-    # Remove all data after 75th birthday
-    nrow(dat_prc)
-    dat_prc %<>% dplyr::filter(age<75)
+    dat_prc %<>% dplyr::filter(age<cfg2$age_end)
     nrow(dat_prc)
     
     # Remove tests with an "S" result
@@ -694,6 +684,8 @@ if (cfg2$run_analysis) {
     par_init <- c(g_x1=1.378, g_x2=0.652, g_x3=-0.220, g_x4=-1.242, g_x5=3.564, g_x6=2.113, g_x7=-2.053, g_x8=-0.294, g_x9=-0.560, g_x10=-2.843, t_x1=-2.248, t_x2=-5.615, t_x3=-15.796, t_x4=0.996, a_s=-3.074, g_s1=-0.461, g_s2=3.276, g_s3=0.252, g_s4=4.272, g_s5=-0.583, beta_x1=0, beta_x2=0, beta_x3=0, beta_x4=0, beta_x5=0, a_y=-8.222, g_y1=0.657, g_y2=1.982, g_y3=3.492, g_y4=8.479, g_y5=3.900, t_y1=-0.883, t_y2=-0.201, t_y3=-1.170, t_y4=-1.428)
   } else if (cfg$model_version==24) {
     par_init <- c(a_x=-5.974, g_x1=-0.153, g_x2=-0.892, g_x3=1.491, g_x4=1.431, g_x5=-6.335, g_x6=-0.520, g_x7=4.633, g_x8=-1.664, t_x1=0.254, t_x2=-4.697, t_x3=-4.189, t_x4=0.077, a_s=-2.931, g_s1=-0.461, g_s2=3.276, g_s3=0.252, g_s4=4.272, g_s5=-0.583, beta_x1=1.257, beta_x2=0.545, beta_x3=-0.298, beta_x4=2.249, beta_x5=-1.334, a_y=-8.222, g_y1=0.657, g_y2=1.982, g_y3=3.492, g_y4=8.479, g_y5=3.900, t_y1=-0.883, t_y2=-0.201, t_y3=-1.170, t_y4=-1.428)
+  } else if (cfg$model_version==25) {
+    par_init <- c(a_x=-5.421, g_x1=-1.690, g_x2=-2.412, g_x3=1.663, g_x4=1.349, g_x5=-10.755, g_x6=-0.610, g_x7=3.350, g_x8=-4.869, t_x1=-0.318, t_x2=-2.969, t_x3=-1.602, t_x4=-1.104, a_s=-3.274, g_s1=-0.448, g_s2=3.195, g_s3=0.805, g_s4=4.478, g_s5=-1.428, beta_x1=1.348, beta_x2=1.082, beta_x3=-0.713, beta_x4=2.348, beta_x5=-0.680, a_y=-8.170, g_y1=0.577, g_y2=2.514, g_y3=2.838, g_y4=7.372, g_y5=3.795, t_y1=-0.605, t_y2=0.681, t_y3=-0.760, t_y4=-0.964)
   }
   
   # par_true <- c(

@@ -181,6 +181,9 @@ construct_basis <- function(which, window_start=NA) {
   } else if (which %in% c("year (10,13,17,20,23)", "year (10,13,17,20,23) +i")) {
     grid <- scale_year(seq(2010,2023, length.out=500))
     k <- scale_year(seq(2010,2023, length.out=5))
+  } else if (which=="age (13,20,30,40,60)") {
+    grid <- scale_age(seq(13,60, length.out=500))
+    k <- scale_age(c(13,20,30,40,60))
   }
   
   if (substr(which, nchar(which)-1, nchar(which))=="+i") {
