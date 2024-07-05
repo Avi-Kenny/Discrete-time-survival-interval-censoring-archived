@@ -512,7 +512,6 @@ plot_mort3 <- function(x_axis, m, w_start, y_max=NA, title=T) {
     color <- "Year"
     if (w_start==2000) {
       outer <- c(1,11,21)
-      x_grid <- seq(cfg2$w_start,2023,0.1)
     } else if (w_start==2010) {
       outer <- c(1,6,11)
     }
@@ -585,7 +584,7 @@ plot_mort3 <- function(x_axis, m, w_start, y_max=NA, title=T) {
     geom_ribbon(
       aes(ymin=ci_lo, ymax=ci_up, fill=color),
       alpha = 0.2,
-      linetype = "dotted"
+      linetype = "blank"
     ) +
     facet_grid(rows=dplyr::vars(sex), cols=dplyr::vars(outer)) +
     coord_cartesian(ylim=c(0,y_max)) +
@@ -621,12 +620,11 @@ plot_sero3 <- function(m, w_start, y_max=NA, title=T) {
   color <- "Year"
   if (w_start==2000) {
     outer <- c(1,11,21)
-    x_grid <- seq(cfg2$w_start,2023,0.1)
   } else if (w_start==2010) {
     outer <- c(1,6,11)
   }
   prob2 <- function(which, outer) {
-    1000 * sapply(grid, function(inner) {
+    sapply(grid, function(inner) {
       prob(type="sero", m=m, j=outer, w_1=sex, w_2=inner, which=which)
     })
   }
@@ -645,12 +643,7 @@ plot_sero3 <- function(m, w_start, y_max=NA, title=T) {
         sex = ifelse(sex, "Male", "Female")
       )
       
-      if (x_axis=="Year") {
-        plot_data$x <- plot_data$x + (w_start-1)
-        plot_data$outer <- paste0("Age: ", plot_data$outer)
-      } else if (x_axis=="Age") {
-        plot_data$outer <- plot_data$outer + (w_start-1)
-      }
+      plot_data$outer <- plot_data$outer + (w_start-1)
       
       if (init) {
         plot_data2 <- plot_data
@@ -663,35 +656,31 @@ plot_sero3 <- function(m, w_start, y_max=NA, title=T) {
   }
   
   if (title) {
-    title <- "Probability of seroconversion in one year, by age"
+    title <- "Probability of seroconversion, by age"
   } else {
     title <- NULL
   }
   
   plot <- ggplot(
     plot_data2,
-    aes(x=x, y=Rate) # , color=color
+    aes(x=x, y=Rate)
   ) +
-    geom_line() +
+    geom_line(color="forestgreen") +
     geom_ribbon(
-      aes(ymin=ci_lo, ymax=ci_up), # , fill=color
+      aes(ymin=ci_lo, ymax=ci_up),
       alpha = 0.2,
-      linetype = "dotted"
+      fill = "forestgreen"
     ) +
     facet_grid(rows=dplyr::vars(sex), cols=dplyr::vars(outer)) +
     coord_cartesian(ylim=c(0,y_max)) +
     labs(
       title = title,
       x = x_axis,
-      # color = "HIV Status",
-      # fill = "HIV Status",
-      y = "Deaths per 1,000 person-years"
+      y = "Probability of seroconversion (in one year)"
     ) +
     theme(legend.position = "bottom") +
-    scale_x_continuous(breaks=breaks) +
-    scale_color_manual(values=c("forestgreen")) + # , "#56B4E9"
-    scale_fill_manual(values=c("forestgreen")) # , "#56B4E9"
-  
+    scale_x_continuous(breaks=breaks)
+
   return(plot)
   
 }
@@ -763,7 +752,7 @@ if (cfg2$process_analysis) {
     plot = plot_03, device="pdf", width=10, height=10
   )
   
-  # Plots with CIs
+  # Mortality by calendar time, with CIs
   plot_05 <- plot_mort3(x_axis="Year", m=cfg2$m, w_start=cfg2$w_start,
                         y_max=50, title=F)
   ggsave(
@@ -771,12 +760,22 @@ if (cfg2$process_analysis) {
                       " - model ", cfg2$m, ".pdf"),
     plot = plot_05, device="pdf", width=8, height=5
   )
+  
+  # Mortality by age, with CIs
   plot_06 <- plot_mort3(x_axis="Age", m=cfg2$m, w_start=cfg2$w_start,
                         y_max=200, title=F)
   ggsave(
     filename = paste0("../Figures + Tables/", cfg2$d, " p6 (mort CIs, by age) ",
                       "- model ", cfg2$m, ".pdf"),
     plot = plot_06, device="pdf", width=8, height=5
+  )
+  
+  # Seroconversion by age, with CIs
+  plot_07 <- plot_sero3(m=cfg2$m, w_start=cfg2$w_start, y_max=0.1, title=F)
+  ggsave(
+    filename = paste0("../Figures + Tables/", cfg2$d, " p7 (sero CIs, by age) ",
+                      "- model ", cfg2$m, ".pdf"),
+    plot = plot_07, device="pdf", width=8, height=5
   )
   
 }
