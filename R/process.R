@@ -5,9 +5,11 @@
 cfg2 <- list(
   process_sims = F,
   process_analysis = T,
-  m = 24,
+  # m = 24,
+  m = 25,
   w_start = 2010,
-  ests = readRDS("objs/ests_24_20240627.rds")
+  # ests = readRDS("objs/ests_24_20240627.rds")
+  ests = readRDS("objs/ests_25_20240707.rds")
 )
 
 # Construct spline bases
@@ -247,6 +249,14 @@ prob <- function(type, m, j, w_1, w_2, which="est") {
       ))) }
       p2 <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3",
               "g_x4", "g_x5", "g_x6", "g_x7", "g_x8")
+    } else if (m==25) {
+      A <- function(j,w_2) { t(matrix(c(
+        1, b5(j,1), b5(j,2), b5(j,3), b5(j,4), w_1*b9(w_2,1), w_1*b9(w_2,2),
+        w_1*b9(w_2,3), w_1*b9(w_2,4), (1-w_1)*b9(w_2,1), (1-w_1)*b9(w_2,2),
+        (1-w_1)*b9(w_2,3), (1-w_1)*b9(w_2,4)
+      ))) }
+      p2 <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3",
+              "g_x4", "g_x5", "g_x6", "g_x7", "g_x8")
     }
     
   } else if (type=="init") {
@@ -271,6 +281,11 @@ prob <- function(type, m, j, w_1, w_2, which="est") {
     } else if (m==24) {
       A <- function(j,w_2) { t(matrix(c(
         1, w_1, b6(w_2,1), b6(w_2,2), b6(w_2,3), b6(w_2,4)
+      ))) }
+      p2 <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4", "g_s5")
+    } else if (m==25) {
+      A <- function(j,w_2) { t(matrix(c(
+        1, w_1, b9(w_2,1), b9(w_2,2), b9(w_2,3), b9(w_2,4)
       ))) }
       p2 <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4", "g_s5")
     }
@@ -354,6 +369,15 @@ prob <- function(type, m, j, w_1, w_2, which="est") {
       A <- function(j,w_2) { t(matrix(c(
         x*b7(j,1), x*b7(j,2), x*b7(j,3), x*b7(j,4), x*b7(j,5), 1, w_1,
         b6(w_2,1), b6(w_2,2), b6(w_2,3), b6(w_2,4), b5(j,1), b5(j,2), b5(j,3),
+        b5(j,4)
+      ))) }
+      p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "a_y",
+              "g_y1", "g_y2", "g_y3", "g_y4", "g_y5", "t_y1", "t_y2", "t_y3",
+              "t_y4")
+    } else if (m==25) {
+      A <- function(j,w_2) { t(matrix(c(
+        x*b7(j,1), x*b7(j,2), x*b7(j,3), x*b7(j,4), x*b7(j,5), 1, w_1,
+        b9(w_2,1), b9(w_2,2), b9(w_2,3), b9(w_2,4), b5(j,1), b5(j,2), b5(j,3),
         b5(j,4)
       ))) }
       p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "a_y",
@@ -775,6 +799,9 @@ if (cfg2$process_analysis) {
   A_b8 <- function(w_2) {
     t(matrix(c(b8(w_2,1), b8(w_2,2), b8(w_2,3), b8(w_2,4), b8(w_2,5))))
   }
+  A_b9 <- function(w_2) {
+    t(matrix(c(b9(w_2,1), b9(w_2,2), b9(w_2,3), b9(w_2,4))))
+  }
   
   # Extract estimates and SEs
   plot_names <- c("HR_mort_hiv_cal",
@@ -789,59 +816,71 @@ if (cfg2$process_analysis) {
     # Set graph-specific variables
     if (plot_name=="HR_mort_hiv_cal") {
       title <- "HR of mortality, HIV+ vs. HIV- individuals (calendar time)"
-      if (cfg2$m %in% c(23:24)) {
-        params <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5")
-      }
-      A <- A_b7
       x_axis <- "cal time"
+      if (cfg2$m %in% c(23:25)) {
+        params <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5")
+        A <- A_b7
+      }
     } else if (plot_name=="HR_mort_age") {
       title <- "HR of mortality (age)"
+      x_axis <- "age"
       if (cfg2$m==24) {
         params <- c("g_y2", "g_y3", "g_y4", "g_y5")
+        A <- A_b6
+      } else if (cfg2$m==25) {
+        params <- c("g_y2", "g_y3", "g_y4", "g_y5")
+        A <- A_b9
       }
-      A <- A_b6
-      x_axis <- "age"
     } else if (plot_name=="HR_mort_cal") {
       title <- "HR of mortality (calendar time)"
-      if (cfg2$m==24) {
-        params <- c("t_y1", "t_y2", "t_y3", "t_y4")
-      }
-      A <- A_b5
       x_axis <- "cal time"
+      if (cfg2$m %in% c(24:25)) {
+        params <- c("t_y1", "t_y2", "t_y3", "t_y4")
+        A <- A_b5
+      }
     } else if (plot_name=="HR_sero_cal") {
       title <- "HR of seroconversion (calendar time)"
-      if (cfg2$m %in% c(23:24)) {
+      if (cfg2$m %in% c(23:25)) {
         params <- c("t_x1", "t_x2", "t_x3", "t_x4")
+        A <- A_b5
       }
-      A <- A_b5
       x_axis <- "cal time"
     } else if (plot_name=="HR_sero_male_age") {
       title <- "HR of seroconversion among males (age)"
+      x_axis <- "age"
       if (cfg2$m==23) {
         params <- c("g_x1", "g_x2", "g_x3", "g_x4", "g_x5")
         A <- A_b8
       } else if (cfg2$m==24) {
         params <- c("g_x1", "g_x2", "g_x3", "g_x4")
         A <- A_b6
+      } else if (cfg2$m==25) {
+        params <- c("g_x1", "g_x2", "g_x3", "g_x4")
+        A <- A_b9
       }
-      x_axis <- "age"
     } else if (plot_name=="HR_sero_female_age") {
       title <- "HR of seroconversion among females (age)"
+      x_axis <- "age"
       if (cfg2$m==23) {
         params <- c("g_x6", "g_x7", "g_x8", "g_x9", "g_x10")
         A <- A_b8
       } else if (cfg2$m==24) {
         params <- c("g_x5", "g_x6", "g_x7", "g_x8")
         A <- A_b6
+      } else if (cfg2$m==25) {
+        params <- c("g_x5", "g_x6", "g_x7", "g_x8")
+        A <- A_b9
       }
-      x_axis <- "age"
     } else if (plot_name=="HR_init_age") {
       title <- "HR of HIV+ initial status (age)"
+      x_axis <- "age"
       if (cfg2$m==24) {
         params <- c("g_s2", "g_s3", "g_s4", "g_s5")
         A <- A_b6
+      } else if (cfg2$m==25) {
+        params <- c("g_s2", "g_s3", "g_s4", "g_s5")
+        A <- A_b9
       }
-      x_axis <- "age"
     }
     
     indices <- which(names(cfg2$ests$opt$par) %in% params)
