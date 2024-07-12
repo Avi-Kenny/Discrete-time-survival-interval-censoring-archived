@@ -11,15 +11,15 @@ for (pkg in c(cfg$pkgs,cfg$pkgs_nocluster)) {
 chk(0, "START")
 .t_start <- Sys.time()
 cfg2 <- list(
-  process_data = T,
+  process_data = T, # !!!!!
   save_data = T,
   run_dqa = F,
   run_analysis = T,
-  parallelize = T, # !!!!! Just changed this
+  parallelize = T,
   use_simulated_dataset = F,
   # samp_size = 20000,
-  # samp_size = 40000,
-  samp_size = 1000,
+  samp_size = as.integer(Sys.getenv("samp_size")),
+  samp_size = 0,
   opt_maxit = 5000,
   opt_r = 2,
   opt_reltol = 1e-5,
@@ -405,9 +405,7 @@ if (cfg2$use_simulated_dataset) {
     
     dat <- readRDS("../Data/dat.rds")
     dat_objs <- readRDS("../Data/dat_objs.rds")
-    # dat <- readRDS("../Data/dat_20K.rds")
-    # dat_objs <- readRDS("../Data/dat_objs_20K.rds")
-    
+
   }
   
 }
@@ -636,6 +634,7 @@ if (cfg2$run_analysis) {
   st <- system.time({ nll_init <- negloglik(par_init) })
   print(st)
   print(paste("negloglik(par_init):", nll_init))
+  # stop("!!!!! TEMP !!!!!")
   opt <- stats::optim(
     par = par_init,
     fn = negloglik,
@@ -643,7 +642,7 @@ if (cfg2$run_analysis) {
     control = list(maxit=cfg2$opt_maxit, reltol=cfg2$opt_reltol))
   print("optim() finished.")
   print(opt)
-
+  
   if (F) {
     stats::optim(par=par_init, fn=negloglik, control=list(trace=6))
     library(optimParallel)

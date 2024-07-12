@@ -12,8 +12,8 @@ cfg <- list(
   sim_run_or_update = "run",
   sim_num = 1000,
   sim_parallel = F,
-  # sim_n_cores = 50,
-  sim_n_cores = as.integer(Sys.getenv("SLURM_CPUS_PER_TASK")),
+  sim_n_cores = 2,
+  # sim_n_cores = as.integer(Sys.getenv("SLURM_CPUS_PER_TASK")),
   sim_stop_at_error = F,
   model_version = 25
 )
