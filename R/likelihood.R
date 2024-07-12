@@ -13,8 +13,6 @@ transform_dataset <- function(dat, model_version=0, window_start) {
   b8 <- construct_basis("age (13,28,44,60,75) +i")
   b9 <- construct_basis("age (13,20,30,40,60)")
 
-  n <- attr(dat, "n")
-  
   # This procedure assumes the dataset is sorted by id
   row_map <- new.env()
   id_prev <- -1
@@ -30,16 +28,23 @@ transform_dataset <- function(dat, model_version=0, window_start) {
   }
   row_map[[as.character(id_prev)]] <- c(row_start:(i-1))
   
+  # Extract and remove attributes
+  n <- attr(dat, "n")
+  s_i <- attr(dat, "s_i")
+  t_i <- attr(dat, "t_i")
+  attr(dat, "n") <- NULL
+  attr(dat, "s_i") <- NULL
+  attr(dat, "t_i") <- NULL
+  
   # Construct a dataframe specific to each individual
   dat_objs <- lapply(c(1:n), function(i) {
     
     d <- list()
-    # d$dat_i <- dat[dat$id==i,]
     d$dat_i <- dat[row_map[[as.character(i)]],]
     
     # Start and end times
-    d$s_i <- attr(dat, "s_i")[i]
-    d$t_i <- attr(dat, "t_i")[i]
+    d$s_i <- s_i[i]
+    d$t_i <- t_i[i]
     
     # Create new variables
     d$dat_i$init_visit <- 0
@@ -134,6 +139,11 @@ transform_dataset <- function(dat, model_version=0, window_start) {
 #' @notes This corresponds to the missing data structure
 construct_negloglik <- function(parallelize=FALSE, model_version=0) {
   
+  # cl <- parallel::makeCluster(cfg$sim_n_cores)
+  # objs_to_export <- c("f_x", "f_y", "icll", "lik_fn2", "inds", "batches",
+  #                     "uncompress")
+  # parallel::clusterExport(cl, objs_to_export, envir=.GlobalEnv)
+  
   negloglik <- function(par) {
     
     counter <<- counter + 1
@@ -195,12 +205,38 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
     # Compute the negative likelihood across individuals
     if (parallelize) {
       
-        nll <- -1 * sum(log(unlist(
-          parallel::parLapply(cl, dat_objs_wrapper, function(d) {
-            lapply(d, function(d2) { lik_fn2(d2, params, inds) })
-          })
-        )))
-        return(nll)
+      # Original code
+      nll <- -1 * sum(log(unlist(
+        parallel::parLapply(cl, dat_objs_wrapper, function(d) {
+          lapply(d, function(d2) { lik_fn2(d2, params, inds) })
+        })
+      )))
+      return(nll)
+      
+      if (F) {
+        # # Debugging 2
+        # nll <- -1 * sum(log(unlist(
+        #   parallel::parLapply(cl, dat_objs_wrapper, function(d) {
+        #     lapply(d, function(d2) { Sys.sleep(0.0001); return(1); })
+        #   })
+        # )))
+        # return(nll)
+        
+        # # !!!!! DEBUGGING 1
+        # if (F) {
+        #   nll <- -1 * sum(log(unlist(
+        #     lapply(dat_objs_wrapper, function(d) {
+        #       st <- system.time({
+        #         x <- lapply(d, function(d2) { lik_fn2(d2, params, inds) })
+        #       })
+        #       print(paste0("Length(d): ", length(d)))
+        #       print("Time:")
+        #       print(st)
+        #     })
+        #   )))
+        #   return(nll)
+        # }
+      }
 
     } else {
       
@@ -327,7 +363,7 @@ lik_fn2 <- function(d, params, inds) {
       
     }
     
-      f2 <- sum(unlist(lapply(d$X_i_set, f2_fnc)))
+    f2 <- sum(unlist(lapply(d$X_i_set, f2_fnc)))
       
   }
   

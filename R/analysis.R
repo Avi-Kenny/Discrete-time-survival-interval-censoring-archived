@@ -11,7 +11,7 @@ for (pkg in c(cfg$pkgs,cfg$pkgs_nocluster)) {
 chk(0, "START")
 .t_start <- Sys.time()
 cfg2 <- list(
-  process_data = T, # !!!!!
+  process_data = T,
   save_data = T,
   run_dqa = F,
   run_analysis = T,
@@ -19,7 +19,7 @@ cfg2 <- list(
   use_simulated_dataset = F,
   # samp_size = 20000,
   samp_size = as.integer(Sys.getenv("samp_size")),
-  samp_size = 0,
+  # samp_size = 0,
   opt_maxit = 5000,
   opt_r = 2,
   opt_reltol = 1e-5,
