@@ -11,14 +11,15 @@ for (pkg in c(cfg$pkgs,cfg$pkgs_nocluster)) {
 chk(0, "START")
 .t_start <- Sys.time()
 cfg2 <- list(
-  process_data = F,
+  process_data = T,
   save_data = T,
   run_dqa = F,
   run_analysis = T,
   parallelize = T, # !!!!! Just changed this
   use_simulated_dataset = F,
   # samp_size = 20000,
-  samp_size = 40000,
+  # samp_size = 40000,
+  samp_size = 1000,
   opt_maxit = 5000,
   opt_r = 2,
   opt_reltol = 1e-5,
@@ -512,8 +513,6 @@ if (cfg2$run_dqa) {
   length(dplyr::filter(dat_4, year_08_16==1)$u) # Year 08-16: xx%
   length(dplyr::filter(dat_4, year_17_22==1)$u) # Year 17-22: xx%
   
-  
-  
   nrow(dplyr::filter(dat_4, w_1==0 & age_below_50==1 & year_00_07==1))
   nrow(dplyr::filter(dat_4, w_1==1 & age_below_50==1 & year_00_07==1))
   nrow(dplyr::filter(dat_4, w_1==0 & age_below_50==1 & year_08_16==1))
@@ -541,25 +540,24 @@ if (cfg2$run_analysis) {
   
   # Construct log likelihood function
   chk(3, "construct_negloglik: START")
+  n <- attr(dat, "n")
+  print(paste0("Using ", cfg$sim_n_cores, " cores."))
   if (cfg2$parallelize) {
-    print(paste0("Using ", cfg$sim_n_cores, " cores."))
-    n <- attr(dat, "n")
-    folds <- cut(c(1:n), breaks=cfg$sim_n_cores, labels=FALSE)
-    batches <- lapply(c(1:cfg$sim_n_cores), function(batch) {
-      c(1:n)[folds==batch]
-    })
-    dat_objs_wrapper <- lapply(batches, function(i) { dat_objs[i] })
+    n_batches <- cfg$sim_n_cores
+  } else {
+    n_batches <- 2
+  }
+  folds <- cut(c(1:n), breaks=n_batches, labels=FALSE)
+  batches <- lapply(c(1:n_batches), function(batch) { c(1:n)[folds==batch] })
+  dat_objs_wrapper <- lapply(batches, function(i) { dat_objs[i] })
+  
+  if (cfg2$parallelize) {
     cl <- parallel::makeCluster(cfg$sim_n_cores)
     objs_to_export <- c("f_x", "f_y", "icll", "lik_fn2", "inds", "batches",
                         "uncompress")
     parallel::clusterExport(cl, objs_to_export, envir=.GlobalEnv)
-    # parallel::clusterExport(cl, ls(.GlobalEnv))
     negloglik <- construct_negloglik(parallelize=T, cfg$model_version)
   } else {
-    n <- attr(dat, "n")
-    folds <- cut(c(1:n), breaks=2, labels=FALSE)
-    batches <- lapply(c(1:2), function(batch) { c(1:n)[folds==batch] })
-    dat_objs_wrapper <- lapply(batches, function(i) { dat_objs[i] })
     negloglik <- construct_negloglik(parallelize=F, cfg$model_version)
   }
   chk(3, "construct_negloglik: END")
@@ -622,28 +620,27 @@ if (cfg2$run_analysis) {
     par_init <- c(a_x=-6.660, g_x1=2.739, g_x2=-1.388, g_x3=-0.418, g_x4=-2.872, g_x5=1.115, g_x6=-1.687, g_x7=3.922, g_x8=-3.564, t_x1=-0.108, t_x2=-2.928, t_x3=-1.238, t_x4=-0.435, a_s=-3.293, g_s1=-0.518, g_s2=3.702, g_s3=2.628, g_s4=4.248, g_s5=0.814, beta_x1=1.459, beta_x2=0.955, beta_x3=-0.187, beta_x4=2.743, beta_x5=-1.324, a_y=-8.834, g_y1=0.623, g_y2=2.767, g_y3=2.160, g_y4=5.665, g_y5=2.648, t_y1=-0.193, t_y2=0.521, t_y3=-0.161, t_y4=-0.711)
   }
   
-  # par_true <- c(
-  #   par_true_full$a_x, par_true_full$g_x[1], par_true_full$g_x[2],
-  #   par_true_full$a_y, par_true_full$g_y[1], par_true_full$g_y[2],
-  #   par_true_full$beta_x, par_true_full$beta_z, par_true_full$t_x,
-  #   par_true_full$t_y, par_true_full$a_s, par_true_full$t_s,
-  #   par_true_full$g_s[1], par_true_full$g_s[2]
-  # )
+  if (F) {
+    # par_true <- c(
+    #   par_true_full$a_x, par_true_full$g_x[1], par_true_full$g_x[2],
+    #   par_true_full$a_y, par_true_full$g_y[1], par_true_full$g_y[2],
+    #   par_true_full$beta_x, par_true_full$beta_z, par_true_full$t_x,
+    #   par_true_full$t_y, par_true_full$a_s, par_true_full$t_s,
+    #   par_true_full$g_s[1], par_true_full$g_s[2]
+    # )
+  }
   
   # Run optimizer
   chk(4, "optim: START")
   counter <- 0
-  st <- system.time({
-    nll_init <- negloglik(par_init)
-  })
+  st <- system.time({ nll_init <- negloglik(par_init) })
   print(st)
   print(paste("negloglik(par_init):", nll_init))
   opt <- stats::optim(
     par = par_init,
     fn = negloglik,
     method = "Nelder-Mead",
-    control = list(maxit=cfg2$opt_maxit,
-                   reltol=cfg2$opt_reltol)) # !!!!!
+    control = list(maxit=cfg2$opt_maxit, reltol=cfg2$opt_reltol))
   print("optim() finished.")
   print(opt)
 

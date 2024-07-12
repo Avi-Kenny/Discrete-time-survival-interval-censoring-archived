@@ -140,10 +140,6 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
     if (counter%%10==0) {
       print(paste0(counter, " negloglik calls processed: ",Sys.time())) # !!!!!
     }
-    # print(sort(sapply(ls(parent.frame(2)),function(x) { # !!!!!
-    #   format(object.size(get(x)), units="MB") # !!!!!
-    # }))) # !!!!!
-    # browser() # !!!!!
 
     # Convert parameter vector to a named list
     p <- as.numeric(par)
@@ -372,7 +368,7 @@ lik_fn2 <- function(d, params, inds) {
 #' @param w Vector of covariates (time j)
 #' @param params Named list of parameters
 #' @return Numeric likelihood
-if (model_version %in% c(0:23)) {
+if (cfg$model_version %in% c(0:23)) {
   
   if (cfg$model_version==0) {
     
@@ -810,7 +806,7 @@ if (cfg$model_version==24) {
 #' @param z ART indicator (time j)
 #' @param params Named list of parameters
 #' @return Numeric likelihood
-if (model_version %in% c(0:23)) {
+if (cfg$model_version %in% c(0:23)) {
   
   if (cfg$model_version==0) {
     
