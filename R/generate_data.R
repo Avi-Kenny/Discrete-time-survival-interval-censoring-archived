@@ -8,7 +8,7 @@
 #' @notes
 #'     - TO DO
 
-generate_data <- function(n, max_time, params) {
+generate_data <- function(n, max_time, params, art=FALSE) {
   
   # Set baseline hazard functions
   # Note: these have temporarily been set to constants, passed in through the
@@ -35,7 +35,7 @@ generate_data <- function(n, max_time, params) {
   # Generate baseline covariates
   id <- c(1:n)
   w_1 <- sample(c(0,1), size=n, replace=T)
-  w_2 <- sample(c(13:80), size=n, replace=T)
+  w_2 <- sample(c(13:60), size=n, replace=T)
   
   # Scale age variable
   w_2 <- w_2/100
@@ -66,16 +66,16 @@ generate_data <- function(n, max_time, params) {
       if (j==1) {
         # Sample baseline serostatus
         # !!!!! Add calendar time trend: + p$t_s*cal_time
-        p_sero <- expit(p$a_s + sum(p$g_s*c(w_1_,w_2_)))
+        p_sero <- icll(p$a_s + sum(p$g_s*c(w_1_,w_2_)))
       } else {
-        p_sero <- x_prev + (1-x_prev) * exp(
+        p_sero <- x_prev + (1-x_prev) * icll(
           p$a_x + p$g_x[1]*w_1_ + p$g_x[2]*w_2_
         )
       }
       x[j] <- x_prev <- rbinom(n=1, size=1, prob=p_sero)
       
       # Sample testing
-      p_test <- (1-known_pos_prev) * exp(
+      p_test <- (1-known_pos_prev) * icll(
         p$a_v + p$g_v[1]*w_1_ + p$g_v[2]*w_2_
       )
       v[j] <- rbinom(n=1, size=1, prob=p_test)
@@ -85,20 +85,24 @@ generate_data <- function(n, max_time, params) {
       known_pos_prev <- known_pos[j]
       
       # Sample ART status
-      if (known_pos[j]==0) {
-        p_art <- 0
-      } else if (z_prev==1) {
-        p_art <- 1
+      if (art) {
+        if (known_pos[j]==0) {
+          p_art <- 0
+        } else if (z_prev==1) {
+          p_art <- 1
+        } else {
+          p_art <- icll(
+            p$a_z + p$g_z[1]*w_1_ + p$g_z[2]*w_2_
+          )
+        }
+        z[j] <- z_prev <- rbinom(n=1, size=1, prob=p_art)
       } else {
-        p_art <- exp(
-          p$a_z + p$g_z[1]*w_1_ + p$g_z[2]*w_2_
-        )
+        z[j] <- z_prev <- 0
       }
-      z[j] <- z_prev <- rbinom(n=1, size=1, prob=p_art)
       
       # Sample events
       # !!!!! Add calendar time trend
-      p_event <- exp(
+      p_event <- icll(
         p$a_y + p$g_y[1]*w_1_ + p$g_y[2]*w_2_ +
           p$beta_x*x[j] + p$beta_z*z[j]
       )

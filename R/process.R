@@ -429,7 +429,7 @@ plot_mod <- function(x_axis, type, m, w_start, y_max) {
   }
   
   if (x_axis=="Age") {
-    grid <- seq(13,75,0.1)
+    grid <- seq(13,60,0.1)
     color <- "Year"
     plot_data <- data.frame(
       x = rep(grid,6),
@@ -505,8 +505,8 @@ plot_mort3 <- function(x_axis, m, w_start, y_max=NA, title=T) {
   
   if (x_axis=="Age") {
     
-    grid <- seq(13,75,0.1)
-    breaks <- seq(15,75, length.out=5)
+    grid <- seq(13,60,0.1)
+    breaks <- seq(20,60, length.out=5)
     color <- "Year"
     if (w_start==2000) {
       outer <- c(1,11,21)
@@ -612,8 +612,8 @@ plot_mort3 <- function(x_axis, m, w_start, y_max=NA, title=T) {
 #' @return ggplot2 object
 plot_sero3 <- function(m, w_start, y_max=NA, title=T) {
   
-  grid <- seq(13,75,0.1)
-  breaks <- seq(15,75, length.out=5)
+  grid <- seq(13,60,0.1)
+  breaks <- seq(20,60, length.out=5)
   color <- "Year"
   if (w_start==2000) {
     outer <- c(1,11,21)
@@ -751,7 +751,7 @@ if (cfg2$process_analysis) {
   
   # Mortality by calendar time, with CIs
   plot_05 <- plot_mort3(x_axis="Year", m=cfg2$m, w_start=cfg2$w_start,
-                        y_max=50, title=F)
+                        y_max=70, title=F)
   ggsave(
     filename = paste0("../Figures + Tables/", cfg2$d, " p5 (mort CIs, by year)",
                       " - model ", cfg2$m, ".pdf"),
@@ -760,7 +760,7 @@ if (cfg2$process_analysis) {
   
   # Mortality by age, with CIs
   plot_06 <- plot_mort3(x_axis="Age", m=cfg2$m, w_start=cfg2$w_start,
-                        y_max=200, title=F)
+                        y_max=120, title=F)
   ggsave(
     filename = paste0("../Figures + Tables/", cfg2$d, " p6 (mort CIs, by age) ",
                       "- model ", cfg2$m, ".pdf"),
@@ -768,7 +768,7 @@ if (cfg2$process_analysis) {
   )
   
   # Seroconversion by age, with CIs
-  plot_07 <- plot_sero3(m=cfg2$m, w_start=cfg2$w_start, y_max=0.1, title=F)
+  plot_07 <- plot_sero3(m=cfg2$m, w_start=cfg2$w_start, y_max=0.2, title=F)
   ggsave(
     filename = paste0("../Figures + Tables/", cfg2$d, " p7 (sero CIs, by age) ",
                       "- model ", cfg2$m, ".pdf"),
@@ -777,6 +777,112 @@ if (cfg2$process_analysis) {
   
 }
 
+
+
+#######################################################.
+##### VIZ: Marginalized modeled probability curve #####
+#######################################################.
+
+if (cfg2$process_analysis) {
+  
+  dat <- readRDS("../Data/dat.rds")
+
+  w_1_mean <- mean(dat$w_1)
+  b9_1_mean <- mean(sapply(dat$w_2, function(w_2) { b9(w_2,1) }))
+  b9_2_mean <- mean(sapply(dat$w_2, function(w_2) { b9(w_2,2) }))
+  b9_3_mean <- mean(sapply(dat$w_2, function(w_2) { b9(w_2,3) }))
+  b9_4_mean <- mean(sapply(dat$w_2, function(w_2) { b9(w_2,4) }))
+  
+  prob_m <- function(type, m, j, which="est") {
+    
+    j <- j/10
+    
+    if (type=="mort (HIV-)") { x <- 0; z <- NA; }
+    if (type=="mort (HIV+)") { x <- 1; z <- NA; }
+    
+    if (m==25) {
+      A <- function(j) { t(matrix(c(
+        x*b7(j,1), x*b7(j,2), x*b7(j,3), x*b7(j,4), x*b7(j,5), 1, w_1_mean,
+        b9_1_mean, b9_2_mean, b9_3_mean, b9_4_mean, b5(j,1), b5(j,2), b5(j,3),
+        b5(j,4)
+      ))) }
+      p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "a_y",
+              "g_y1", "g_y2", "g_y3", "g_y4", "g_y5", "t_y1", "t_y2", "t_y3",
+              "t_y4")
+    }
+    
+    indices <- as.numeric(sapply(p2, function(p) {
+      which(names(cfg2$ests$opt$par)==p)
+    }))
+    beta <- matrix(cfg2$ests$opt$par[indices])
+    Sigma <- cfg2$ests$hessian_inv[indices,indices]
+    if (which=="est") {
+      fac <- 0
+    } else if (which=="ci_lo") {
+      fac <- -1.96
+    } else if (which=="ci_up") {
+      fac <- 1.96
+    }
+    est <- c(A(j) %*% beta)
+    se <- c(sqrt(A(j) %*% Sigma %*% t(A(j))))
+    prob <- icll(est+fac*se)
+    
+    return(prob)
+    
+  }
+  
+  grid <- seq(cfg2$w_start,2023,0.01) %>% (function(x) { x-(cfg2$w_start-1) })
+  breaks_x <- seq(cfg2$w_start,2022, length.out=5)
+  breaks_y <- seq(0,20,2)
+  prob2_m <- function(type, which, outer) {
+    1000 * sapply(grid, function(j) {
+      prob_m(type=type, m=cfg2$m, j=j, which=which)
+    })
+  }
+  
+  plot_data <- data.frame(
+    x = rep(grid,2) + (cfg2$w_start-1),
+    Rate = c(prob2_m(type="mort (HIV-)", which="est", outer=o),
+             prob2_m(type="mort (HIV+)", which="est", outer=o)),
+    ci_lo = c(prob2_m(type="mort (HIV-)", which="ci_lo", outer=o),
+              prob2_m(type="mort (HIV+)", which="ci_lo", outer=o)),
+    ci_up = c(prob2_m(type="mort (HIV-)", which="ci_up", outer=o),
+              prob2_m(type="mort (HIV+)", which="ci_up", outer=o)),
+    color = rep(c("HIV-","HIV+"), each=length(grid))
+  )
+  
+  # y_max <- 25
+  plot_08 <- ggplot(
+    plot_data,
+    aes(x=x, y=Rate, color=color)
+  ) +
+    geom_line() +
+    geom_ribbon(
+      aes(ymin=ci_lo, ymax=ci_up, fill=color),
+      alpha = 0.2,
+      linetype = "blank"
+    ) +
+    # coord_cartesian(ylim=c(0,y_max)) +
+    labs(
+      title = "Marginalized mortality rates by HIV status, over calendar time",
+      x = "Year",
+      color = "HIV Status",
+      fill = "HIV Status",
+      y = "Deaths per 1,000 person-years"
+    ) +
+    theme(legend.position = "bottom") +
+    scale_x_continuous(breaks=breaks_x) +
+    scale_y_continuous(breaks=breaks_y) +
+    scale_color_manual(values=c("forestgreen", "#56B4E9")) +
+    scale_fill_manual(values=c("forestgreen", "#56B4E9"))
+  
+  ggsave(
+    filename = paste0("../Figures + Tables/", cfg2$d, " p8 (mort CIs, by year,",
+                      " marginal) - model ", cfg2$m, ".pdf"),
+    plot = plot_08, device="pdf", width=8, height=5
+  )
+  
+}
 
 
 
@@ -901,7 +1007,7 @@ if (cfg2$process_analysis) {
       x_grid <- seq(cfg2$w_start,2023,0.1)
       grid <- sapply(x_grid, function(x) { (x-cfg2$w_start+1)/10 })
     } else if (x_axis=="age") {
-      x_grid <- seq(13,75,0.1)
+      x_grid <- seq(13,60,0.1)
       grid <- sapply(x_grid, function(x) { x / 100 })
     }
     
@@ -917,11 +1023,11 @@ if (cfg2$process_analysis) {
       plot <- ggplot(
         data = df_plot,
         aes(x=x, y=y)) +
-        geom_line() +
+        geom_line(color="forestgreen") +
         geom_ribbon(
           aes(ymin=ci_lo, ymax=ci_up),
           alpha = 0.2,
-          linetype = "dotted"
+          fill = "forestgreen"
         ) +
         labs(
           x = ifelse(x_axis=="cal time", "Year", "Age"),
@@ -929,6 +1035,16 @@ if (cfg2$process_analysis) {
           title = title
         )
       assign(paste0("plot_", log), plot)
+      
+      # Save plot for paper
+      if (plot_name=="HR_mort_hiv_cal" && !log) {
+        plot_paper <- plot + labs(title=NULL)
+        ggsave(
+          filename = paste0(
+            "../Figures + Tables/", cfg2$d, " paper_", plot_name, ".pdf"
+          ), plot=plot_paper, device="pdf", width=8, height=4 # 6x4
+        )
+      }
       
     }
     

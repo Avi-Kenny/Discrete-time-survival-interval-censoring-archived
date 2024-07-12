@@ -11,13 +11,14 @@ for (pkg in c(cfg$pkgs,cfg$pkgs_nocluster)) {
 chk(0, "START")
 .t_start <- Sys.time()
 cfg2 <- list(
-  process_data = T,
+  process_data = F,
   save_data = T,
   run_dqa = F,
   run_analysis = T,
-  parallelize = T,
+  parallelize = T, # !!!!! Just changed this
   use_simulated_dataset = F,
-  samp_size = 20000, # as.integer(Sys.getenv("samp_size"))
+  # samp_size = 20000,
+  samp_size = 40000,
   opt_maxit = 5000,
   opt_r = 2,
   opt_reltol = 1e-5,
@@ -349,8 +350,8 @@ if (cfg2$use_simulated_dataset) {
                                   window_start=cfg2$window_start)
     
     if (cfg2$save_data) {
-      saveRDS(dat, "dat.rds")
-      saveRDS(dat_objs, "dat_objs.rds")
+      saveRDS(dat, "../Data/dat.rds")
+      saveRDS(dat_objs, "../Data/dat_objs.rds")
     }
     
     # Check estimates for model 10 against Cox model estimates
@@ -401,8 +402,10 @@ if (cfg2$use_simulated_dataset) {
     
   } else {
     
-    dat <- readRDS("dat.rds")
-    dat_objs <- readRDS("dat_objs.rds")
+    dat <- readRDS("../Data/dat.rds")
+    dat_objs <- readRDS("../Data/dat_objs.rds")
+    # dat <- readRDS("../Data/dat_20K.rds")
+    # dat_objs <- readRDS("../Data/dat_objs_20K.rds")
     
   }
   
@@ -545,95 +548,21 @@ if (cfg2$run_analysis) {
     batches <- lapply(c(1:cfg$sim_n_cores), function(batch) {
       c(1:n)[folds==batch]
     })
-    dat_objs_wrapper <- lapply(batches, function(i) { dat_objs[i] }) # !!!!! New
+    dat_objs_wrapper <- lapply(batches, function(i) { dat_objs[i] })
     cl <- parallel::makeCluster(cfg$sim_n_cores)
     objs_to_export <- c("f_x", "f_y", "icll", "lik_fn2", "inds", "batches",
                         "uncompress")
     parallel::clusterExport(cl, objs_to_export, envir=.GlobalEnv)
-    
     # parallel::clusterExport(cl, ls(.GlobalEnv))
-    # negloglik <- construct_negloglik(parallelize=T, cl=cl,
-    #                                  cfg$model_version)
     negloglik <- construct_negloglik(parallelize=T, cfg$model_version)
   } else {
-    # negloglik <- construct_negloglik(parallelize=F, cl=NULL,
-    #                                  cfg$model_version)
-    
-    # !!!!! Temporary
-    {
-      n <- attr(dat, "n")
-      folds <- cut(c(1:n), breaks=2, labels=FALSE)
-      batches <- lapply(c(1:2), function(batch) {
-        c(1:n)[folds==batch]
-      })
-      dat_objs_wrapper <- lapply(batches, function(i) { dat_objs[i] })
-    }
+    n <- attr(dat, "n")
+    folds <- cut(c(1:n), breaks=2, labels=FALSE)
+    batches <- lapply(c(1:2), function(batch) { c(1:n)[folds==batch] })
+    dat_objs_wrapper <- lapply(batches, function(i) { dat_objs[i] })
     negloglik <- construct_negloglik(parallelize=F, cfg$model_version)
   }
   chk(3, "construct_negloglik: END")
-  
-  # !!!!! Code profiling
-  if (F) {
-    
-    if (F) {
-      
-      cl <- parallel::makeCluster(cfg$sim_n_cores)
-      parallel::clusterEvalQ(cl, sink(paste0("C:/Users/ak811/Desktop/Avi/Research/HIVMI/output", Sys.getpid(), ".txt"))) # !!!!!
-      parallel::parLapply(cl, c(1:5), function(i) {
-        print("Check 1")
-        print(pryr::mem_used())
-      })
-      parallel::clusterExport(cl, c("f_x", "f_y", "icll"), envir=.GlobalEnv)
-      parallel::parLapply(cl, c(1:5), function(i) {
-        print("Check 2")
-        print(pryr::mem_used())
-      })
-      parallel::clusterExport(cl, c("lik_fn2"), envir=.GlobalEnv)
-      parallel::parLapply(cl, c(1:5), function(i) {
-        print("Check 3")
-        print(pryr::mem_used())
-      })
-      parallel::clusterExport(cl, c("inds", "batches"), envir=.GlobalEnv)
-      parallel::parLapply(cl, c(1:5), function(i) {
-        print("Check 4")
-        print(pryr::mem_used())
-      })
-      print("Check 4.2")
-      print("pryr::object_size(dat_objs)")
-      print(pryr::object_size(dat_objs))
-      print("pryr::object_size(get('dat_objs', envir=.GlobalEnv))")
-      print(pryr::object_size(get("dat_objs", envir=.GlobalEnv)))
-      parallel::clusterExport(cl, c("dat_objs"), envir=.GlobalEnv)
-      parallel::parLapply(cl, c(1:5), function(i) {
-        print("Check 5")
-        print(pryr::mem_used())
-        print("pryr::object_size(dat_objs)")
-        print(pryr::object_size(dat_objs))
-        # dat_objs[[i]]
-      })
-      
-      parallel::clusterExport(cl, c("dat"), envir=.GlobalEnv)
-      parallel::parLapply(cl, c(1:5), function(i) {
-        pryr::object_size(dat)
-        # pryr::mem_used()
-      })
-      
-      
-    }
-    
-    par_init <- c(a_x=-6.535, g_x1=-0.6737, g_x2=3.636, g_x3=0.2734, g_x4=0.4366, g_x5=-8.512, t_x1=-1.578, t_x2=-0.2818, t_x3=0.3750, t_x4=-2.160, a_s=-3.369, g_s1=-0.5761, g_s2=0.8899, t_s1=0, t_s2=0, t_s3=0, t_s4=0, beta_x=1, beta_z=0.5072, a_y=-5.944, g_y1=0.3940, g_y2=1.871, g_y3=2.923, g_y4=6.809, g_y5=3.004, t_y=-0.6077)
-    
-    negloglik <- construct_negloglik(parallelize=T, cfg$model_version)
-    system.time({ qqq1 <- negloglik(par_init) })
-    print(qqq1)
-    
-    negloglik <- construct_negloglik(parallelize=F, cfg$model_version)
-    system.time({ qqq2 <- negloglik(par_init) })
-    print(qqq2)
-    
-    # BEFORE: qqq = 17333.29
-    # AFTER: qqq = 17333.29
-  }
   
   # Set initial parameter estimates
   if (cfg$model_version==0) {
@@ -685,7 +614,7 @@ if (cfg2$run_analysis) {
   } else if (cfg$model_version==24) {
     par_init <- c(a_x=-5.974, g_x1=-0.153, g_x2=-0.892, g_x3=1.491, g_x4=1.431, g_x5=-6.335, g_x6=-0.520, g_x7=4.633, g_x8=-1.664, t_x1=0.254, t_x2=-4.697, t_x3=-4.189, t_x4=0.077, a_s=-2.931, g_s1=-0.461, g_s2=3.276, g_s3=0.252, g_s4=4.272, g_s5=-0.583, beta_x1=1.257, beta_x2=0.545, beta_x3=-0.298, beta_x4=2.249, beta_x5=-1.334, a_y=-8.222, g_y1=0.657, g_y2=1.982, g_y3=3.492, g_y4=8.479, g_y5=3.900, t_y1=-0.883, t_y2=-0.201, t_y3=-1.170, t_y4=-1.428)
   } else if (cfg$model_version==25) {
-    par_init <- c(a_x=-6.678, g_x1=0.838, g_x2=-5.469, g_x3=-0.158, g_x4=-1.671, g_x5=0.811, g_x6=-1.426, g_x7=4.173, g_x8=-3.428, t_x1=-0.551, t_x2=-3.288, t_x3=-1.237, t_x4=-1.100, a_s=-3.273, g_s1=-0.445, g_s2=3.674, g_s3=2.586, g_s4=4.146, g_s5=0.814, beta_x1=1.670, beta_x2=0.849, beta_x3=-0.314, beta_x4=2.351, beta_x5=-1.651, a_y=-8.829, g_y1=0.571, g_y2=2.754, g_y3=2.421, g_y4=5.656, g_y5=2.317, t_y1=-0.275, t_y2=0.773, t_y3=-0.180, t_y4=-0.603)
+    par_init <- c(a_x=-6.660, g_x1=2.739, g_x2=-1.388, g_x3=-0.418, g_x4=-2.872, g_x5=1.115, g_x6=-1.687, g_x7=3.922, g_x8=-3.564, t_x1=-0.108, t_x2=-2.928, t_x3=-1.238, t_x4=-0.435, a_s=-3.293, g_s1=-0.518, g_s2=3.702, g_s3=2.628, g_s4=4.248, g_s5=0.814, beta_x1=1.459, beta_x2=0.955, beta_x3=-0.187, beta_x4=2.743, beta_x5=-1.324, a_y=-8.834, g_y1=0.623, g_y2=2.767, g_y3=2.160, g_y4=5.665, g_y5=2.648, t_y1=-0.193, t_y2=0.521, t_y3=-0.161, t_y4=-0.711)
   }
   
   # par_true <- c(
@@ -699,7 +628,10 @@ if (cfg2$run_analysis) {
   # Run optimizer
   chk(4, "optim: START")
   counter <- 0
-  nll_init <- negloglik(par_init)
+  st <- system.time({
+    nll_init <- negloglik(par_init)
+  })
+  print(st)
   print(paste("negloglik(par_init):", nll_init))
   opt <- stats::optim(
     par = par_init,

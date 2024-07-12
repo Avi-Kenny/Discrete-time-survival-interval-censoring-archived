@@ -1,3 +1,62 @@
+##########################.
+##### Code profiling #####
+##########################.
+
+if (F) {
+  
+  cl <- parallel::makeCluster(cfg$sim_n_cores)
+  parallel::clusterEvalQ(cl, sink(paste0("C:/Users/ak811/Desktop/Avi/Research/HIVMI/output", Sys.getpid(), ".txt"))) # !!!!!
+  parallel::parLapply(cl, c(1:5), function(i) {
+    print("Check 1")
+    print(pryr::mem_used())
+  })
+  parallel::clusterExport(cl, c("f_x", "f_y", "icll"), envir=.GlobalEnv)
+  parallel::parLapply(cl, c(1:5), function(i) {
+    print("Check 2")
+    print(pryr::mem_used())
+  })
+  parallel::clusterExport(cl, c("lik_fn2"), envir=.GlobalEnv)
+  parallel::parLapply(cl, c(1:5), function(i) {
+    print("Check 3")
+    print(pryr::mem_used())
+  })
+  parallel::clusterExport(cl, c("inds", "batches"), envir=.GlobalEnv)
+  parallel::parLapply(cl, c(1:5), function(i) {
+    print("Check 4")
+    print(pryr::mem_used())
+  })
+  print("Check 4.2")
+  print("pryr::object_size(dat_objs)")
+  print(pryr::object_size(dat_objs))
+  print("pryr::object_size(get('dat_objs', envir=.GlobalEnv))")
+  print(pryr::object_size(get("dat_objs", envir=.GlobalEnv)))
+  parallel::clusterExport(cl, c("dat_objs"), envir=.GlobalEnv)
+  parallel::parLapply(cl, c(1:5), function(i) {
+    print("Check 5")
+    print(pryr::mem_used())
+    print("pryr::object_size(dat_objs)")
+    print(pryr::object_size(dat_objs))
+    # dat_objs[[i]]
+  })
+  
+  parallel::clusterExport(cl, c("dat"), envir=.GlobalEnv)
+  parallel::parLapply(cl, c(1:5), function(i) {
+    pryr::object_size(dat)
+    # pryr::mem_used()
+  })
+  
+  par_init <- c(a_x=-6.535, g_x1=-0.6737, g_x2=3.636, g_x3=0.2734, g_x4=0.4366, g_x5=-8.512, t_x1=-1.578, t_x2=-0.2818, t_x3=0.3750, t_x4=-2.160, a_s=-3.369, g_s1=-0.5761, g_s2=0.8899, t_s1=0, t_s2=0, t_s3=0, t_s4=0, beta_x=1, beta_z=0.5072, a_y=-5.944, g_y1=0.3940, g_y2=1.871, g_y3=2.923, g_y4=6.809, g_y5=3.004, t_y=-0.6077)
+  
+  negloglik <- construct_negloglik(parallelize=T, cfg$model_version)
+  system.time({ qqq1 <- negloglik(par_init) })
+  print(qqq1)
+  
+  negloglik <- construct_negloglik(parallelize=F, cfg$model_version)
+  system.time({ qqq2 <- negloglik(par_init) })
+  print(qqq2)
+  
+}
+
 #############################.
 ##### Old plotting code #####
 #############################.

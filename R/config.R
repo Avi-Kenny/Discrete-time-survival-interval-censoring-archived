@@ -4,7 +4,7 @@
 # Set packages
 cfg$pkgs <- c(
   "dplyr", "survival", "data.table", "tidyr", "memoise", "Rsolnp", "numDeriv",
-  "lubridate"  
+  "lubridate"
 )
 cfg$pkgs_nocluster <- c("ggplot2")
 

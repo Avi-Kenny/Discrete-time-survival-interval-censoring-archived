@@ -17,10 +17,6 @@ if (cfg$run_sims && Sys.getenv("sim_run") %in% c("first", "")) {
     params = list(
       "70pct testing" = lapply(list(
         a_s = 0.05,
-        # a_v = 0.7, # Monthly
-        # a_x = 0.005, # Monthly
-        # a_y = 0.003, # Monthly
-        # a_z = 0.01, # Monthly
         a_v = 0.7, # Yearly (same)
         a_x = 0.05, # Yearly
         a_y = 0.03, # Yearly
