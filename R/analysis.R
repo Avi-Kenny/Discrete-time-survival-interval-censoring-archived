@@ -18,8 +18,8 @@ cfg2 <- list(
   parallelize = T,
   use_simulated_dataset = F,
   # samp_size = 20000,
-  samp_size = as.integer(Sys.getenv("samp_size")),
-  # samp_size = 0,
+  # samp_size = as.integer(Sys.getenv("samp_size")),
+  samp_size = 0, # Full sample
   opt_maxit = 5000,
   opt_r = 2,
   opt_reltol = 1e-5,
@@ -28,7 +28,6 @@ cfg2 <- list(
   # temp = T
 )
 
-# !!!!! TEMPORARY: testing different optim config options
 if (T) {
   print("CONFIG")
   print("------------")
@@ -82,9 +81,11 @@ if (cfg2$use_simulated_dataset) {
     dat_prc <- dat_raw <- read.csv("../Data/data_raw_full_v2.csv")
     
     # Take sample from dataset (for model development)
-    iintids <- unique(dat_prc$IIntId)
-    iintids_sample <- sample(iintids, size=cfg2$samp_size)
-    dat_prc %<>% dplyr::filter(IIntId %in% iintids_sample)
+    if (cfg2$samp_size!=0) {
+      iintids <- unique(dat_prc$IIntId)
+      iintids_sample <- sample(iintids, size=cfg2$samp_size)
+      dat_prc %<>% dplyr::filter(IIntId %in% iintids_sample)
+    }
     
     # Rename columns
     dat_prc %<>% dplyr::rename(

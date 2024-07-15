@@ -8,8 +8,7 @@ cfg2 <- list(
   # m = 24,
   m = 25,
   w_start = 2010,
-  # ests = readRDS("objs/ests_24_20240627.rds")
-  ests = readRDS("objs/ests_25_20240707.rds")
+  ests = readRDS("objs/ests_25_full_20240715.rds")
 )
 
 # Construct spline bases
@@ -783,7 +782,7 @@ if (cfg2$process_analysis) {
   
   # Mortality by calendar time, with CIs
   plot_05 <- plot_mort3(x_axis="Year", m=cfg2$m, w_start=cfg2$w_start,
-                        y_max=70, title=F)
+                        y_max=65, title=F)
   ggsave(
     filename = paste0("../Figures + Tables/", cfg2$d, " p5 (mort CIs, by year)",
                       " - model ", cfg2$m, ".pdf"),
@@ -800,7 +799,7 @@ if (cfg2$process_analysis) {
   )
   
   # Seroconversion by age, with CIs
-  plot_07 <- plot_sero3(m=cfg2$m, w_start=cfg2$w_start, y_max=0.2, title=F)
+  plot_07 <- plot_sero3(m=cfg2$m, w_start=cfg2$w_start, y_max=0.05, title=F)
   ggsave(
     filename = paste0("../Figures + Tables/", cfg2$d, " p7 (sero CIs, by age) ",
                       "- model ", cfg2$m, ".pdf"),

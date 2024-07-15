@@ -52,13 +52,21 @@ icll <- function(x) { 1 - exp(-exp(x)) }
 #'     - Case 3: NEG test then POS test
 #'     - Case 4: first test POS
 case <- function(T_minus, T_plus) {
-  return(dplyr::case_when(
-    T_minus==0 & T_plus==0 ~ 1,
-    T_minus!=0 & T_plus==0 ~ 2,
-    T_minus!=0 & T_plus!=0 ~ 3,
-    T_minus==0 & T_plus!=0 ~ 4,
-    TRUE ~ 999
-  ))
+  
+  if (T_minus==0) {
+    if (T_plus==0) { return(1) } else { return(4) }
+  } else {
+    if (T_plus==0) { return(2) } else { return(3) }
+  }
+  
+  # return(dplyr::case_when(
+  #   T_minus==0 & T_plus==0 ~ 1,
+  #   T_minus!=0 & T_plus==0 ~ 2,
+  #   T_minus!=0 & T_plus!=0 ~ 3,
+  #   T_minus==0 & T_plus!=0 ~ 4,
+  #   TRUE ~ 999
+  # ))
+  
 }
 
 
