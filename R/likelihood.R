@@ -137,7 +137,11 @@ transform_dataset <- function(dat, model_version=0, window_start) {
 #' @param model_version Model version, as specified in MAIN.R
 #' @return Numeric likelihood
 #' @notes This corresponds to the missing data structure
-construct_negloglik <- function(parallelize=FALSE, model_version=0) {
+construct_negloglik <- function(
+  inds, parallelize=FALSE, model_version=0, use_counter=F, temp=FALSE
+) {
+  
+  if (!identical(temp, FALSE)) { dat_objs_wrapper <- temp }
   
   # cl <- parallel::makeCluster(cfg$sim_n_cores)
   # objs_to_export <- c("f_x", "f_y", "icll", "lik_fn2", "inds", "batches",
@@ -146,9 +150,11 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
   
   negloglik <- function(par) {
     
-    counter <<- counter + 1
-    if (counter%%10==0) {
-      print(paste0(counter, " negloglik calls processed: ",Sys.time())) # !!!!!
+    if (use_counter) {
+      counter <<- counter + 1
+      if (counter%%10==0) {
+        print(paste0(counter, " negloglik calls processed: ",Sys.time()))
+      }
     }
 
     # Convert parameter vector to a named list
@@ -168,7 +174,7 @@ construct_negloglik <- function(parallelize=FALSE, model_version=0) {
       } else if (model_version==6) {
         params <- list(a_x=p[1], g_x=p[2:3], a_y=p[4], g_y=p[5:6], beta_x=p[7], beta_z=p[8], t_x=p[9], t_y=p[10], a_s=p[11], g_s=p[12:13])
       } else if (model_version==7) {
-        params <- list(a_x=p[1], g_x=p[2:3], a_y=p[4], g_y=p[5:6], beta_x=p[7], beta_z=p[8], t_x=p[9], t_y=p[10], a_s=p[11], t_s=p[12], g_s=p[13:14])
+        params <- list(a_x=p[1], g_x=p[2:3], t_x=p[4], a_s=p[5], g_s=p[6:7], t_s=p[8], beta_x=p[9], a_y=p[10], g_y=p[11:12], t_y=p[13])
       } else if (model_version==8) {
         params <- list(a_x=p[1], g_x=p[2:3], a_y=p[4], g_y=p[5:8], beta_x=p[9], beta_z=p[10], t_x=p[11], t_y=p[12], a_s=p[13], t_s=p[14], g_s=p[15:16])
       } else if (model_version==9) {
@@ -470,7 +476,7 @@ if (cfg$model_version %in% c(0:23)) {
       }
     }
     
-  } else if (cfg$model_version %in% c(7,8,9)) {
+  } else if (cfg$model_version %in% c(7:9)) {
     
     f_x <- function(x, x_prev, w, j, s, spl, params) {
       if (s==0) {
@@ -872,12 +878,11 @@ if (cfg$model_version %in% c(0:23)) {
       if (y==1) { return(prob) } else { return(1-prob) }
     }
     
-  } else if (cfg$model_version %in% c(5,6,7)) {
+  } else if (cfg$model_version %in% c(5:7)) {
     
     f_y <- function(y, x, w, z, j, spl, params) {
       prob <- icll(
-        params$a_y + params$t_y*j + sum(params$g_y*w) + params$beta_x*x*(1-z) +
-          params$beta_z*x*z
+        params$a_y + params$t_y*j + sum(params$g_y*w) + params$beta_x*x
       )
       if (y==1) { return(prob) } else { return(1-prob) }
     }

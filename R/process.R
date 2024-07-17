@@ -37,9 +37,16 @@ if (cfg2$process_sims) {
                         "aseline model).rds"))
   
   # p_names should match those used by negloglik()
-  p_names <- c("a_x", "g_x1", "g_x2", "a_y", "g_y1", "g_y2", "beta_x", "beta_z",
-               "t_x", "t_y", "a_s", "t_s", "g_s1", "g_s2")
-  true_vals <- log(c(0.05,1.3,1.2,0.03,1.2,1.1,1.5,0.7,1,1,0.05,1,2,1.5)) # Yearly
+  p_names <- c("a_x", "g_x1", "g_x2", "t_x",
+               "a_s", "g_s1", "g_s2", "t_s",
+               "beta_x",
+               "a_y", "g_y1", "g_y2", "t_y")
+  p <- sim$levels$params$`param set 1`
+  true_vals <- c(p$a_x, p$g_x, p$t_x,
+                 p$a_s, p$g_s, p$t_s,
+                 p$beta_x,
+                 p$a_y, p$g_y, p$t_y)
+  names(true_vals) <- p_names
   
   # prm_sim <- sim$levels$params[[1]]
   # true_vals2 <- c(prm_sim$a_x, prm_sim$g_x[1], prm_sim$g_x[2], prm_sim$a_y,
@@ -49,7 +56,7 @@ if (cfg2$process_sims) {
   #                prm_sim$g_s[1], prm_sim$g_s[2])
   
   v <- paste0("lik_M_",p_names,"_est")
-  r <- dplyr::filter(sim$results, params=="70pct testing")
+  r <- dplyr::filter(sim$results, params=="param set 1")
   x <- unlist(lapply(v, function(col) { r[,col] }))
   df_true <- data.frame(
     which = factor(v, levels=v),
@@ -80,24 +87,32 @@ if (cfg2$process_sims) {
   )
   
   # Summary stats
-  summ_mean <- summ_sd <- summ_cov <- list()
+  summ_bias <- summ_mean <- summ_sd <- summ_cov <- list()
   for (i in c(1:length(p_names))) {
     p <- p_names[i]
+    summ_bias[[i]] <- list(stat="bias",
+                           name=paste0(p,"__bias"),
+                           estimate=paste0("lik_M_",p,"_est"),
+                           truth=true_vals[[p]])
     summ_mean[[i]] <- list(stat="mean",
                            name=paste0(p,"__sd_est"),
-                           x=paste0("lik_M_",p,"_se"))
+                           x=paste0("lik_M_",p,"_se"), na.rm=T)
     summ_sd[[i]] <- list(stat="sd", name=paste0(p,"__sd_actual"),
-                         x=paste0("lik_M_",p,"_est"))
+                         x=paste0("lik_M_",p,"_est"), na.rm=T)
     summ_cov[[i]] <- list(stat="coverage", name=paste0(p,"__cov"),
                           truth=true_vals[i],
                           estimate=paste0("lik_M_",p,"_est"),
                           se=paste0("lik_M_",p,"_se"), na.rm=T)
   }
-  summ <- do.call(SimEngine::summarize, c(list(sim), summ_mean, summ_sd, summ_cov))
+  summ <- do.call(
+    SimEngine::summarize,
+    c(list(sim), summ_bias, summ_mean, summ_sd, summ_cov)
+  )
   l_id <- 1
   summ2 <- summ[summ$level_id==l_id]
   df_results <- data.frame(
     "param" = character(),
+    "bias" = double(),
     "sd_est" = double(),
     "sd_actual" = double(),
     "coverage" = double()
@@ -105,8 +120,9 @@ if (cfg2$process_sims) {
   for (p in p_names) {
     df_results[nrow(df_results)+1,] <- c(
       p,
-      round(summ[[paste0(p,"__sd_actual")]], 3),
+      round(summ[[paste0(p,"__bias")]], 3),
       round(summ[[paste0(p,"__sd_est")]], 3),
+      round(summ[[paste0(p,"__sd_actual")]], 3),
       round(summ[[paste0(p,"__cov")]], 3)
     )
   }

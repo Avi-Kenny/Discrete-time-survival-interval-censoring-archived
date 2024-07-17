@@ -555,9 +555,13 @@ if (cfg2$run_analysis) {
     objs_to_export <- c("f_x", "f_y", "icll", "lik_fn2", "inds", "batches",
                         "uncompress")
     parallel::clusterExport(cl, objs_to_export, envir=.GlobalEnv)
-    negloglik <- construct_negloglik(parallelize=T, cfg$model_version)
+    negloglik <- construct_negloglik(
+      inds=inds, parallelize=T, model_version=cfg$model_version, use_counter=T
+    )
   } else {
-    negloglik <- construct_negloglik(parallelize=F, cfg$model_version)
+    negloglik <- construct_negloglik(
+      inds=inds, parallelize=F, model_version=cfg$model_version, use_counter=T
+    )
   }
   chk(3, "construct_negloglik: END")
   
@@ -577,7 +581,8 @@ if (cfg2$run_analysis) {
     } else if (cfg$model_version==6) {
       par_init <- c(a_x=-4.6185, g_x1=-1.3117, g_x2=-0.3883, a_y=-6.1581, g_y1=0.3794, g_y2=4.4762, beta_x=1.8497, beta_z=1.708, t_x=0, t_y=-0.45141, a_s=-2.495, g_s1=-0.0177, g_s2=1.684)
     } else if (cfg$model_version==7) {
-      par_init <- c(a_x=-6.2967, g_x1=-0.1535, g_x2=0.9796, a_y=-5.5786, g_y1=0.3278, g_y2=4.2046, beta_x=1.401, beta_z=1.3177, t_x=0.5343, t_y=-0.7198, a_s=-2.3111, t_s=0.4245, g_s1=-0.5649, g_s2=0.6198)
+      # par_init <- c(a_x=-6.2967, g_x1=-0.1535, g_x2=0.9796, a_y=-5.5786, g_y1=0.3278, g_y2=4.2046, beta_x=1.401, beta_z=1.3177, t_x=0.5343, t_y=-0.7198, a_s=-2.3111, t_s=0.4245, g_s1=-0.5649, g_s2=0.6198)
+      par_init <- c(a_x=-6.2967, g_x1=-0.1535, g_x2=0.9796, t_x=0.5343, a_s=-2.3111, g_s1=-0.5649, g_s2=0.6198, t_s=0.4245, beta_x=1.401, a_y=-5.5786, g_y1=0.3278, g_y2=4.2046, t_y=-0.7198)
     } else if (cfg$model_version==8) {
       par_init <- c(a_x=-3.5607, g_x1=-0.3244, g_x2=-0.2809, a_y=-5.7446, g_y1=0.3544, g_y2=4.4057, g_y3=0, g_y4=0, beta_x=1.8096, beta_z=1.8153, t_x=-0.786, t_y=-0.7826, a_s=-2.87, t_s=0.6349, g_s1=-0.3768, g_s2=0.6409)
     } else if (cfg$model_version==9) {
@@ -640,7 +645,8 @@ if (cfg2$run_analysis) {
     par = par_init,
     fn = negloglik,
     method = "Nelder-Mead",
-    control = list(maxit=cfg2$opt_maxit, reltol=cfg2$opt_reltol))
+    control = list(maxit=cfg2$opt_maxit, reltol=cfg2$opt_reltol)
+  )
   print("optim() finished.")
   print(opt)
   

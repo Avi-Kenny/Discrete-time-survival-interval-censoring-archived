@@ -4,45 +4,43 @@
 
 one_simulation <- function() {
   
+  # Tepmorary, to prevent restructuring code
+  if (cfg$model_version!=L$model_version) {
+    stop("cfg$model_version must equal L$model_version.")
+  }
+  
   # Set this flag to TRUE to speed up code (but with worse optim performance)
   speedy <- T
   if (speedy) {
-    maxit <- 200
-    hess_r <- 2
+    cfg2 <- list(opt_maxit=200, opt_reltol=1e-5, opt_r=2)
   } else {
-    maxit <- 500
-    hess_r <- 4
+    cfg2 <- list(opt_maxit=500, opt_reltol=1e-5, opt_r=4)
   }
   
   chk(0, "START")
   
-  # Generate dataset
+  # Generate and transform dataset
   dat <- generate_data(
     n = L$n,
     max_time = L$max_time,
-    params = L$params
+    params = L$params,
+    art = F
   )
+  
+  dat_objs <- transform_dataset(dat, model_version=L$model_version,
+                                window_start=1)
+  dat_i_names <- names(dat_objs[[1]]$dat_i)
+  inds <- list(
+    w = which(dat_i_names %in% c("w_1", "w_2")),
+    spl = which(substr(dat_i_names, 1, 1)=="b" & substr(dat_i_names, 3, 3)=="_")
+  )
+  n <- attr(dat, "n")
+  n_batches <- 2
+  folds <- cut(c(1:n), breaks=n_batches, labels=FALSE)
+  batches <- lapply(c(1:n_batches), function(batch) { c(1:n)[folds==batch] })
+  dat_objs_wrapper <- lapply(batches, function(i) { dat_objs[i] })
+
   chk(1, "Data generated")
-  
-  # # Add x_prev column
-  # # !!!!! This might not be needed
-  # dat %<>% arrange(id, t_end)
-  # dat$x_prev <- ifelse(
-  #   dat$id==c(0,dat$id[c(1:(length(dat$id)-1))]),
-  #   c(0,dat$x[c(1:(length(dat$x)-1))]),
-  #   0
-  # )
-  
-  if (F) {
-    
-    # Run optimizer
-    opt <- solnp(
-      pars = log(c(0.002, 1, 1, 0.002, 1, 1, 1)),
-      fun = negloglik_full
-    )
-    if (opt$convergence!=0) { warning("solnp() did not converge") }
-    
-  } # Rsolnp optimizer
   
   if (F) {
     
@@ -61,24 +59,28 @@ one_simulation <- function() {
     
   } # DEBUG: Cox model (ideal data structure)
   
-  # Set initial parameter estimate - should roughly (but not exactly) equal the
-  # true parameters
-  par_init <- log(c(
-    # a_x=0.003, g_x1=1.2, g_x2=1.1, a_y=0.002, g_y1=1.3, g_y2=1, beta_x=1.3, # Monthly
-    # beta_z=0.8, t_x=0.999, t_y=1.001, a_s=0.03, t_s=1.001, g_s1=1.8, g_s2=1.7 # Monthly
-    a_x=0.03, g_x1=1.2, g_x2=1.1, a_y=0.02, g_y1=1.3, g_y2=1, beta_x=1.3, # Yearly
-    beta_z=0.8, t_x=0.999, t_y=1.001, a_s=0.03, t_s=1.001, g_s1=1.8, g_s2=1.7 # Yearly
-  ))
+  # Set initial parameter vector
+  if (L$model_version==7) {
+    par_init <- log(c(
+      a_x=0.03, g_x1=1.2, g_x2=1.1, t_x=0.999,
+      a_s=0.03, g_s1=1.8, g_s2=1.7, t_s=1.001, 
+      beta_x=1.3,
+      a_y=0.02, g_y1=1.3, g_y2=1, t_y=1.001
+    ))
+  }
   
   chk(2, "construct_negloglik: START")
-  negloglik <- construct_negloglik()
+  negloglik <- construct_negloglik(
+    inds=inds, parallelize=F, model_version=L$model_version,
+    temp=dat_objs_wrapper
+  )
   chk(2, "construct_negloglik: END")
   chk(2, "optim: START")
   opt <- stats::optim(
     par = par_init,
     fn = negloglik,
     method = "Nelder-Mead",
-    control = list(maxit=maxit)
+    control = list(maxit=cfg2$opt_maxit, reltol=cfg2$opt_reltol)
   )
   chk(2, "optim: END")
   chk(2, "hessian: START")
@@ -86,7 +88,13 @@ one_simulation <- function() {
     func = negloglik,
     x = opt$par,
     method = "Richardson",
-    method.args = list(r=hess_r)
+    method.args = list(
+      eps = 0.0001,
+      d = 0.0001,
+      zero.tol = sqrt(.Machine$double.eps/7e-7),
+      r = cfg2$opt_r,
+      v = 2
+    )
   )
   hessian_inv <- solve(hessian_est)
   chk(2, "hessian: END")

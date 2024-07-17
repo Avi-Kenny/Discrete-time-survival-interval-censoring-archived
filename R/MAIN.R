@@ -5,17 +5,19 @@
 # Sys.setenv(avi_r=2) # For running locally
 # Sys.setenv(avi_reltol=1e-5) # For running locally
 cfg <- list(
-  run_sims = F,
+  run_sims = T,
   run_analysis = F,
-  run_process = T,
+  run_process = F,
   sim_level_set = "level_set_1",
   sim_run_or_update = "run",
-  sim_num = 1000,
+  sim_num = 300,
+  # sim_num = 1,
   sim_parallel = F,
-  # sim_n_cores = 8,
-  sim_n_cores = as.integer(Sys.getenv("SLURM_CPUS_PER_TASK")),
+  sim_n_cores = 300,
+  # sim_n_cores = as.integer(Sys.getenv("SLURM_CPUS_PER_TASK")), # For parallelizing across multiple CPUs within a single task
   sim_stop_at_error = F,
-  model_version = 25
+  # model_version = 25 # For analysis
+  model_version = 7 # For simulations
 )
 
 # Secondary config

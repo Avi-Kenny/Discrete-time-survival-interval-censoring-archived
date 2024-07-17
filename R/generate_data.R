@@ -18,19 +18,33 @@ generate_data <- function(n, max_time, params, art=FALSE) {
   # a_v <- function(t) { log(0.1) }
   
   # Generate dataframe to hold results
-  dat <- data.frame(
-    "id" = integer(),
-    "t_start" = integer(),
-    "t_end" = integer(),
-    "w_1" = integer(),
-    "w_2" = double(),
-    "x" = integer(),
-    "z" = integer(),
-    "y" = integer(),
-    "v" = integer(),
-    "d" = integer(),
-    "u" = integer()
-  )
+  if (art) {
+    dat <- data.frame(
+      "id" = integer(),
+      "t_start" = integer(),
+      "t_end" = integer(),
+      "w_1" = integer(),
+      "w_2" = double(),
+      "x" = integer(),
+      "z" = integer(),
+      "y" = integer(),
+      "v" = integer(),
+      "d" = integer(),
+      "u" = integer()
+    )
+  } else {
+    dat <- data.frame(
+      "id" = integer(),
+      "t_end" = integer(),
+      "w_1" = integer(),
+      "w_2" = double(),
+      "x" = integer(),
+      "y" = integer(),
+      "v" = integer(),
+      "d" = integer(),
+      "u" = integer()
+    )
+  }
   
   # Generate baseline covariates
   id <- c(1:n)
@@ -49,7 +63,7 @@ generate_data <- function(n, max_time, params, art=FALSE) {
   for (i in c(1:n)) {
     
     # Initial values
-    x <- y <- v <- z <- c()
+    x <- y <- v <- z <- w_2_vec <- c()
     event <- z_prev <- 0
     known_pos <- known_pos_prev <- 0
     j <- 1
@@ -102,16 +116,23 @@ generate_data <- function(n, max_time, params, art=FALSE) {
       
       # Sample events
       # !!!!! Add calendar time trend
-      p_event <- icll(
-        p$a_y + p$g_y[1]*w_1_ + p$g_y[2]*w_2_ +
-          p$beta_x*x[j] + p$beta_z*z[j]
-      )
+      if (art) {
+        p_event <- icll(
+          p$a_y + p$g_y[1]*w_1_ + p$g_y[2]*w_2_ + p$beta_x*x[j] + p$beta_z*z[j]
+        )
+      } else {
+        p_event <- icll(
+          p$a_y + p$g_y[1]*w_1_ + p$g_y[2]*w_2_ + p$beta_x*x[j]
+        )
+      }
       event <- rbinom(n=1, size=1, prob=p_event)
       y[j] <- event
       
-      # Increment time
+      # Increment time-varying variables
       j <- round(j+1)
       cal_time <- cal_time+1 # Currently unused; also account for scaling
+      w_2_vec <- c(w_2_vec, w_2_)
+      w_2_ <- w_2_ + 0.01
       
     }
     
@@ -129,10 +150,17 @@ generate_data <- function(n, max_time, params, art=FALSE) {
                  T_plus=T_pm$T_plus)
     
     # Add results to dataframe
-    dat <- rbind(dat, list(
-      id=rep(i,j), t_start=c((s_i_-1):(s_i_+j-2)), t_end=c(s_i_:(s_i_+j-1)),
-      w_1=rep(w_1_,j), w_2=rep(w_2_,j), x=x, z=z, y=y, v=v, d=d, u=x*d
-    ))
+    if (art) {
+      dat <- rbind(dat, list(
+        id=rep(i,j), t_end=c(s_i_:(s_i_+j-1)), w_1=rep(w_1_,j), w_2=w_2_vec,
+        z=z, y=y, v=v, delta=d, u=x*d # x=x, 
+      ))
+    } else {
+      dat <- rbind(dat, list(
+        id=rep(i,j), t_end=c(s_i_:(s_i_+j-1)), w_1=rep(w_1_,j), w_2=w_2_vec,
+        y=y, v=v, delta=d, u=x*d # x=x, 
+      ))
+    }
     
     # Store additional vectors
     vec_T_minus[i] <- T_pm$T_minus
