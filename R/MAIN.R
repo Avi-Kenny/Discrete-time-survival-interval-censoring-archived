@@ -10,8 +10,7 @@ cfg <- list(
   run_process = F,
   sim_level_set = "level_set_1",
   sim_run_or_update = "run",
-  sim_num = 300,
-  # sim_num = 1,
+  sim_num = 1000,
   sim_parallel = F,
   sim_n_cores = 300,
   # sim_n_cores = as.integer(Sys.getenv("SLURM_CPUS_PER_TASK")), # For parallelizing across multiple CPUs within a single task

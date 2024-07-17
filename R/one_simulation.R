@@ -10,7 +10,7 @@ one_simulation <- function() {
   }
   
   # Set this flag to TRUE to speed up code (but with worse optim performance)
-  speedy <- T
+  speedy <- F
   if (speedy) {
     cfg2 <- list(opt_maxit=200, opt_reltol=1e-5, opt_r=2)
   } else {
@@ -99,7 +99,7 @@ one_simulation <- function() {
   hessian_inv <- solve(hessian_est)
   chk(2, "hessian: END")
   
-  res <- list()
+  res <- list(conv=opt$convergence, iter=as.numeric(opt$counts[1]))
   pn <- names(par_init)
   for (i in c(1:length(par_init))) {
     res[[paste0("lik_M_",pn[i],"_est")]] <- as.numeric(opt$par[i])

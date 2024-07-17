@@ -73,7 +73,8 @@ case <- function(T_minus, T_plus) {
 
 #' Calculate time(s) of most recent negative test and/or positive test
 #' 
-#' @param J Maximum time
+#' @param s_i Start time
+#' @param t_i End time
 #' @param x Vector of seroconversion indicators for one individual
 #' @param v Vector of testing indicators for one individual
 #' @return A list containing T_minus and T_plus (0 = no NEG/POS tests)

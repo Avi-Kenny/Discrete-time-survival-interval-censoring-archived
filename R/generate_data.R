@@ -10,18 +10,10 @@
 
 generate_data <- function(n, max_time, params, art=FALSE) {
   
-  # Set baseline hazard functions
-  # Note: these have temporarily been set to constants, passed in through the
-  #     `params` argument
-  # a_x <- function(t) { log(0.005) }
-  # a_y <- function(t) { log(0.003) }
-  # a_v <- function(t) { log(0.1) }
-  
   # Generate dataframe to hold results
   if (art) {
     dat <- data.frame(
       "id" = integer(),
-      "t_start" = integer(),
       "t_end" = integer(),
       "w_1" = integer(),
       "w_2" = double(),
@@ -54,8 +46,8 @@ generate_data <- function(n, max_time, params, art=FALSE) {
   # Scale age variable
   w_2 <- w_2/100
   
-  # Sample start time
-  s_i <- sample(c(1:100), size=n, replace=T)
+  # Sample start times
+  s_i <- sample(c(1:max_time), size=n, replace=T)
   
   # Loop through individuals/time to generate events
   p <- params
@@ -73,14 +65,10 @@ generate_data <- function(n, max_time, params, art=FALSE) {
     
     while (!event && j<=max_time) {
       
-      # !!!!! Need to increment age each loop
-      
       # Sample serostatus (x)
-      # !!!!! Add calendar time trend
       if (j==1) {
         # Sample baseline serostatus
-        # !!!!! Add calendar time trend: + p$t_s*cal_time
-        p_sero <- icll(p$a_s + sum(p$g_s*c(w_1_,w_2_)))
+        p_sero <- icll(p$a_s + p$g_s[1]*w_1_ + p$g_s[2]*w_2_)
       } else {
         p_sero <- x_prev + (1-x_prev) * icll(
           p$a_x + p$g_x[1]*w_1_ + p$g_x[2]*w_2_
@@ -115,7 +103,6 @@ generate_data <- function(n, max_time, params, art=FALSE) {
       }
       
       # Sample events
-      # !!!!! Add calendar time trend
       if (art) {
         p_event <- icll(
           p$a_y + p$g_y[1]*w_1_ + p$g_y[2]*w_2_ + p$beta_x*x[j] + p$beta_z*z[j]
@@ -142,7 +129,7 @@ generate_data <- function(n, max_time, params, art=FALSE) {
     # Calculate time(s) of most recent negative test and/or positive test
     T_pm <- T_plusminus(s_i=s_i_, t_i=j+s_i_-1, x=x, v=v)
     
-    # # Calculate case indicators
+    # Calculate case indicators
     case_i <- case(T_pm$T_minus, T_pm$T_plus)
 
     # Calculate Delta

@@ -128,7 +128,7 @@ if (cfg2$process_sims) {
   }
   utils::write.table(
     x = df_results,
-    file = "../Figures + Tables/sims_sd_and_coverage.csv",
+    file = paste0("../Figures + Tables/", cfg2$d, " sims_sd_and_coverage.csv"),
     sep = ",",
     row.names = FALSE
   )
