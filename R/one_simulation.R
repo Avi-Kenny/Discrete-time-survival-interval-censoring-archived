@@ -12,9 +12,9 @@ one_simulation <- function() {
   # Set this flag to TRUE to speed up code (but with worse optim performance)
   speedy <- F
   if (speedy) {
-    cfg2 <- list(opt_maxit=200, opt_reltol=1e-5, opt_r=2)
+    cfg2 <- list(opt_maxit=400, opt_reltol=1e-5, opt_r=2)
   } else {
-    cfg2 <- list(opt_maxit=500, opt_reltol=1e-5, opt_r=4)
+    cfg2 <- list(opt_maxit=5000, opt_reltol=1e-5, opt_r=4)
   }
   
   chk(0, "START")
@@ -62,10 +62,10 @@ one_simulation <- function() {
   # Set initial parameter vector
   if (L$model_version==7) {
     par_init <- log(c(
-      a_x=0.03, g_x1=1.2, g_x2=1.1, t_x=0.999,
-      a_s=0.03, g_s1=1.8, g_s2=1.7, t_s=1.001, 
-      beta_x=1.3,
-      a_y=0.02, g_y1=1.3, g_y2=1, t_y=1.001
+      a_x=0.055, g_x1=1.2, g_x2=1.1, t_x=0.999,
+      a_s=0.22, g_s1=1.8, g_s2=1.2, t_s=1.001, 
+      beta_x=1.4,
+      a_y=0.025, g_y1=1.3, g_y2=1, t_y=1.001
     ))
   }
   
