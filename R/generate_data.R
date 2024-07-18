@@ -61,17 +61,20 @@ generate_data <- function(n, max_time, params, art=FALSE) {
     j <- 1
     w_1_ <- w_1[i]
     w_2_ <- w_2[i]
-    cal_time <- s_i_ <- s_i[i] # cal_time currently unused
+    s_i_ <- s_i[i]
+    cal_time_sc <- s_i_/10
     
     while (!event && j<=max_time) {
       
       # Sample serostatus (x)
       if (j==1) {
         # Sample baseline serostatus
-        p_sero <- icll(p$a_s + p$g_s[1]*w_1_ + p$g_s[2]*w_2_)
+        p_sero <- icll(
+          p$a_s + p$g_s[1]*w_1_ + p$g_s[2]*w_2_ + p$t_s*cal_time_sc
+        )
       } else {
         p_sero <- x_prev + (1-x_prev) * icll(
-          p$a_x + p$g_x[1]*w_1_ + p$g_x[2]*w_2_
+          p$a_x + p$g_x[1]*w_1_ + p$g_x[2]*w_2_ + p$t_x*cal_time_sc
         )
       }
       x[j] <- x_prev <- rbinom(n=1, size=1, prob=p_sero)
@@ -94,7 +97,7 @@ generate_data <- function(n, max_time, params, art=FALSE) {
           p_art <- 1
         } else {
           p_art <- icll(
-            p$a_z + p$g_z[1]*w_1_ + p$g_z[2]*w_2_
+            p$a_z + p$g_z[1]*w_1_ + p$g_z[2]*w_2_ + p$t_z*cal_time_sc
           )
         }
         z[j] <- z_prev <- rbinom(n=1, size=1, prob=p_art)
@@ -105,11 +108,13 @@ generate_data <- function(n, max_time, params, art=FALSE) {
       # Sample events
       if (art) {
         p_event <- icll(
-          p$a_y + p$g_y[1]*w_1_ + p$g_y[2]*w_2_ + p$beta_x*x[j] + p$beta_z*z[j]
+          p$a_y + p$g_y[1]*w_1_ + p$g_y[2]*w_2_ + p$t_y*cal_time_sc +
+            p$beta_x*x[j] + p$beta_z*z[j]
         )
       } else {
         p_event <- icll(
-          p$a_y + p$g_y[1]*w_1_ + p$g_y[2]*w_2_ + p$beta_x*x[j]
+          p$a_y + p$g_y[1]*w_1_ + p$g_y[2]*w_2_ + p$t_y*cal_time_sc +
+            p$beta_x*x[j]
         )
       }
       event <- rbinom(n=1, size=1, prob=p_event)
@@ -117,7 +122,7 @@ generate_data <- function(n, max_time, params, art=FALSE) {
       
       # Increment time-varying variables
       j <- round(j+1)
-      cal_time <- cal_time+1 # Currently unused; also account for scaling
+      cal_time_sc <- cal_time_sc + 0.1
       w_2_vec <- c(w_2_vec, w_2_)
       w_2_ <- w_2_ + 0.01
       

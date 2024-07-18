@@ -62,13 +62,13 @@ one_simulation <- function() {
   # Set initial parameter vector
   if (L$model_version==7) {
     par_init <- log(c(
-      a_x=0.055, g_x1=1.2, g_x2=1.1, t_x=0.999,
-      a_s=0.22, g_s1=1.8, g_s2=1.2, t_s=1.001, 
+      a_x=0.055, g_x1=1.2, g_x2=1.1, t_x=1,
+      a_s=0.22, g_s1=1.8, g_s2=1.2, t_s=1, 
       beta_x=1.4,
-      a_y=0.025, g_y1=1.3, g_y2=1, t_y=1.001
+      a_y=0.025, g_y1=1.3, g_y2=1, t_y=1
     ))
   }
-  
+
   chk(2, "construct_negloglik: START")
   negloglik <- construct_negloglik(
     inds=inds, parallelize=F, model_version=L$model_version,
