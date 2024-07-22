@@ -33,15 +33,16 @@ cfg2$d <- format(Sys.time(), "%Y-%m-%d")
 
 if (cfg2$process_sims) {
   
-  sim <- readRDS(paste0("SimEngine.out/sim_20231017 (v8, added time trend to b",
-                        "aseline model).rds"))
+  sim <- readRDS("SimEngine.out/sim_20240719.rds")
+  
+  p_set <- "10% testing"
   
   # p_names should match those used by negloglik()
   p_names <- c("a_x", "g_x1", "g_x2", "t_x",
                "a_s", "g_s1", "g_s2", "t_s",
                "beta_x",
                "a_y", "g_y1", "g_y2", "t_y")
-  p <- sim$levels$params$`param set 1`
+  p <- sim$levels$params[[p_set]]
   true_vals <- c(p$a_x, p$g_x, p$t_x,
                  p$a_s, p$g_s, p$t_s,
                  p$beta_x,
@@ -56,7 +57,7 @@ if (cfg2$process_sims) {
   #                prm_sim$g_s[1], prm_sim$g_s[2])
   
   v <- paste0("lik_M_",p_names,"_est")
-  r <- dplyr::filter(sim$results, params=="param set 1")
+  r <- dplyr::filter(sim$results, params==p_set)
   x <- unlist(lapply(v, function(col) { r[,col] }))
   df_true <- data.frame(
     which = factor(v, levels=v),
@@ -72,7 +73,7 @@ if (cfg2$process_sims) {
     geom_jitter(width=0, height=1, alpha=0.3, size=3) +
     geom_vline(aes(xintercept=val), df_true, alpha=0.5, linetype="dashed") +
     facet_wrap(~which, ncol=1, strip.position="left") + # scales="free_x"
-    labs(y=NULL, title="70% testing") +
+    labs(y=NULL, title=p_set) +
     ylim(-2,2) +
     theme(axis.text.y=element_blank(),
           axis.ticks.y=element_blank(),
@@ -87,14 +88,17 @@ if (cfg2$process_sims) {
   )
   
   # Summary stats
-  summ_bias <- summ_mean <- summ_sd <- summ_cov <- list()
+  summ_mean <- summ_bias <- summ_mean2 <- summ_sd <- summ_cov <- list()
   for (i in c(1:length(p_names))) {
     p <- p_names[i]
+    summ_mean[[i]] <- list(stat="mean",
+                           name=paste0(p,"__est"),
+                           x=paste0("lik_M_",p,"_est"), na.rm=T)
     summ_bias[[i]] <- list(stat="bias",
                            name=paste0(p,"__bias"),
                            estimate=paste0("lik_M_",p,"_est"),
                            truth=true_vals[[p]])
-    summ_mean[[i]] <- list(stat="mean",
+    summ_mean2[[i]] <- list(stat="mean",
                            name=paste0(p,"__sd_est"),
                            x=paste0("lik_M_",p,"_se"), na.rm=T)
     summ_sd[[i]] <- list(stat="sd", name=paste0(p,"__sd_actual"),
@@ -106,12 +110,14 @@ if (cfg2$process_sims) {
   }
   summ <- do.call(
     SimEngine::summarize,
-    c(list(sim), summ_bias, summ_mean, summ_sd, summ_cov)
+    c(list(sim), summ_mean, summ_bias, summ_mean2, summ_sd, summ_cov)
   )
   l_id <- 1
   summ2 <- summ[summ$level_id==l_id]
   df_results <- data.frame(
     "param" = character(),
+    "truth" = double(),
+    "est" = double(),
     "bias" = double(),
     "sd_est" = double(),
     "sd_actual" = double(),
@@ -120,6 +126,8 @@ if (cfg2$process_sims) {
   for (p in p_names) {
     df_results[nrow(df_results)+1,] <- c(
       p,
+      true_vals[[p]],
+      round(summ[[paste0(p,"__est")]], 3),
       round(summ[[paste0(p,"__bias")]], 3),
       round(summ[[paste0(p,"__sd_est")]], 3),
       round(summ[[paste0(p,"__sd_actual")]], 3),
@@ -1102,5 +1110,53 @@ if (cfg2$process_analysis) {
     )
     
   }
+  
+}
+
+
+
+##################################################.
+##### TAB: Table of probabilities for UNAIDS #####
+##################################################.
+
+if (F) {
+  
+  df_tab <- data.frame(
+    "Year" = integer(),
+    "Age" = double(),
+    "Sex" = double(),
+    "Rate" = double(),
+    "Status" = character(),
+    "ci_lo" = double(),
+    "ci_up" = double()
+  )
+  
+  for (year in c(2010:2023)) {
+    for (age in seq(15,60,5)) {
+      for (sex in c(0,1)) {
+        for (status in c("HIV-", "HIV+")) {
+          year_sc <- year - cfg2$w_start + 1
+          type <- paste0("mort (", status, ")")
+          rate <- 1000 * prob(
+            type=type, m=cfg2$m, j=year_sc, w_1=sex, w_2=age, which="est"
+          )
+          ci_lo <- 1000 * prob(
+            type=type, m=cfg2$m, j=year_sc, w_1=sex, w_2=age, which="ci_lo"
+          )
+          ci_up <- 1000 * prob(
+            type=type, m=cfg2$m, j=year_sc, w_1=sex, w_2=age, which="ci_up"
+          )
+          df_tab[nrow(df_tab)+1,] <- list(year,age,sex,rate,status,ci_lo,ci_up)
+        }
+      }
+    }
+  }
+  
+  utils::write.table(
+    x = df_tab,
+    file = paste0("../Figures + Tables/", cfg2$d, " temp_table_of_vals.csv"),
+    sep = ",",
+    row.names = FALSE
+  )
   
 }

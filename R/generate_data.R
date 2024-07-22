@@ -84,6 +84,15 @@ generate_data <- function(n, max_time, params, art=FALSE) {
         p$a_v + p$g_v[1]*w_1_ + p$g_v[2]*w_2_
       )
       v[j] <- rbinom(n=1, size=1, prob=p_test)
+      if (F) {
+        # Testing prob
+        w1_samp <- rep(c(0,1), each=38)
+        w2_samp <- rep(c(13:60), 2)/100
+        mean(sapply(c(1:length(w1_samp)), function(i) {
+          # icll(p$a_v + p$g_v[1]*w1_samp[i] + p$g_v[2]*w2_samp[i])
+          icll(-2.4 + p$g_v[1]*w1_samp[i] + p$g_v[2]*w2_samp[i])
+        }))
+      }
       
       # Calculate "known positive" variable
       known_pos[j] <- known_pos_prev + (1-known_pos_prev)*v[j]*x[j]

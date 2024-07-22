@@ -10,25 +10,30 @@ if (cfg$run_sims && Sys.getenv("sim_run") %in% c("first", "")) {
   
   # Simulation 1: basic
   # Figures: ...
+  params_10 <- params_20 <- params_40 <- list(
+    a_x = -3,
+    g_x = c(0.3,0.2),
+    t_x = -0.1,
+    a_s = -1.6,
+    g_s = c(0.5,0.3),
+    t_s = 0.1,
+    beta_x = 0.4,
+    a_y = -3.5,
+    g_y = c(0.2,0.1),
+    t_y = -0.1,
+    a_v = -0.8,
+    g_v = c(0.2,0.1)
+  )
+  params_20$a_v <- -1.6
+  params_10$a_v <- -2.4
   level_sets[["level_set_1"]] <- list(
     n = 1000,
     max_time = 20,
     model_version = 7,
     params = list(
-      "param set 1" = lapply(list(
-        a_x = 0.05,
-        g_x = c(1.3,1.2),
-        t_x = 0.9,
-        a_s = 0.2,
-        g_s = c(1.7,1.3),
-        t_s = 1.05,
-        beta_x = 1.5,
-        a_y = 0.03,
-        g_y = c(1.2,1.1),
-        t_y = 0.95,
-        a_v = 0.5,
-        g_v = c(1.2,1.1)
-      ), log)
+      # "40% testing" = params_40,
+      # "20% testing" = params_20,
+      "10% testing" = params_10
     )
   )
   

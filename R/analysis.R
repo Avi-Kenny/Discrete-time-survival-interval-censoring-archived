@@ -77,8 +77,16 @@ if (cfg2$use_simulated_dataset) {
     
     set.seed(1)
     
+    # Set up data frame to track filtering
+    dat_log <- data.frame("note"=character(), "num_rows"=integer())
+    log_note <- function(note, num_rows) {
+      dat_log[nrow(dat_log)+1,] <<- list(note, num_rows)
+    }
+    
     # Read in data
     dat_prc <- dat_raw <- read.csv("../Data/data_raw_full_v2.csv")
+    log_note("# rows, original", nrow(dat_prc))
+    log_note("# individuals, original", length(unique(dat_prc$IIntId)))
     
     # Take sample from dataset (for model development)
     if (cfg2$samp_size!=0) {
@@ -86,6 +94,7 @@ if (cfg2$use_simulated_dataset) {
       iintids_sample <- sample(iintids, size=cfg2$samp_size)
       dat_prc %<>% dplyr::filter(IIntId %in% iintids_sample)
     }
+    log_note("# rows, subsample", nrow(dat_prc))
     
     # Rename columns
     dat_prc %<>% dplyr::rename(
@@ -104,9 +113,9 @@ if (cfg2$use_simulated_dataset) {
     })
     
     # Filter out obs with sex=="Unknown"
-    nrow(dat_prc)
+    rows_pre <- nrow(dat_prc)
     dat_prc %<>% dplyr::filter(sex!="Unknown")
-    nrow(dat_prc)
+    log_note("# rows dropped, sex=='Unknown'", rows_pre-nrow(dat_prc))
     
     # Misc data wrangling
     dat_prc %<>% dplyr::mutate(
@@ -116,27 +125,26 @@ if (cfg2$use_simulated_dataset) {
       dod = convert_date(dod),
       age = year - dob,
       ART_status = ifelse(is.na(ART_status), 0, ART_status)
-      # year_prev = year - 1
     )
-    # dat_prc %<>% dplyr::relocate(year_prev, .before=year)
     
     # Filter out children with tests before age 12
-    nrow(dat_prc)
+    rows_pre <- nrow(dat_prc)
     children_with_tests <- dplyr::filter(
       dat_prc, age<=13 & ResultDate!=""
     )$id
     dat_prc %<>% dplyr::filter(!(id %in% children_with_tests))
-    nrow(dat_prc)
-    
+    log_note("# rows dropped, children with tests before age 12",
+             rows_pre-nrow(dat_prc))
+
     # Remove all data before 13th birthday
-    nrow(dat_prc)
+    rows_pre <- nrow(dat_prc)
     dat_prc %<>% dplyr::filter(age>=13)
-    nrow(dat_prc)
+    log_note("# rows dropped, age<13", rows_pre-nrow(dat_prc))
     
     # Remove all data after age cfg2$age_end
-    nrow(dat_prc)
+    rows_pre <- nrow(dat_prc)
     dat_prc %<>% dplyr::filter(age<cfg2$age_end)
-    nrow(dat_prc)
+    log_note("# rows dropped, age>=cfg2$age_end", rows_pre-nrow(dat_prc))
     
     # Remove tests with an "S" result
     rows_with_s <- which(dat_prc$HIVResult=="S")
@@ -154,7 +162,9 @@ if (cfg2$use_simulated_dataset) {
     rm(dat_pos_at_start)
     
     # Remove all data prior to window_start
+    rows_pre <- nrow(dat_prc)
     dat_prc %<>% dplyr::filter(year>=cfg2$window_start)
+    log_note("# rows dropped, year>=cfg2$window_start", rows_pre-nrow(dat_prc))
     
     # Set V=1 if status is known at window_start
     rows <- which(
@@ -199,12 +209,28 @@ if (cfg2$use_simulated_dataset) {
     )    
     
     # Filter out records with a negative test after a positive test
-    nrow(dat_prc)
+    rows_pre <- nrow(dat_prc)
     dat_prc %<>% dplyr::filter(
       is.na(first_hiv_pos_dt) | is.na(last_hiv_neg_dt) |
         first_hiv_pos_dt>last_hiv_neg_dt
     )
-    nrow(dat_prc)
+    log_note("# rows dropped, NEG test after POS test", rows_pre-nrow(dat_prc))
+
+    # Drop rows with duplicate person-time
+    rows_pre <- nrow(dat_prc)
+    dupe_time_rows <- which(
+      dat_prc$id==c(NA,dat_prc$id[1:length(dat_prc$id)-1]) &
+        dat_prc$t_end==c(NA,dat_prc$t_end[1:length(dat_prc$t_end)-1])
+    )
+    if (length(dupe_time_rows)>0) { dat_prc <- dat_prc[-dupe_time_rows,] }
+    log_note("# rows dropped, duplicate person-time", rows_pre-nrow(dat_prc))
+    log_note("# rows, final", nrow(dat_prc))
+    log_note("# individuals, final", length(unique(dat_prc$id)))
+    log_note("# deaths, final", sum(dat_prc$died))
+    log_note("# male, final", sum(dat_prc$sex))
+    
+    # Print data log
+    print(dat_log)
     
     # Sort dataframe
     dat_prc %<>% dplyr::arrange(id,year)
@@ -214,8 +240,6 @@ if (cfg2$use_simulated_dataset) {
       "w_1" = sex,
       "y" = died,
       "z" = ART_status_new,
-      # "z_old" = ART_status, # !!!!! TEMP
-      # "t_start" = year_prev,
       "t_end" = year
     )
     
@@ -254,16 +278,6 @@ if (cfg2$use_simulated_dataset) {
     # }
     
     # !!!!! Check that `first_hiv_pos_dt` and `last_hiv_neg_dt` lie within `t_start` and `t_end`
-    
-    # Drop rows with duplicate time
-    # !!!!! Maybe move this above
-    nrow(dat_prc)
-    dupe_time_rows <- which(
-      dat_prc$id==c(NA,dat_prc$id[1:length(dat_prc$id)-1]) &
-        dat_prc$t_end==c(NA,dat_prc$t_end[1:length(dat_prc$t_end)-1])
-    )
-    if (length(dupe_time_rows)>0) { dat_prc <- dat_prc[-dupe_time_rows,] }
-    nrow(dat_prc)
     
     # Drop rows with DOB > t_start
     # !!!!! TO DO
