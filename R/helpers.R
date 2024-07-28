@@ -164,7 +164,7 @@ uncompress <- function(len, num_ones) {
 #' 
 #' @param which Which basis to construct
 #' @param window_start Start year
-construct_basis <- function(which, window_start=NA) {
+construct_basis <- function(which, window_start=NA, window_end=NA) {
   
   scale_age <- function(x) { x / 100 }
   scale_year <- function(x) { (x-window_start+1)/10 }
@@ -190,6 +190,9 @@ construct_basis <- function(which, window_start=NA) {
   } else if (which %in% c("year (10,13,17,20,23)", "year (10,13,17,20,23) +i")) {
     grid <- scale_year(seq(2010,2023, length.out=500))
     k <- scale_year(seq(2010,2023, length.out=5))
+  } else if (which %in% c("year (10,13,16,19,22)", "year (10,13,16,19,22) +i")) {
+    grid <- scale_year(seq(2010,2022, length.out=500))
+    k <- scale_year(seq(2010,2022, length.out=5))
   } else if (which=="age (13,20,30,40,60)") {
     grid <- scale_age(seq(13,60, length.out=500))
     k <- scale_age(c(13,20,30,40,60))

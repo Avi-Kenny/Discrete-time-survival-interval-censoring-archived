@@ -26,9 +26,13 @@ one_simulation <- function() {
     params = L$params,
     art = F
   )
-
-  dat_objs <- transform_dataset(dat, model_version=L$model_version,
-                                window_start=1)
+  
+  dat_objs <- transform_dataset(
+    dat = dat,
+    model_version = L$model_version,
+    window_start = 1,
+    window_end = 9999
+  )
   dat_i_names <- names(dat_objs[[1]]$dat_i)
   inds <- list(
     w = which(dat_i_names %in% c("w_1", "w_2")),
