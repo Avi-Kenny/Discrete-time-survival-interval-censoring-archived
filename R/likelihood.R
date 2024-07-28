@@ -103,6 +103,7 @@ transform_dataset <- function(dat, model_version=0, window_start, window_end) {
     d$dat_i$b11_2 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b11(j,2) }),4)
     d$dat_i$b11_3 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b11(j,3) }),4)
     d$dat_i$b11_4 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b11(j,4) }),4)
+    d$dat_i$b11_5 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b11(j,5) }),4)
     
     # Calculate the set X_i to sum over
     d$X_i_set <- list()
