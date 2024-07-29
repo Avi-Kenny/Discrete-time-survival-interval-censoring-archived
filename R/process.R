@@ -8,7 +8,9 @@ cfg2 <- list(
   # m = 24,
   m = 25,
   w_start = 2010,
-  ests = readRDS("objs/ests_25_full_20240715.rds")
+  w_end = 2022,
+  # ests = readRDS("objs/ests_25_full_20240715.rds")
+  ests = readRDS("objs/ests_26_full_20240728.rds")
 )
 
 # Construct spline bases
@@ -21,6 +23,10 @@ b6 <- construct_basis("age (13,28,44,60,75)")
 b7 <- construct_basis("year (10,13,17,20,23) +i", window_start=cfg2$w_start)
 b8 <- construct_basis("age (13,28,44,60,75) +i")
 b9 <- construct_basis("age (13,20,30,40,60)")
+b10 <- construct_basis("year (10,13,16,19,22)", window_start=cfg2$w_start,
+                       window_end=cfg2$w_end)
+b11 <- construct_basis("year (10,13,16,19,22) +i", window_start=cfg2$w_start,
+                       window_end=cfg2$w_end)
 
 # Get current date
 cfg2$d <- format(Sys.time(), "%Y-%m-%d")
@@ -291,6 +297,16 @@ prob <- function(type, m, j, w_1, w_2, which="est") {
       p2 <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3",
               "g_x4", "g_x5", "g_x6", "g_x7", "g_x8")
       
+    } else if (m==26) {
+      
+      A <- function(j,w_2) { t(matrix(c(
+        1, b10(j,1), b10(j,2), b10(j,3), b10(j,4), w_1*b9(w_2,1), w_1*b9(w_2,2),
+        w_1*b9(w_2,3), w_1*b9(w_2,4), (1-w_1)*b9(w_2,1), (1-w_1)*b9(w_2,2),
+        (1-w_1)*b9(w_2,3), (1-w_1)*b9(w_2,4)
+      ))) }
+      p2 <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3",
+              "g_x4", "g_x5", "g_x6", "g_x7", "g_x8")
+      
     }
     
   } else if (type=="init") {
@@ -322,7 +338,7 @@ prob <- function(type, m, j, w_1, w_2, which="est") {
         1, w_1, b6(w_2,1), b6(w_2,2), b6(w_2,3), b6(w_2,4)
       ))) }
       p2 <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4", "g_s5")
-    } else if (m==25) {
+    } else if (m %in% c(25:26)) {
       A <- function(j,w_2) { t(matrix(c(
         1, w_1, b9(w_2,1), b9(w_2,2), b9(w_2,3), b9(w_2,4)
       ))) }
@@ -421,6 +437,7 @@ prob <- function(type, m, j, w_1, w_2, which="est") {
       
     }
     if (m==24) {
+      
       A <- function(j,w_2) { t(matrix(c(
         x*b7(j,1), x*b7(j,2), x*b7(j,3), x*b7(j,4), x*b7(j,5), 1, w_1,
         b6(w_2,1), b6(w_2,2), b6(w_2,3), b6(w_2,4), b5(j,1), b5(j,2), b5(j,3),
@@ -429,7 +446,9 @@ prob <- function(type, m, j, w_1, w_2, which="est") {
       p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "a_y",
               "g_y1", "g_y2", "g_y3", "g_y4", "g_y5", "t_y1", "t_y2", "t_y3",
               "t_y4")
+      
     } else if (m==25) {
+      
       A <- function(j,w_2) { t(matrix(c(
         x*b7(j,1), x*b7(j,2), x*b7(j,3), x*b7(j,4), x*b7(j,5), 1, w_1,
         b9(w_2,1), b9(w_2,2), b9(w_2,3), b9(w_2,4), b5(j,1), b5(j,2), b5(j,3),
@@ -438,6 +457,18 @@ prob <- function(type, m, j, w_1, w_2, which="est") {
       p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "a_y",
               "g_y1", "g_y2", "g_y3", "g_y4", "g_y5", "t_y1", "t_y2", "t_y3",
               "t_y4")
+      
+    } else if (m==26) {
+      
+      A <- function(j,w_2) { t(matrix(c(
+        x*b11(j,1), x*b11(j,2), x*b11(j,3), x*b11(j,4), x*b11(j,5), 1, w_1,
+        b9(w_2,1), b9(w_2,2), b9(w_2,3), b9(w_2,4), b10(j,1), b10(j,2),
+        b10(j,3), b10(j,4)
+      ))) }
+      p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "a_y",
+              "g_y1", "g_y2", "g_y3", "g_y4", "g_y5", "t_y1", "t_y2", "t_y3",
+              "t_y4")
+      
     }
     
   }

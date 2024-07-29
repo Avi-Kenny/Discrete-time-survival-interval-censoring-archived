@@ -36,7 +36,11 @@ one_simulation <- function() {
   dat_i_names <- names(dat_objs[[1]]$dat_i)
   inds <- list(
     w = which(dat_i_names %in% c("w_1", "w_2")),
-    spl = which(substr(dat_i_names, 1, 1)=="b" & substr(dat_i_names, 3, 3)=="_")
+    spl = which(
+      substr(dat_i_names, 1, 1)=="b" & (
+        substr(dat_i_names, 3, 3)=="_" | substr(dat_i_names, 4, 4)=="_"
+      )
+    )
   )
   n <- attr(dat, "n")
   n_batches <- 2

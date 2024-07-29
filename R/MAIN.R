@@ -6,8 +6,8 @@
 # Sys.setenv(avi_reltol=1e-5) # For running locally
 cfg <- list(
   run_sims = F,
-  run_analysis = T,
-  run_process = F,
+  run_analysis = F,
+  run_process = T,
   sim_level_set = "level_set_1",
   sim_run_or_update = "run",
   sim_num = 1000,
