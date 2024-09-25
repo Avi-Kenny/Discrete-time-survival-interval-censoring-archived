@@ -95,7 +95,7 @@ transform_dataset <- function(dat, model_version=0, window_start, window_end) {
       d$dat_i$b9_2 <- signif(sapply(d$dat_i$w_2, function(w_2) { b9(w_2,2) }),4)
       d$dat_i$b9_3 <- signif(sapply(d$dat_i$w_2, function(w_2) { b9(w_2,3) }),4)
       d$dat_i$b9_4 <- signif(sapply(d$dat_i$w_2, function(w_2) { b9(w_2,4) }),4)
-    } else if (model_version==26) {
+    } else if (model_version %in% c(26:27)) {
       d$dat_i$b9_1 <- signif(sapply(d$dat_i$w_2, function(w_2) { b9(w_2,1) }),4)
       d$dat_i$b9_2 <- signif(sapply(d$dat_i$w_2, function(w_2) { b9(w_2,2) }),4)
       d$dat_i$b9_3 <- signif(sapply(d$dat_i$w_2, function(w_2) { b9(w_2,3) }),4)
@@ -227,6 +227,8 @@ construct_negloglik <- function(
     }
     if (model_version %in% c(24:26)) {
       params <- list(a_x=p[1], g_x=p[2:9], t_x=p[10:13], a_s=p[14], g_s=p[15:19], beta_x=p[20:24], a_y=p[25], g_y=p[26:30], t_y=p[31:34])
+    } else if (model_version==27) {
+      params <- list(a_x=p[1], g_x=p[2:9], t_x=p[10:13], a_s=p[14], g_s=p[15:19], a_y=p[20], g_y=p[21:25], t_y=p[26:29])
     }
     
     # Compute the negative likelihood across individuals
@@ -841,7 +843,7 @@ if (cfg$model_version==24) {
     }
   }
   
-} else if (cfg$model_version==26) {
+} else if (cfg$model_version %in% c(26:27)) {
   
   f_x <- function(x, x_prev, w, j, s, spl, params) {
     if (s==0) {
@@ -1156,6 +1158,19 @@ if (cfg$model_version==24) {
           params$beta_x[5]*spl[["b11_5"]]
       ) +
         params$a_y + params$g_y[1]*w[1] + params$g_y[2]*spl[["b9_1"]] +
+        params$g_y[3]*spl[["b9_2"]] + params$g_y[4]*spl[["b9_3"]] +
+        params$g_y[5]*spl[["b9_4"]] + params$t_y[1]*spl[["b10_1"]] +
+        params$t_y[2]*spl[["b10_2"]] + params$t_y[3]*spl[["b10_3"]] +
+        params$t_y[4]*spl[["b10_4"]]
+    )
+    if (y==1) { return(prob) } else { return(1-prob) }
+  }
+  
+} else if (cfg$model_version==27) {
+  
+  f_y <- function(y, x, w, z, j, spl, params) {
+    prob <- icll(
+      params$a_y + params$g_y[1]*w[1] + params$g_y[2]*spl[["b9_1"]] +
         params$g_y[3]*spl[["b9_2"]] + params$g_y[4]*spl[["b9_3"]] +
         params$g_y[5]*spl[["b9_4"]] + params$t_y[1]*spl[["b10_1"]] +
         params$t_y[2]*spl[["b10_2"]] + params$t_y[3]*spl[["b10_3"]] +

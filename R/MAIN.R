@@ -5,9 +5,10 @@
 # Sys.setenv(avi_r=2) # For running locally
 # Sys.setenv(avi_reltol=1e-5) # For running locally
 cfg <- list(
+  run_dqa = F,
   run_sims = F,
-  run_analysis = F,
-  run_process = T,
+  run_analysis = T,
+  run_process = F,
   sim_level_set = "level_set_1",
   sim_run_or_update = "run",
   sim_num = 1000,
@@ -15,7 +16,8 @@ cfg <- list(
   # sim_n_cores = 300,
   sim_n_cores = as.integer(Sys.getenv("SLURM_CPUS_PER_TASK")), # For parallelizing across multiple CPUs within a single task
   sim_stop_at_error = F,
-  model_version = 26 # For analysis
+  # model_version = 26 # For analysis; latest model including HIV status
+  model_version = 27 # !!!!! For analysis; debugging; model that does not include HIV status
   # model_version = 7 # For simulations
 )
 
@@ -31,6 +33,13 @@ source("R/config.R", local=T)
   source("R/likelihood.R", local=T)
 }
 
+if (cfg$run_dqa) {
+  
+  # Data quality assurance
+  source("R/dqa.R", local=T)
+  
+}
+
 if (cfg$run_analysis) {
   
   source("R/analysis.R", local=T)
@@ -43,7 +52,9 @@ if (cfg$run_analysis) {
   # Run simulation
   source("R/run.R", local=T)
   
-} else if (cfg$run_process) {
+}
+
+if (cfg$run_process) {
   
   # Tables and figures
   source("R/process.R", local=T)
