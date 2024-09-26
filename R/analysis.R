@@ -25,7 +25,8 @@ cfg2 <- list(
   opt_reltol = 1e-5,
   window_start = 2010, # Spline bases for year must reflect this
   window_end = 2022, # Spline bases for year must reflect this
-  age_end = 60 # Spline bases for age must reflect this
+  age_end = 60, # Spline bases for age must reflect this
+  model_sex = Sys.getenv("model_sex")
   # temp = T
 )
 
@@ -118,10 +119,15 @@ if (cfg2$use_simulated_dataset) {
     dat_prc %<>% dplyr::filter(sex!="Unknown")
     log_note("# rows dropped, sex=='Unknown'", rows_pre-nrow(dat_prc))
     
+    # Filter dataset based on sex
+    rows_pre <- nrow(dat_prc)
+    dat_prc %<>% dplyr::filter(sex==cfg2$model_sex)
+    if (nrow(dat_prc)==0) { stop("`model_sex` incorrectly specified.") }
+    log_note("# rows after filtering by sex", rows_pre-nrow(dat_prc))
+    
     # Misc data wrangling
     dat_prc %<>% dplyr::mutate(
       died = ifelse(is.na(died), 0, died),
-      sex = ifelse(sex=="Male", 1, 0),
       dob = convert_date(dob),
       dod = convert_date(dod),
       age = year - dob,
@@ -233,7 +239,6 @@ if (cfg2$use_simulated_dataset) {
     log_note("# rows, final", nrow(dat_prc))
     log_note("# individuals, final", length(unique(dat_prc$id)))
     log_note("# deaths, final", sum(dat_prc$died))
-    log_note("# male, final", sum(dat_prc$sex))
     
     # Print data log
     print(dat_log)
@@ -243,7 +248,6 @@ if (cfg2$use_simulated_dataset) {
     
     # Rename columns
     dat_prc %<>% dplyr::rename(
-      "w_1" = sex,
       "y" = died,
       "z" = ART_status_new,
       "t_end" = year
@@ -333,7 +337,7 @@ if (cfg2$use_simulated_dataset) {
     attr(dat_prc, "t_i") <- (attr(dat_prc, "t_i") - cfg2$window_start) + 1
     
     # Create (scaled) age variable
-    dat_prc %<>% dplyr::mutate(w_2 = (t_end-dob)/100)
+    dat_prc %<>% dplyr::mutate(w_1 = (t_end-dob)/100)
     
     # DQA
     if (F) {
@@ -557,7 +561,7 @@ if (cfg2$run_analysis) {
   
   dat_i_names <- names(dat_objs[[1]]$dat_i)
   inds <- list(
-    w = which(dat_i_names %in% c("w_1", "w_2")),
+    w = which(dat_i_names %in% c("w_1")),
     spl = which(
       substr(dat_i_names, 1, 1)=="b" & (
         substr(dat_i_names, 3, 3)=="_" | substr(dat_i_names, 4, 4)=="_"
@@ -656,6 +660,8 @@ if (cfg2$run_analysis) {
     par_init <- c(a_x=-6.586, g_x1=1.622, g_x2=-0.340, g_x3=-1.187, g_x4=-2.215, g_x5=0.786, g_x6=-0.299, g_x7=3.819, g_x8=-2.592, t_x1=0.921, t_x2=-2.219, t_x3=-0.694, t_x4=0.235, a_s=-3.250, g_s1=-0.465, g_s2=3.692, g_s3=2.392, g_s4=4.333, g_s5=0.986, a_y=-8.645, g_y1=0.595, g_y2=2.588, g_y3=1.931, g_y4=5.047, g_y5=2.706, t_y1=-0.142, t_y2=0.554, t_y3=0.172, t_y4=-0.695)
   } else if (cfg$model_version==28) {
     par_init <- c(a_x=-6.586, g_x1=1.622, g_x2=-0.340, g_x3=-1.187, g_x4=-2.215, g_x5=0.786, g_x6=-0.299, g_x7=3.819, g_x8=-2.592, t_x1=0.921, t_x2=-2.219, t_x3=-0.694, t_x4=0.235, a_s=-3.250, g_s1=-0.465, g_s2=3.692, g_s3=2.392, g_s4=4.333, g_s5=0.986, beta_x1=0, beta_x2=0, beta_x3=0, beta_x4=0, beta_x5=0, beta_x6=0, a_y=-8.645, g_y1=0.595, g_y2=2.588, g_y3=1.931, g_y4=5.047, g_y5=2.706, t_y1=-0.142, t_y2=0.554, t_y3=0.172, t_y4=-0.695)
+  } else if (cfg$model_version==29) {
+    par_init <- c(a_x=-6.087, g_x1=1.283, g_x2=-0.983, g_x3=-1.032, g_x4=-0.888, t_x1=0.602, t_x2=-1.874, t_x3=-1.472, t_x4=-0.530, a_s=-3.209, g_s1=3.658, g_s2=2.351, g_s3=4.186, g_s4=0.942, beta_x1=1.981, beta_x2=-0.784, beta_x3=0.0149, beta_x4=-1.884, beta_x5=-2.042, beta_x6=-0.565, a_y=-8.153, g_y1=2.255, g_y2=1.771, g_y3=4.729, g_y4=2.989, t_y1=-0.174, t_y2=-0.103, t_y3=-0.288, t_y4=0.126)
   }
   
   if (F) {
@@ -718,7 +724,10 @@ if (cfg2$run_analysis) {
   
   chk(5, "hessian: END")
   parallel::stopCluster(cl)
-  saveRDS(list(opt=opt, hessian_inv=hessian_inv), "ests.rds")
+  saveRDS(
+    list(opt=opt, hessian_inv=hessian_inv),
+    paste0("ests_", cfg2$model_sex, ".rds")
+  )
   
   # if (cfg2$parallelize) { stopCluster(cl) }
   
