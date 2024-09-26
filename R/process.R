@@ -300,11 +300,11 @@ prob <- function(type, m, j, w_1, w_2, which="est") {
       
     } else if (m %in% c(26:28)) {
       
-      A <- function(j,w_2) { t(matrix(c(
+      A <- t(matrix(c(
         1, b10(j,1), b10(j,2), b10(j,3), b10(j,4), w_1*b9(w_2,1), w_1*b9(w_2,2),
         w_1*b9(w_2,3), w_1*b9(w_2,4), (1-w_1)*b9(w_2,1), (1-w_1)*b9(w_2,2),
         (1-w_1)*b9(w_2,3), (1-w_1)*b9(w_2,4)
-      ))) }
+      )))
       p2 <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3",
               "g_x4", "g_x5", "g_x6", "g_x7", "g_x8")
       
@@ -340,9 +340,9 @@ prob <- function(type, m, j, w_1, w_2, which="est") {
       ))) }
       p2 <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4", "g_s5")
     } else if (m %in% c(25:28)) {
-      A <- function(j,w_2) { t(matrix(c(
+      A <- t(matrix(c(
         1, w_1, b9(w_2,1), b9(w_2,2), b9(w_2,3), b9(w_2,4)
-      ))) }
+      )))
       p2 <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4", "g_s5")
     }
     
