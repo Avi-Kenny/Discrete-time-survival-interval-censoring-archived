@@ -6,12 +6,12 @@ cfg2 <- list(
   process_sims = F,
   process_analysis = T,
   # m = 24,
-  m = 27,
+  m = 28,
   w_start = 2010,
   w_end = 2022,
   # ests = readRDS("objs/ests_25_full_20240715.rds")
   # ests = readRDS("objs/ests_26_full_20240728.rds")
-  ests = readRDS("objs/ests_27_full_20240925.rds")
+  ests = readRDS("objs/ests_28_full_20240926.rds")
 )
 
 # Construct spline bases
@@ -298,7 +298,7 @@ prob <- function(type, m, j, w_1, w_2, which="est") {
       p2 <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3",
               "g_x4", "g_x5", "g_x6", "g_x7", "g_x8")
       
-    } else if (m %in% c(26:27)) {
+    } else if (m %in% c(26:28)) {
       
       A <- function(j,w_2) { t(matrix(c(
         1, b10(j,1), b10(j,2), b10(j,3), b10(j,4), w_1*b9(w_2,1), w_1*b9(w_2,2),
@@ -339,7 +339,7 @@ prob <- function(type, m, j, w_1, w_2, which="est") {
         1, w_1, b6(w_2,1), b6(w_2,2), b6(w_2,3), b6(w_2,4)
       ))) }
       p2 <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4", "g_s5")
-    } else if (m %in% c(25:27)) {
+    } else if (m %in% c(25:28)) {
       A <- function(j,w_2) { t(matrix(c(
         1, w_1, b9(w_2,1), b9(w_2,2), b9(w_2,3), b9(w_2,4)
       ))) }
@@ -479,6 +479,22 @@ prob <- function(type, m, j, w_1, w_2, which="est") {
       p2 <- c("a_y", "g_y1", "g_y2", "g_y3", "g_y4", "g_y5", "t_y1", "t_y2",
               "t_y3", "t_y4")
       
+    } else if (m==28) {
+      
+      # A <- function(j,w_2) { t(matrix(c(
+      #   x, x*j, x*max(w_2-0.3,0), x*j*max(w_2-0.3,0), x*max(w_2-0.45,0),
+      #   x*j*max(w_2-0.45,0), 1, w_1, b9(w_2,1), b9(w_2,2), b9(w_2,3), b9(w_2,4),
+      #   b10(j,1), b10(j,2), b10(j,3), b10(j,4)
+      # ))) }
+      A <- t(matrix(c(
+        x, x*j, x*max(w_2-0.3,0), x*j*max(w_2-0.3,0), x*max(w_2-0.45,0),
+        x*j*max(w_2-0.45,0), 1, w_1, b9(w_2,1), b9(w_2,2), b9(w_2,3), b9(w_2,4),
+        b10(j,1), b10(j,2), b10(j,3), b10(j,4)
+      ))) # !!!!! Testing whether this needs to be a function
+      p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "beta_x6",
+              "a_y", "g_y1", "g_y2", "g_y3", "g_y4", "g_y5", "t_y1", "t_y2",
+              "t_y3", "t_y4")
+      
     }
     
   }
@@ -495,8 +511,10 @@ prob <- function(type, m, j, w_1, w_2, which="est") {
   } else if (which=="ci_up") {
     fac <- 1.96
   }
-  est <- c(A(j,w_2) %*% beta)
-  se <- c(sqrt(A(j,w_2) %*% Sigma %*% t(A(j,w_2))))
+  # est <- c(A(j,w_2) %*% beta)
+  # se <- c(sqrt(A(j,w_2) %*% Sigma %*% t(A(j,w_2))))
+  est <- c(A %*% beta) # !!!!! Testing whether this needs to be a function
+  se <- c(sqrt(A %*% Sigma %*% t(A))) # !!!!! Testing whether this needs to be a function
   prob <- icll(est+fac*se)
   
   return(prob)

@@ -345,7 +345,7 @@ for (sex_ in c("Male", "Female")) {
 
 # Plot death rates by age, filtering out highest age bin
 # Export: 10 x 5
-years_plot <- c(2010,2011,2012,2013,2014)
+years_plot <- c(2010,2013,2016,2019,2022)
 ggplot(
   dplyr::filter(df_summ2, year %in% years_plot),
   aes(x=age, y=rate, color=factor(source))

@@ -109,6 +109,15 @@ transform_dataset <- function(dat, model_version=0, window_start, window_end) {
       d$dat_i$b11_3 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b11(j,3) }),4)
       d$dat_i$b11_4 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b11(j,4) }),4)
       d$dat_i$b11_5 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b11(j,5) }),4)
+    } else if (model_version==28) {
+      d$dat_i$b9_1 <- signif(sapply(d$dat_i$w_2, function(w_2) { b9(w_2,1) }),4)
+      d$dat_i$b9_2 <- signif(sapply(d$dat_i$w_2, function(w_2) { b9(w_2,2) }),4)
+      d$dat_i$b9_3 <- signif(sapply(d$dat_i$w_2, function(w_2) { b9(w_2,3) }),4)
+      d$dat_i$b9_4 <- signif(sapply(d$dat_i$w_2, function(w_2) { b9(w_2,4) }),4)
+      d$dat_i$b10_1 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b10(j,1) }),4)
+      d$dat_i$b10_2 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b10(j,2) }),4)
+      d$dat_i$b10_3 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b10(j,3) }),4)
+      d$dat_i$b10_4 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b10(j,4) }),4)
     }
     
     # Calculate the set X_i to sum over
@@ -229,6 +238,8 @@ construct_negloglik <- function(
       params <- list(a_x=p[1], g_x=p[2:9], t_x=p[10:13], a_s=p[14], g_s=p[15:19], beta_x=p[20:24], a_y=p[25], g_y=p[26:30], t_y=p[31:34])
     } else if (model_version==27) {
       params <- list(a_x=p[1], g_x=p[2:9], t_x=p[10:13], a_s=p[14], g_s=p[15:19], a_y=p[20], g_y=p[21:25], t_y=p[26:29])
+    } else if (model_version==28) {
+      params <- list(a_x=p[1], g_x=p[2:9], t_x=p[10:13], a_s=p[14], g_s=p[15:19], beta_x=p[20:25], a_y=p[26], g_y=p[27:31], t_y=p[32:35])
     }
     
     # Compute the negative likelihood across individuals
@@ -843,7 +854,7 @@ if (cfg$model_version==24) {
     }
   }
   
-} else if (cfg$model_version %in% c(26:27)) {
+} else if (cfg$model_version %in% c(26:28)) {
   
   f_x <- function(x, x_prev, w, j, s, spl, params) {
     if (s==0) {
@@ -1171,6 +1182,24 @@ if (cfg$model_version==24) {
   f_y <- function(y, x, w, z, j, spl, params) {
     prob <- icll(
       params$a_y + params$g_y[1]*w[1] + params$g_y[2]*spl[["b9_1"]] +
+        params$g_y[3]*spl[["b9_2"]] + params$g_y[4]*spl[["b9_3"]] +
+        params$g_y[5]*spl[["b9_4"]] + params$t_y[1]*spl[["b10_1"]] +
+        params$t_y[2]*spl[["b10_2"]] + params$t_y[3]*spl[["b10_3"]] +
+        params$t_y[4]*spl[["b10_4"]]
+    )
+    if (y==1) { return(prob) } else { return(1-prob) }
+  }
+  
+} else if (cfg$model_version==28) {
+  
+  f_y <- function(y, x, w, z, j, spl, params) {
+    prob <- icll(
+      x*(
+        (params$beta_x[1] + params$beta_x[2]*j) +
+          (params$beta_x[3] + params$beta_x[4]*j) * max(w[2]-0.3,0) +
+          (params$beta_x[5] + params$beta_x[6]*j) * max(w[2]-0.45,0)
+      ) +
+        params$a_y + params$g_y[1]*w[1] + params$g_y[2]*spl[["b9_1"]] +
         params$g_y[3]*spl[["b9_2"]] + params$g_y[4]*spl[["b9_3"]] +
         params$g_y[5]*spl[["b9_4"]] + params$t_y[1]*spl[["b10_1"]] +
         params$t_y[2]*spl[["b10_2"]] + params$t_y[3]*spl[["b10_3"]] +
