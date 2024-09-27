@@ -365,7 +365,7 @@ if (cfg2$use_simulated_dataset) {
       "dob", "dod", "age", "ResultDate", "HIVResult", "hiv_result_fill",
       "VisitDate", "ReceivedHIVTestResult", "CurrentlyOnART", "HIV_status",
       "HadPosHIVResult", "first_hiv_pos_dt", "last_hiv_neg_dt", "ART_status",
-      "first_art_pos_dt"
+      "first_art_pos_dt", "sex"
     )
     for (col in cols_to_drop) { dat[[col]] <- NULL }
     
