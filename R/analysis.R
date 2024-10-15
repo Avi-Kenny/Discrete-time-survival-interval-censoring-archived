@@ -604,7 +604,7 @@ if (cfg2$run_analysis) {
   if (cfg$model_version %in% c(0:23)) {
     
     if (cfg$model_version==0) {
-      par_init <- c(a_x=-5.603, g_x1=0, g_x2=-0.3655, a_y=-6.020, g_y1=0, g_y2=4.282, beta_x=1.401, beta_z=0.0004, t_x=0.9609, t_y=-3.906, a_s=-1.740, t_s=-2.100, g_s1=0, g_s2=1.271) # Model iteration 0
+      `par_init` <- c(a_x=-5.603, g_x1=0, g_x2=-0.3655, a_y=-6.020, g_y1=0, g_y2=4.282, beta_x=1.401, beta_z=0.0004, t_x=0.9609, t_y=-3.906, a_s=-1.740, t_s=-2.100, g_s1=0, g_s2=1.271) # Model iteration 0
     } else if (cfg$model_version==1) {
       par_init <- c(a_x=-5.651, a_y=-4.942, beta_x=1.423, beta_z=0.2235, a_s=-2.007)
     } else if (cfg$model_version==2) {
