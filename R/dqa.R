@@ -26,6 +26,11 @@ if(cfg2$m==26) {
   status_vec <- c("no HIV")
   colors_1 <- c("cyan4", "brown3")
   colors_2 <- c("cyan4", "brown3", "orange")
+} else if (cfg2$m %in% c(29:30)) {
+  sources <- c("raw", "Model (HIV-)", "Model (HIV+)")
+  status_vec <- c("HIV-", "HIV+")
+  colors_1 <- c("cyan3", "cyan4", "brown3")
+  colors_2 <- c("cyan3", "cyan4", "brown3", "orange")
 }
 
 # Load datasets
@@ -33,33 +38,33 @@ if(cfg2$m==26) {
   # dat_raw is raw/original dataset
   dat_raw <- readstata13::read.dta13("../Data/SurveillanceEpisodesHIV.dta")
   
-  # dat_so is the dataset processed by Stephen
-  dat_so <- read.csv("../Data/data_raw_full_v2.csv")
+  # # dat_so is the dataset processed by Stephen
+  # dat_so <- read.csv("../Data/data_raw_full_v2.csv")
   
-  # dat_prc is dat_so processed via analysis.R
-  dat_prc <- read.csv("../Data/dat_processed.csv")
+  # # dat_prc is dat_so processed via analysis.R
+  # dat_prc <- read.csv("../Data/dat_processed.csv")
 }
 
-# dat_prc: Rescale and rename variables
-dat_prc %<>% dplyr::mutate(
-  t_end = (t_end-1)+2010,
-  age = round(w_2*100),
-  sex = w_1
-)
+# # dat_prc: Rescale and rename variables
+# dat_prc %<>% dplyr::mutate(
+#   t_end = (t_end-1)+2010,
+#   age = round(w_1*100),
+#   sex = w_2
+# )
 
 # dat_raw: Generate age-at-death variable
 dat_raw$AoD <- round((dat_raw$DoD-dat_raw$DoB)/365.25)
 
-# dat_so: Generate age variable
-dat_so %<>% dplyr::mutate(age=Year-as.numeric(substr(dob,1,4)))
+# # dat_so: Generate age variable
+# dat_so %<>% dplyr::mutate(age=Year-as.numeric(substr(dob,1,4)))
 
 # Summary stats
 log_note("rows, dat_raw", nrow(dat_raw))
-log_note("rows, dat_so", nrow(dat_so))
-log_note("rows, dat_prc", nrow(dat_prc))
+# log_note("rows, dat_so", nrow(dat_so))
+# log_note("rows, dat_prc", nrow(dat_prc))
 log_note("# people, dat_raw", length(unique(dat_raw$IIntId)))
-log_note("# people, dat_so", length(unique(dat_so$IIntId)))
-log_note("# people, dat_prc", length(unique(dat_prc$id)))
+# log_note("# people, dat_so", length(unique(dat_so$IIntId)))
+# log_note("# people, dat_prc", length(unique(dat_prc$id)))
 
 
 
@@ -116,22 +121,22 @@ for (year_ in c(2010:2022)) {
         na.rm=T
       )
       
-      # Summary stats from SO dataset
-      dat_so_filt <- dplyr::filter(
-        dat_so,
-        Year==year_ & sex==sex_ & age >= age_bin[1] & age <= age_bin[2]
-      )
-      n_deaths_so <- sum(dat_so_filt$died, na.rm=T)
-      n_py_so <- nrow(dat_so_filt)
+      # # Summary stats from SO dataset
+      # dat_so_filt <- dplyr::filter(
+      #   dat_so,
+      #   Year==year_ & sex==sex_ & age >= age_bin[1] & age <= age_bin[2]
+      # )
+      # n_deaths_so <- sum(dat_so_filt$died, na.rm=T)
+      # n_py_so <- nrow(dat_so_filt)
       
-      # Summary stats from processed dataset
-      dat_prc_filt <- dplyr::filter(
-        dat_prc,
-        t_end==year_ & sex==as.integer(sex_=="Male") &
-          age >= age_bin[1] & age <= age_bin[2]
-      )
-      n_deaths_prc <- sum(dat_prc_filt$y)
-      n_py_prc <- nrow(dat_prc_filt)
+      # # Summary stats from processed dataset
+      # dat_prc_filt <- dplyr::filter(
+      #   dat_prc,
+      #   t_end==year_ & sex==as.integer(sex_=="Male") &
+      #     age >= age_bin[1] & age <= age_bin[2]
+      # )
+      # n_deaths_prc <- sum(dat_prc_filt$y)
+      # n_py_prc <- nrow(dat_prc_filt)
       
       # Summary from raw dataset
       df_summ[nrow(df_summ)+1,] <- list(
@@ -159,8 +164,8 @@ for (year_ in c(2010:2022)) {
         age_ <- mean(age_bin)
         type <- paste0("mort (", status, ")")
         rate <- round(1000 * prob(
-          type=type, m=cfg2$m, j=year_sc, w_1=as.integer(sex_=="Male"),
-          w_2=age_, which="est"
+          type=type, m=cfg2$m, j=year_sc, w_1=age_,
+          w_2=as.integer(sex_=="Male"), which="est"
         ), 1)
         df_summ[nrow(df_summ)+1,] <- list(
           year_, sex_, paste0(age_bin, collapse="-"), NA, NA,
@@ -307,8 +312,8 @@ for (year_ in c(2010:2022)) {
         year_sc <- year_ - cfg2$w_start + 1
         type <- paste0("mort (", status, ")")
         rate <- round(1000 * prob(
-          type=type, m=cfg2$m, j=year_sc, w_1=as.integer(sex_=="Male"),
-          w_2=age_, which="est"
+          type=type, m=cfg2$m, j=year_sc, w_1=age_,
+          w_2=as.integer(sex_=="Male"), which="est"
         ), 1)
         df_summ2[nrow(df_summ2)+1,] <- list(
           year_, sex_, age_, NA, NA,

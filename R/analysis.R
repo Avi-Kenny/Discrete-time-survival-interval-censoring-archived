@@ -38,6 +38,7 @@ if (T) {
   print(paste("reltol:", cfg2$opt_reltol))
   print(paste("r:", cfg2$opt_r))
   print(paste("sample size:", cfg2$samp_size))
+  print(paste("sex:", cfg2$model_sex))
   print("------------")
 }
 
@@ -380,8 +381,10 @@ if (cfg2$use_simulated_dataset) {
     )
     
     if (cfg2$save_data) {
-      saveRDS(dat, "../Data/dat.rds")
-      saveRDS(dat_objs, "../Data/dat_objs.rds")
+      # saveRDS(dat, "../Data/dat.rds")
+      # saveRDS(dat_objs, "../Data/dat_objs.rds")
+      saveRDS(dat, paste0("../Data/dat_", cfg2$model_sex, ".rds"))
+      saveRDS(dat_objs, paste0("../Data/dat_objs_", cfg2$model_sex, ".rds"))
     }
     
     # Check estimates for model 10 against Cox model estimates
@@ -662,6 +665,10 @@ if (cfg2$run_analysis) {
     par_init <- c(a_x=-6.586, g_x1=1.622, g_x2=-0.340, g_x3=-1.187, g_x4=-2.215, g_x5=0.786, g_x6=-0.299, g_x7=3.819, g_x8=-2.592, t_x1=0.921, t_x2=-2.219, t_x3=-0.694, t_x4=0.235, a_s=-3.250, g_s1=-0.465, g_s2=3.692, g_s3=2.392, g_s4=4.333, g_s5=0.986, beta_x1=0, beta_x2=0, beta_x3=0, beta_x4=0, beta_x5=0, beta_x6=0, a_y=-8.645, g_y1=0.595, g_y2=2.588, g_y3=1.931, g_y4=5.047, g_y5=2.706, t_y1=-0.142, t_y2=0.554, t_y3=0.172, t_y4=-0.695)
   } else if (cfg$model_version==29) {
     par_init <- c(a_x=-6.087, g_x1=1.283, g_x2=-0.983, g_x3=-1.032, g_x4=-0.888, t_x1=0.602, t_x2=-1.874, t_x3=-1.472, t_x4=-0.530, a_s=-3.209, g_s1=3.658, g_s2=2.351, g_s3=4.186, g_s4=0.942, beta_x1=1.981, beta_x2=-0.784, beta_x3=0.0149, beta_x4=-1.884, beta_x5=-2.042, beta_x6=-0.565, a_y=-8.153, g_y1=2.255, g_y2=1.771, g_y3=4.729, g_y4=2.989, t_y1=-0.174, t_y2=-0.103, t_y3=-0.288, t_y4=0.126)
+  } else if (cfg$model_version==30) {
+    par_init <- c(a_x=-6.087, g_x1=1.283, g_x2=-0.983, g_x3=-1.032, g_x4=-0.888, t_x1=0.602, t_x2=-1.874, t_x3=-1.472, t_x4=-0.530, a_s=-3.209, g_s1=3.658, g_s2=2.351, g_s3=4.186, g_s4=0.942, beta_x1=0, beta_x2=0, beta_x3=0, beta_x4=0, a_y=-8.153, g_y1=2.255, g_y2=1.771, g_y3=4.729, g_y4=2.989, t_y1=-0.174, t_y2=-0.103, t_y3=-0.288, t_y4=0.126)
+  } else if (cfg$model_version==31) {
+    par_init <- c(a_x=-6.087, g_x1=1.283, g_x2=-0.983, g_x3=-1.032, g_x4=-0.888, t_x1=0.602, t_x2=-1.874, t_x3=-1.472, t_x4=-0.530, a_s=-3.209, g_s1=3.658, g_s2=2.351, g_s3=4.186, g_s4=0.942, beta_x1=0, beta_x2=0, beta_x3=0, beta_x4=0, beta_x5=0, beta_x6=0, a_y=-8.153, g_y1=2.255, g_y2=1.771, g_y3=4.729, g_y4=2.989, t_y1=-0.174, t_y2=-0.103, t_y3=-0.288, t_y4=0.126)
   }
   
   if (F) {
