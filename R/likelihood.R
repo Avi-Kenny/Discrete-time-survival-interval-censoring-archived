@@ -257,6 +257,8 @@ construct_negloglik <- function(
       params <- list(a_x=p[1], g_x=p[2:5], t_x=p[6:9], a_s=p[10], g_s=p[11:14], beta_x=p[15:20], a_y=p[21], g_y=p[22:25], t_y=p[26:29])
     } else if (model_version==32) {
       params <- list(a_x=p[1], g_x=p[2:5], t_x=p[6:9], a_s=p[10], g_s=p[11:14], beta_x=p[15:23], a_y=p[24], g_y=p[25:28], t_y=p[29:32])
+    } else if (model_version==33) {
+      params <- list(a_x=p[1], g_x=p[2:5], t_x=p[6:9], a_s=p[10], g_s=p[11:14], beta_x=p[15:23], a_y=p[24], g_y=p[25:28], t_y=p[29:32])
     }
     
     # Compute the negative likelihood across individuals
