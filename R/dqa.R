@@ -26,7 +26,7 @@ if(cfg2$m==26) {
   status_vec <- c("no HIV")
   colors_1 <- c("cyan4", "brown3")
   colors_2 <- c("cyan4", "brown3", "orange")
-} else if (cfg2$m %in% c(29:30)) {
+} else if (cfg2$m %in% c(29:33)) {
   sources <- c("raw", "Model (HIV-)", "Model (HIV+)")
   status_vec <- c("HIV-", "HIV+")
   colors_1 <- c("cyan3", "cyan4", "brown3")
@@ -179,7 +179,7 @@ for (year_ in c(2010:2022)) {
 
 # Plot death rates by year, filtering out highest age bin
 # Export: 10 x 5
-ggplot(
+plot <- ggplot(
   dplyr::filter(df_summ, !(age_bin %in% c("0-12", "61-999"))),
   aes(x=year, y=rate, color=factor(source))
 ) +
@@ -188,6 +188,11 @@ ggplot(
   scale_x_continuous(breaks=c(2010,2015,2020)) +
   scale_color_manual(values=colors_1) +
   labs(color="Source", y="Deaths per 1,000 person-years")
+ggsave(
+  filename = paste0("../Figures + Tables/", cfg2$d, " death_rates_by_year - ",
+                    "model ", cfg2$m, ".pdf"),
+  plot = plot, device="pdf", width=10, height=5
+)
 
 # # Plot death counts, filtering out highest age bin
 # ggplot(
@@ -214,13 +219,13 @@ log_note("Person-time, based on dat_raw$Days", sum(dat_raw$Days)/365)
 log_note("Person-time, based on dat_raw$EndDate and dat_raw$StartDate",
          sum(as.numeric(dat_raw$EndDate-dat_raw$StartDate)/365.25))
 log_note("Person-time, based on df_summ$n_py", sum(df_summ$n_py))
-log_note("Person-time, based on nrow(dat_so)", nrow(dat_so))
-log_note("Person-time, based on nrow(dat_prc)", nrow(dat_prc))
+# log_note("Person-time, based on nrow(dat_so)", nrow(dat_so))
+# log_note("Person-time, based on nrow(dat_prc)", nrow(dat_prc))
 
 # Summary stats, deaths
 log_note("Deaths, based on dat_raw$Died", sum(dat_raw$Died=="Yes"))
-log_note("Deaths, based on dat_so$died", sum(dat_so$died, na.rm=T))
-log_note("Deaths, based on dat_prc$y", sum(dat_prc$y))
+# log_note("Deaths, based on dat_so$died", sum(dat_so$died, na.rm=T))
+# log_note("Deaths, based on dat_prc$y", sum(dat_prc$y))
 
 
 ################################.
@@ -271,21 +276,21 @@ for (year_ in c(2010:2022)) {
         na.rm=T
       )
       
-      # Summary stats from SO dataset
-      dat_so_filt <- dplyr::filter(
-        dat_so,
-        Year==year_ & sex==sex_ & age == age_
-      )
-      n_deaths_so <- sum(dat_so_filt$died, na.rm=T)
-      n_py_so <- nrow(dat_so_filt)
+      # # Summary stats from SO dataset
+      # dat_so_filt <- dplyr::filter(
+      #   dat_so,
+      #   Year==year_ & sex==sex_ & age == age_
+      # )
+      # n_deaths_so <- sum(dat_so_filt$died, na.rm=T)
+      # n_py_so <- nrow(dat_so_filt)
       
-      # Summary stats from processed dataset
-      dat_prc_filt <- dplyr::filter(
-        dat_prc,
-        t_end==year_ & sex==as.integer(sex_=="Male") & age == age_
-      )
-      n_deaths_prc <- sum(dat_prc_filt$y)
-      n_py_prc <- nrow(dat_prc_filt)
+      # # Summary stats from processed dataset
+      # dat_prc_filt <- dplyr::filter(
+      #   dat_prc,
+      #   t_end==year_ & sex==as.integer(sex_=="Male") & age == age_
+      # )
+      # n_deaths_prc <- sum(dat_prc_filt$y)
+      # n_py_prc <- nrow(dat_prc_filt)
       
       # Summary from raw dataset
       df_summ2[nrow(df_summ2)+1,] <- list(
@@ -351,7 +356,7 @@ for (sex_ in c("Male", "Female")) {
 # Plot death rates by age, filtering out highest age bin
 # Export: 10 x 5
 years_plot <- c(2010,2013,2016,2019,2022)
-ggplot(
+plot <- ggplot(
   dplyr::filter(df_summ2, year %in% years_plot),
   aes(x=age, y=rate, color=factor(source))
 ) +
@@ -360,9 +365,14 @@ ggplot(
   scale_x_continuous(breaks=seq(10,60,10)) +
   scale_color_manual(values=colors_2) +
   labs(color="Source", y="Deaths per 1,000 person-years")
+ggsave(
+  filename = paste0("../Figures + Tables/", cfg2$d, " death_rates_by_age - ",
+                    "model ", cfg2$m, ".pdf"),
+  plot = plot, device="pdf", width=10, height=5
+)
 
 # Calculate
-df_45q10 <- data.frame(
+df_45q15 <- data.frame(
   "year" = integer(),
   "sex" = character(),
   "rate" = double(),
@@ -377,15 +387,15 @@ for (sex_ in c("Male", "Female")) {
         year==year_ & sex==sex_ & source==source_
       )$rate
       rate <- 1-prod(1-rate_vec/1000)
-      df_45q10[nrow(df_45q10)+1,] <- list(year_, sex_, rate, source_)
+      df_45q15[nrow(df_45q15)+1,] <- list(year_, sex_, rate, source_)
     }
   }
 }
 
-# Plot 45q10 death rates
+# Plot 45q15 death rates
 # Export 6x4
-ggplot(
-  df_45q10,
+plot <- ggplot(
+  df_45q15,
   aes(x=year, y=rate, color=factor(source))
 ) +
   geom_line() +
@@ -393,3 +403,8 @@ ggplot(
   scale_x_continuous(breaks=c(2010,2015,2020)) +
   scale_color_manual(values=colors_1) +
   labs(color="Source", y="Probability of death between ages 15-60")
+ggsave(
+  filename = paste0("../Figures + Tables/", cfg2$d, " 45q15 - ",
+                    "model ", cfg2$m, ".pdf"),
+  plot = plot, device="pdf", width=6, height=4
+)
