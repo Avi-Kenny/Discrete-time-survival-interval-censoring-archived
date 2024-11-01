@@ -10,30 +10,6 @@ expit <- function(x) {1/(1+exp(-x))}
 
 
 
-#' #' Modified exp function (see scratch for derivation)
-#' #' 
-#' #' @param x Numeric input
-#' #' @return Numeric output
-#' exp2 <- (function() {
-#'   
-#'   expit <- function(x) {1/(1+exp(-x))}
-#'   logit <- function(x) { log(x/(1-x)) }
-#'   e <- -0.1 # This value configurable but hard-coded
-#'   ell <- logit(exp(e))
-#'   x_0 <- e - (ell*exp(ell))/(exp(e)*(1+exp(ell))^2)
-#'   k_0 <- exp(e-ell)*(1+exp(ell))^2
-#'   exp2 <- function(x) {
-#'     if (x<=e) {
-#'       return(exp(x))
-#'     } else {
-#'       return(1/(1+exp(k_0*(x_0-x))))
-#'     }
-#'   }
-#'   return(exp2)
-#' })()
-
-
-
 #' Inverse of complementary log-log link function
 #' 
 #' @param x Numeric input
@@ -196,6 +172,9 @@ construct_basis <- function(which, window_start=NA, window_end=NA) {
   } else if (which=="age (13,20,30,40,60)") {
     grid <- scale_age(seq(13,60, length.out=500))
     k <- scale_age(c(13,20,30,40,60))
+  } else if (which=="year (17,...,22)") {
+    grid <- scale_year(seq(2017,2022, length.out=500))
+    k <- scale_year(seq(2010,2022, length.out=5))
   }
   
   if (substr(which, nchar(which)-1, nchar(which))=="+i") {
