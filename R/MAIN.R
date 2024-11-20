@@ -16,7 +16,7 @@ cfg <- list(
   # sim_n_cores = 300,
   sim_n_cores = as.integer(Sys.getenv("SLURM_CPUS_PER_TASK")), # For parallelizing across multiple CPUs within a single task
   sim_stop_at_error = F,
-  model_version = 34 # For analysis
+  model_version = 35 # For analysis
   # model_version = 7 # For simulations
 )
 

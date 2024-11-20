@@ -87,7 +87,8 @@ if (cfg2$use_simulated_dataset) {
     }
     
     # Read in data
-    dat_prc <- dat_raw <- read.csv("../Data/data_raw_full_v2.csv")
+    # dat_prc <- dat_raw <- read.csv("../Data/data_raw_full_v2.csv")
+    dat_prc <- dat_raw <- read.csv("../Data/data_raw_full_v3.csv")
     log_note("# rows, original", nrow(dat_prc))
     log_note("# individuals, original", length(unique(dat_prc$IIntId)))
     
@@ -106,7 +107,8 @@ if (cfg2$use_simulated_dataset) {
     )
     
     # Drop unnecessary columns
-    dat_prc %<>% subset(select=-c(X, EarliestARTInitDate))
+    dat_prc %<>% subset(select=-c(X, EarliestARTInitDate, HIV_update, age_start,
+                                  age_end, first_hiv_pos, last_hiv_neg))
 
     # Function to convert dates
     convert_date <- memoise(function(date) {
@@ -130,9 +132,8 @@ if (cfg2$use_simulated_dataset) {
     dat_prc %<>% dplyr::mutate(
       died = ifelse(is.na(died), 0, died),
       dob = convert_date(dob),
-      dod = convert_date(dod),
       age = year - dob,
-      ART_status = ifelse(is.na(ART_status), 0, ART_status)
+      ART_update = ifelse(is.na(ART_update), 0, ART_update)
     )
     
     # Filter out children with tests before age 12
@@ -200,7 +201,7 @@ if (cfg2$use_simulated_dataset) {
       hiv_pos_dts = ifelse(is.na(hiv_pos_dts), 9999, hiv_pos_dts),
       hiv_neg_dts = ifelse(HIVResult=="N", year, NA),
       hiv_neg_dts = ifelse(is.na(hiv_neg_dts), 0, hiv_neg_dts),
-      art_pos_dts = ifelse(ART_status==1, year, NA),
+      art_pos_dts = ifelse(ART_update==1, year, NA),
       art_pos_dts = ifelse(is.na(art_pos_dts), 9999, art_pos_dts)
     )
     dat_prc %<>% dplyr::mutate(
@@ -233,7 +234,7 @@ if (cfg2$use_simulated_dataset) {
     rows_pre <- nrow(dat_prc)
     dupe_time_rows <- which(
       dat_prc$id==c(NA,dat_prc$id[1:length(dat_prc$id)-1]) &
-        dat_prc$t_end==c(NA,dat_prc$t_end[1:length(dat_prc$t_end)-1])
+        dat_prc$year==c(NA,dat_prc$year[1:length(dat_prc$year)-1])
     )
     if (length(dupe_time_rows)>0) { dat_prc <- dat_prc[-dupe_time_rows,] }
     log_note("# rows dropped, duplicate person-time", rows_pre-nrow(dat_prc))
@@ -253,14 +254,6 @@ if (cfg2$use_simulated_dataset) {
       "z" = ART_status_new,
       "t_end" = year
     )
-    
-    # # Drop records with ART start date before HIV start date
-    # nrow(dat_prc)
-    # prob_ids <- unique(
-    #   dplyr::filter(dat_prc, first_art_pos_dt<first_hiv_pos_dt)$id
-    # )
-    # dat_prc %<>% dplyr::filter(!(id %in% prob_ids))
-    # nrow(dat_prc)
     
     # Create grouped dataset
     dat_grp <- dat_prc %>% dplyr::group_by(id) %>%
@@ -294,7 +287,10 @@ if (cfg2$use_simulated_dataset) {
     # !!!!! TO DO
 
     # Renumber IDs
-    dat_prc %<>% dplyr::mutate(id=as.integer(factor(id)))
+    dat_prc %<>% dplyr::mutate(
+      id_orig = id,
+      id = as.integer(factor(id))
+    )
     
     # Set data attributes
     attr(dat_prc, "n") <- as.integer(max(dat_prc$id))
@@ -329,7 +325,6 @@ if (cfg2$use_simulated_dataset) {
     # Rescale time variable to start at 1
     dat_prc %<>% dplyr::mutate(
       dob = (dob - cfg2$window_start) + 1,
-      dod = (dod - cfg2$window_start) + 1,
       t_end = (t_end - cfg2$window_start) + 1,
       first_hiv_pos_dt = (first_hiv_pos_dt - cfg2$window_start) + 1,
       last_hiv_neg_dt = (last_hiv_neg_dt - cfg2$window_start) + 1
@@ -363,10 +358,10 @@ if (cfg2$use_simulated_dataset) {
     # write.table(dat_raw, file="dat_raw.csv", sep=",", row.names=FALSE)
     
     cols_to_drop <- c(
-      "dob", "dod", "age", "ResultDate", "HIVResult", "hiv_result_fill",
-      "VisitDate", "ReceivedHIVTestResult", "CurrentlyOnART", "HIV_status",
-      "HadPosHIVResult", "first_hiv_pos_dt", "last_hiv_neg_dt", "ART_status",
-      "first_art_pos_dt", "sex"
+      "dob", "age", "ResultDate", "HIVResult", "hiv_result_fill",
+      "VisitDate", "ReceivedHIVTestResult", "CurrentlyOnART", "HadPosHIVResult",
+      "first_hiv_pos_dt", "last_hiv_neg_dt", "ART_update", "first_art_pos_dt",
+      "sex", "id_orig"
     )
     for (col in cols_to_drop) { dat[[col]] <- NULL }
     
@@ -613,16 +608,8 @@ if (cfg2$run_analysis) {
     par_init <- c(a_x=-5.564, g_x1=0.569, g_x2=-1.992, g_x3=1.610, g_x4=-1.229, t_x1=1.113, t_x2=-1.773, t_x3=-1.267, t_x4=-0.453, a_s=-3.198, g_s1=3.563, g_s2=2.150, g_s3=4.358, g_s4=0.510, beta_x1=0, beta_x2=0, beta_x3=0, beta_x4=0, beta_x5=0, beta_x6=0, beta_x7=0, beta_x8=0, beta_x9=0, a_y=-8.075, g_y1=2.393, g_y2=1.799, g_y3=5.165, g_y4=2.703, t_y1=-0.393, t_y2=-0.460, t_y3=-0.785, t_y4=0.233)
   } else if (cfg$model_version==34) {
     par_init <- c(a_x=-5.564, g_x1=0.569, g_x2=-1.992, g_x3=1.610, g_x4=-1.229, t_x1=1.113, t_x2=-1.773, t_x3=-1.267, t_x4=-0.453, a_s=-3.198, g_s1=3.563, g_s2=2.150, g_s3=4.358, g_s4=0.510, beta_x1=0, beta_x2=0, beta_x3=0, beta_x4=0, a_y=-8.075, g_y1=2.393, g_y2=1.799, g_y3=5.165, g_y4=2.703, t_y1=-0.393, t_y2=-0.460, t_y3=-0.785, t_y4=0.233)
-  }
-  
-  if (F) {
-    # par_true <- c(
-    #   par_true_full$a_x, par_true_full$g_x[1], par_true_full$g_x[2],
-    #   par_true_full$a_y, par_true_full$g_y[1], par_true_full$g_y[2],
-    #   par_true_full$beta_x, par_true_full$beta_z, par_true_full$t_x,
-    #   par_true_full$t_y, par_true_full$a_s, par_true_full$t_s,
-    #   par_true_full$g_s[1], par_true_full$g_s[2]
-    # )
+  } else if (cfg$model_version==35) {
+    par_init <- c(a_x=-5.564, g_x1=0.569, g_x2=-1.992, g_x3=1.610, g_x4=-1.229, t_x1=0, a_s=-3.198, g_s1=3.563, g_s2=2.150, g_s3=4.358, g_s4=0.510, beta_x1=0, beta_x2=0, beta_x3=0, beta_x4=0, a_y=-8.075, g_y1=2.393, g_y2=1.799, g_y3=5.165, g_y4=2.703, t_y1=-0.393, t_y2=-0.460, t_y3=-0.785, t_y4=0.233)
   }
   
   # Run optimizer

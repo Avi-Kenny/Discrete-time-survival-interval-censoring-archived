@@ -35,14 +35,6 @@ case <- function(T_minus, T_plus) {
     if (T_plus==0) { return(2) } else { return(3) }
   }
   
-  # return(dplyr::case_when(
-  #   T_minus==0 & T_plus==0 ~ 1,
-  #   T_minus!=0 & T_plus==0 ~ 2,
-  #   T_minus!=0 & T_plus!=0 ~ 3,
-  #   T_minus==0 & T_plus!=0 ~ 4,
-  #   TRUE ~ 999
-  # ))
-  
 }
 
 

@@ -1,4 +1,3 @@
-
 #####################################.
 ##### Setup and data processing #####
 #####################################.
@@ -26,7 +25,7 @@ if(cfg2$m==26) {
   status_vec <- c("no HIV")
   colors_1 <- c("cyan4", "brown3")
   colors_2 <- c("cyan4", "brown3", "orange")
-} else if (cfg2$m %in% c(29:34)) {
+} else if (cfg2$m %in% c(29:35)) {
   sources <- c("raw", "Model (HIV-)", "Model (HIV+)")
   status_vec <- c("HIV-", "HIV+")
   colors_1 <- c("cyan3", "cyan4", "brown3")

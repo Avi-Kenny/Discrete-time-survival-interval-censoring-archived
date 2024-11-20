@@ -8,35 +8,20 @@
 #' @notes
 #'     - TO DO
 
-generate_data <- function(n, max_time, params, art=FALSE) {
+generate_data <- function(n, max_time, params) {
   
   # Generate dataframe to hold results
-  if (art) {
-    dat <- data.frame(
-      "id" = integer(),
-      "t_end" = integer(),
-      "w_1" = integer(),
-      "w_2" = double(),
-      "x" = integer(),
-      "z" = integer(),
-      "y" = integer(),
-      "v" = integer(),
-      "d" = integer(),
-      "u" = integer()
-    )
-  } else {
-    dat <- data.frame(
-      "id" = integer(),
-      "t_end" = integer(),
-      "w_1" = integer(),
-      "w_2" = double(),
-      "x" = integer(),
-      "y" = integer(),
-      "v" = integer(),
-      "d" = integer(),
-      "u" = integer()
-    )
-  }
+  dat <- data.frame(
+    "id" = integer(),
+    "t_end" = integer(),
+    "w_1" = integer(),
+    "w_2" = double(),
+    "x" = integer(),
+    "y" = integer(),
+    "v" = integer(),
+    "d" = integer(),
+    "u" = integer()
+  )
   
   # Generate baseline covariates
   id <- c(1:n)
@@ -55,8 +40,8 @@ generate_data <- function(n, max_time, params, art=FALSE) {
   for (i in c(1:n)) {
     
     # Initial values
-    x <- y <- v <- z <- w_2_vec <- c()
-    event <- z_prev <- 0
+    x <- y <- v <- w_2_vec <- c()
+    event <- 0
     known_pos <- known_pos_prev <- 0
     j <- 1
     w_1_ <- w_1[i]
@@ -98,34 +83,12 @@ generate_data <- function(n, max_time, params, art=FALSE) {
       known_pos[j] <- known_pos_prev + (1-known_pos_prev)*v[j]*x[j]
       known_pos_prev <- known_pos[j]
       
-      # Sample ART status
-      if (art) {
-        if (known_pos[j]==0) {
-          p_art <- 0
-        } else if (z_prev==1) {
-          p_art <- 1
-        } else {
-          p_art <- icll(
-            p$a_z + p$g_z[1]*w_1_ + p$g_z[2]*w_2_ + p$t_z*cal_time_sc
-          )
-        }
-        z[j] <- z_prev <- rbinom(n=1, size=1, prob=p_art)
-      } else {
-        z[j] <- z_prev <- 0
-      }
-      
       # Sample events
-      if (art) {
-        p_event <- icll(
-          p$a_y + p$g_y[1]*w_1_ + p$g_y[2]*w_2_ + p$t_y*cal_time_sc +
-            p$beta_x*x[j] + p$beta_z*z[j]
-        )
-      } else {
-        p_event <- icll(
-          p$a_y + p$g_y[1]*w_1_ + p$g_y[2]*w_2_ + p$t_y*cal_time_sc +
-            p$beta_x*x[j]
-        )
-      }
+      p_event <- icll(
+        p$a_y + p$g_y[1]*w_1_ + p$g_y[2]*w_2_ + p$t_y*cal_time_sc +
+          p$beta_x*x[j]
+      )
+      
       event <- rbinom(n=1, size=1, prob=p_event)
       y[j] <- event
       
@@ -151,17 +114,10 @@ generate_data <- function(n, max_time, params, art=FALSE) {
                  T_plus=T_pm$T_plus)
     
     # Add results to dataframe
-    if (art) {
-      dat <- rbind(dat, list(
-        id=rep(i,j), t_end=c(s_i_:(s_i_+j-1)), w_1=rep(w_1_,j), w_2=w_2_vec,
-        z=z, y=y, v=v, delta=d, u=x*d # x=x, 
-      ))
-    } else {
-      dat <- rbind(dat, list(
-        id=rep(i,j), t_end=c(s_i_:(s_i_+j-1)), w_1=rep(w_1_,j), w_2=w_2_vec,
-        y=y, v=v, delta=d, u=x*d # x=x, 
-      ))
-    }
+    dat <- rbind(dat, list(
+      id=rep(i,j), t_end=c(s_i_:(s_i_+j-1)), w_1=rep(w_1_,j), w_2=w_2_vec,
+      y=y, v=v, delta=d, u=x*d # x=x, 
+    ))
     
     # Store additional vectors
     vec_T_minus[i] <- T_pm$T_minus

@@ -58,7 +58,7 @@ transform_dataset <- function(dat, model_version=0, window_start, window_end) {
       d$dat_i$b10_2 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b10(j,2) }),4)
       d$dat_i$b10_3 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b10(j,3) }),4)
       d$dat_i$b10_4 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b10(j,4) }),4)
-    } else if (model_version==34) {
+    } else if (model_version %in% c(34:35)) {
       d$dat_i$b9_1 <- signif(sapply(d$dat_i$w_1, function(w_1) { b9(w_1,1) }),4)
       d$dat_i$b9_2 <- signif(sapply(d$dat_i$w_1, function(w_1) { b9(w_1,2) }),4)
       d$dat_i$b9_3 <- signif(sapply(d$dat_i$w_1, function(w_1) { b9(w_1,3) }),4)
@@ -152,6 +152,8 @@ construct_negloglik <- function(
       params <- list(a_x=p[1], g_x=p[2:5], t_x=p[6:9], a_s=p[10], g_s=p[11:14], beta_x=p[15:23], a_y=p[24], g_y=p[25:28], t_y=p[29:32])
     } else if (model_version==34) {
       params <- list(a_x=p[1], g_x=p[2:5], t_x=p[6:9], a_s=p[10], g_s=p[11:14], beta_x=p[15:18], a_y=p[19], g_y=p[20:23], t_y=p[24:27])
+    } else if (model_version==35) {
+      params <- list(a_x=p[1], g_x=p[2:5], t_x=p[6], a_s=p[7], g_s=p[8:11], beta_x=p[12:15], a_y=p[16], g_y=p[17:20], t_y=p[21:24])
     }
     
     # Compute the negative likelihood across individuals
@@ -165,31 +167,6 @@ construct_negloglik <- function(
       )))
       return(nll)
       
-      if (F) {
-        # # Debugging 2
-        # nll <- -1 * sum(log(unlist(
-        #   parallel::parLapply(cl, dat_objs_wrapper, function(d) {
-        #     lapply(d, function(d2) { Sys.sleep(0.0001); return(1); })
-        #   })
-        # )))
-        # return(nll)
-        
-        # # !!!!! DEBUGGING 1
-        # if (F) {
-        #   nll <- -1 * sum(log(unlist(
-        #     lapply(dat_objs_wrapper, function(d) {
-        #       st <- system.time({
-        #         x <- lapply(d, function(d2) { lik_fn2(d2, params, inds) })
-        #       })
-        #       print(paste0("Length(d): ", length(d)))
-        #       print("Time:")
-        #       print(st)
-        #     })
-        #   )))
-        #   return(nll)
-        # }
-      }
-
     } else {
       
       nll <- -1 * sum(log(unlist(
@@ -265,9 +242,6 @@ lik_fn2 <- function(d, params, inds) {
       
   }
   
-  # if (is.na(f2) || is.nan(f2)) {
-  #   browser()
-  # } # Debugging
   if (f2<=0) {
     f2 <- 1e-10
     # warning("Likelihood of zero")
@@ -341,6 +315,29 @@ if (cfg$model_version==7) {
             params$t_x[4]*spl[["b12_4"]] +
             params$g_x[1]*spl[["b9_1"]] + params$g_x[2]*spl[["b9_2"]] +
             params$g_x[3]*spl[["b9_3"]] + params$g_x[4]*spl[["b9_4"]]
+        )
+        if (x==1) { return(prob) } else { return(1-prob) }
+      }
+    } else {
+      prob <- icll(
+        params$a_s + params$g_s[1]*spl[["b9_1"]] + params$g_s[2]*spl[["b9_2"]] +
+          params$g_s[3]*spl[["b9_3"]] + params$g_s[4]*spl[["b9_4"]]
+      )
+      if (x==1) { return(prob) } else { return(1-prob) }
+    }
+  }
+  
+} else if (cfg$model_version==35) {
+  
+  f_x <- function(x, x_prev, w, j, s, spl, params) {
+    if (s==0) {
+      if (x==1 && x_prev==1) {
+        return(1)
+      } else {
+        prob <- icll(
+          params$a_x + params$t_x[1]*j + params$g_x[1]*spl[["b9_1"]] +
+            params$g_x[2]*spl[["b9_2"]] + params$g_x[3]*spl[["b9_3"]] +
+            params$g_x[4]*spl[["b9_4"]]
         )
         if (x==1) { return(prob) } else { return(1-prob) }
       }
@@ -472,7 +469,7 @@ if (cfg$model_version==7) {
     if (y==1) { return(prob) } else { return(1-prob) }
   }
   
-} else if (cfg$model_version==34) {
+} else if (cfg$model_version %in% c(34:35)) {
   
   f_y <- function(y, x, w, z, j, spl, params) {
     prob <- icll(
