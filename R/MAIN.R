@@ -5,10 +5,10 @@
 # Sys.setenv(avi_r=2) # For running locally
 # Sys.setenv(avi_reltol=1e-5) # For running locally
 cfg <- list(
-  run_dqa = F,
+  run_dqa = T,
   run_sims = F,
-  run_analysis = T,
-  run_process = F,
+  run_analysis = F,
+  run_process = T,
   sim_level_set = "level_set_1",
   sim_run_or_update = "run",
   sim_num = 1000,
@@ -32,13 +32,6 @@ source("R/config.R", local=T)
   source("R/likelihood.R", local=T)
 }
 
-if (cfg$run_dqa) {
-  
-  # Data quality assurance
-  source("R/dqa.R", local=T)
-  
-}
-
 if (cfg$run_analysis) {
   
   source("R/analysis.R", local=T)
@@ -57,5 +50,12 @@ if (cfg$run_process) {
   
   # Tables and figures
   source("R/process.R", local=T)
+  
+}
+
+if (cfg$run_dqa) {
+  
+  # Data quality assurance
+  source("R/dqa.R", local=T)
   
 }

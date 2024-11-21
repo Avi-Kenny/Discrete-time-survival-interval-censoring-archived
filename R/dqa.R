@@ -31,6 +31,13 @@ if(cfg2$m==26) {
   colors_1 <- c("cyan3", "cyan4", "brown3")
   colors_2 <- c("cyan3", "cyan4", "brown3", "orange")
 }
+if (cfg2$w_start==2010) {
+  breaks_year <- c(2010,2015,2020)
+  years_plot <- c(2010,2013,2016,2019,2022)
+} else if (cfg2$w_start==2017) {
+  breaks_year <- c(2017,2022)
+  years_plot <- c(2017,2018,2020,2021,2022)
+}
 
 # Load datasets
 {
@@ -46,7 +53,7 @@ if(cfg2$m==26) {
 
 # # dat_prc: Rescale and rename variables
 # dat_prc %<>% dplyr::mutate(
-#   t_end = (t_end-1)+2010,
+#   t_end = (t_end-1)+cfg2$w_start,
 #   age = round(w_1*100),
 #   sex = w_2
 # )
@@ -86,7 +93,7 @@ df_summ <- data.frame(
 )
 
 # Populate df_summ
-for (year_ in c(2010:2022)) {
+for (year_ in c(cfg2$w_start:cfg2$w_end)) {
   
   yr_s <- as.Date(x=paste0(year_,"-01-01"))
   yr_e <- as.Date(x=paste0(year_,"-12-31"))
@@ -184,7 +191,7 @@ plot <- ggplot(
 ) +
   geom_line() +
   facet_grid(rows=dplyr::vars(sex), cols=dplyr::vars(age_bin)) +
-  scale_x_continuous(breaks=c(2010,2015,2020)) +
+  scale_x_continuous(breaks=breaks_year) +
   scale_color_manual(values=colors_1) +
   labs(color="Source", y="Deaths per 1,000 person-years")
 ggsave(
@@ -200,7 +207,7 @@ ggsave(
 # ) +
 #   geom_line() +
 #   facet_grid(rows=dplyr::vars(sex), cols=dplyr::vars(age_bin)) +
-#   scale_x_continuous(breaks=c(2010,2015,2020)) +
+#   scale_x_continuous(breaks=breaks_year) +
 #   labs(color="Source", y="# Deaths total")
 
 # # Plot person-years, filtering out highest age bin
@@ -210,7 +217,7 @@ ggsave(
 # ) +
 #   geom_line() +
 #   facet_grid(rows=dplyr::vars(sex), cols=dplyr::vars(age_bin)) +
-#   scale_x_continuous(breaks=c(2010,2015,2020)) +
+#   scale_x_continuous(breaks=breaks_year) +
 #   labs(color="Source", y="# person-years total")
 
 # Summary stats: person-time
@@ -243,7 +250,7 @@ df_summ2 <- data.frame(
 )
 
 # Populate df_summ2
-for (year_ in c(2010:2022)) {
+for (year_ in c(cfg2$w_start:cfg2$w_end)) {
   
   yr_s <- as.Date(x=paste0(year_,"-01-01"))
   yr_e <- as.Date(x=paste0(year_,"-12-31"))
@@ -331,7 +338,7 @@ for (year_ in c(2010:2022)) {
 
 # Calculate smoothed rates
 for (sex_ in c("Male", "Female")) {
-  for (year_ in c(2010:2022)) {
+  for (year_ in c(cfg2$w_start:cfg2$w_end)) {
 
     source_ <- "raw"
     df_filt <- dplyr::filter(
@@ -354,7 +361,6 @@ for (sex_ in c("Male", "Female")) {
 
 # Plot death rates by age, filtering out highest age bin
 # Export: 10 x 5
-years_plot <- c(2010,2013,2016,2019,2022)
 plot <- ggplot(
   dplyr::filter(df_summ2, year %in% years_plot),
   aes(x=age, y=rate, color=factor(source))
@@ -379,7 +385,7 @@ df_45q15 <- data.frame(
 )
 
 for (sex_ in c("Male", "Female")) {
-  for (year_ in c(2010:2022)) {
+  for (year_ in c(cfg2$w_start:cfg2$w_end)) {
     for (source_ in sources) {
       rate_vec <- dplyr::filter(
         df_summ2,
@@ -399,7 +405,7 @@ plot <- ggplot(
 ) +
   geom_line() +
   facet_grid(cols=dplyr::vars(sex)) +
-  scale_x_continuous(breaks=c(2010,2015,2020)) +
+  scale_x_continuous(breaks=breaks_year) +
   scale_color_manual(values=colors_1) +
   labs(color="Source", y="Probability of death between ages 15-60")
 ggsave(

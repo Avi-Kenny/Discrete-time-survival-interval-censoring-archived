@@ -9,8 +9,8 @@ cfg2 <- list(
   w_start = 2017,
   w_end = 2022,
   # ests = readRDS("objs/ests_28_full_20240926.rds")
-  ests_M = readRDS("objs/ests_35_full_M_20241112.rds"),
-  ests_F = readRDS("objs/ests_35_full_F_20241112.rds")
+  ests_M = readRDS("objs/ests_35_full_M_20241113.rds"),
+  ests_F = readRDS("objs/ests_35_full_F_20241113.rds")
 )
 
 # Construct spline bases
@@ -314,6 +314,9 @@ plot_mod <- function(x_axis, type, m, w_start, w_end, y_max) {
   } else if (w_start==2010) {
     j_vals <- c(1,6,11)
     j_labs <- c("2010","2015","2020")
+  } else if (w_start==2017) {
+    j_vals <- c(1,3,6)
+    j_labs <- c("2017","2019","2022")
   }
   
   if (x_axis=="Age") {
@@ -401,6 +404,8 @@ plot_mort3 <- function(x_axis, m, w_start, w_end, y_max=NA, title=T) {
       outer <- c(1,11,21)
     } else if (w_start==2010) {
       outer <- c(1,6,11)
+    } else if (w_start==2017) {
+      outer <- c(1,3,6)
     }
     prob2 <- function(type, which, outer) {
       1000 * sapply(grid, function(inner) {
@@ -508,6 +513,8 @@ plot_sero3 <- function(m, w_start, y_max=NA, title=T) {
     outer <- c(1,11,21)
   } else if (w_start==2010) {
     outer <- c(1,6,11)
+  } else if (w_start==2017) {
+    outer <- c(1,3,6)
   }
   prob2 <- function(which, outer) {
     sapply(grid, function(inner) {
@@ -866,7 +873,8 @@ if (cfg2$process_analysis) {
         params <- c("t_x1", "t_x2", "t_x3", "t_x4")
         A <- A_b12
       } else if (cfg2$m==35) {
-        stop("TO DO")
+        params <- c("t_x1")
+        A <- function(j) { matrix(j) }
       }
       x_axis <- "cal time"
     } else if (plot_name=="HR_sero_age") {
@@ -922,16 +930,6 @@ if (cfg2$process_analysis) {
       } else {
         return(exp(est + c(0,-1.96,1.96)*se))
       }
-    }
-    
-    if (x_axis=="cal time") {
-      x_grid <- seq(cfg2$w_start,cfg2$w_end,0.1)
-      grid <- sapply(x_grid, function(x) { (x-cfg2$w_start+1)/10 })
-      breaks <- seq(cfg2$w_start, cfg2$w_end, length.out=5)
-    } else if (x_axis=="age") {
-      x_grid <- seq(13,60,0.1)
-      grid <- sapply(x_grid, function(x) { x / 100 })
-      breaks <- seq(20,60, length.out=5)
     }
     
     if (plot_name=="HR_mort_hiv_cal") {
@@ -1079,6 +1077,17 @@ if (cfg2$process_analysis) {
       )
       
     } else {
+      
+      if (x_axis=="cal time") {
+        x_grid <- seq(cfg2$w_start,cfg2$w_end,0.1)
+        grid <- sapply(x_grid, function(x) { (x-cfg2$w_start+1)/10 })
+        breaks <- seq(cfg2$w_start, cfg2$w_end, length.out=5)
+      } else if (x_axis=="age") {
+        x_grid <- seq(13,60,0.1)
+        grid <- sapply(x_grid, function(x) { x / 100 })
+        breaks <- seq(20,60, length.out=5)
+      }
+      
       df_plot <- data.frame(
         x = rep(x_grid,4),
         y = c(
