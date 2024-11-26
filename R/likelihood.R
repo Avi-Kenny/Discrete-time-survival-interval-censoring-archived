@@ -49,7 +49,7 @@ transform_dataset <- function(dat, model_version=0, window_start, window_end) {
     d$dat_i$cal_time_sc <- d$dat_i$t_end / 10 # Rescaling originally done to prevent optimization issues; check if this is still needed
     
     # Apply spline bases to dataframe
-    if (model_version %in% c(29:33)) {
+    if (model_version %in% c(29:33,36)) {
       d$dat_i$b9_1 <- signif(sapply(d$dat_i$w_1, function(w_1) { b9(w_1,1) }),4)
       d$dat_i$b9_2 <- signif(sapply(d$dat_i$w_1, function(w_1) { b9(w_1,2) }),4)
       d$dat_i$b9_3 <- signif(sapply(d$dat_i$w_1, function(w_1) { b9(w_1,3) }),4)
@@ -154,6 +154,8 @@ construct_negloglik <- function(
       params <- list(a_x=p[1], g_x=p[2:5], t_x=p[6:9], a_s=p[10], g_s=p[11:14], beta_x=p[15:18], a_y=p[19], g_y=p[20:23], t_y=p[24:27])
     } else if (model_version==35) {
       params <- list(a_x=p[1], g_x=p[2:5], t_x=p[6], a_s=p[7], g_s=p[8:11], beta_x=p[12:15], a_y=p[16], g_y=p[17:20], t_y=p[21:24])
+    } else if (model_version==36) {
+      params <- list(a_x=p[1], g_x=p[2:6], t_x=p[7:10], a_s=p[11], g_s=p[12:16], beta_x=p[17:20], a_y=p[21], g_y=p[22:26], t_y=p[27:30])
     }
     
     # Compute the negative likelihood across individuals
@@ -350,6 +352,33 @@ if (cfg$model_version==7) {
     }
   }
   
+} else if (cfg$model_version==36) {
+  
+  f_x <- function(x, x_prev, w, j, s, spl, params) {
+    if (s==0) {
+      if (x==1 && x_prev==1) {
+        return(1)
+      } else {
+        prob <- icll(
+          params$a_x + params$t_x[1]*spl[["b10_1"]] +
+            params$t_x[2]*spl[["b10_2"]] + params$t_x[3]*spl[["b10_3"]] +
+            params$t_x[4]*spl[["b10_4"]] +
+            params$g_x[1]*spl[["b9_1"]] + params$g_x[2]*spl[["b9_2"]] +
+            params$g_x[3]*spl[["b9_3"]] + params$g_x[4]*spl[["b9_4"]] +
+            params$g_x[5]*w[2]
+        )
+        if (x==1) { return(prob) } else { return(1-prob) }
+      }
+    } else {
+      prob <- icll(
+        params$a_s + params$g_s[1]*spl[["b9_1"]] + params$g_s[2]*spl[["b9_2"]] +
+          params$g_s[3]*spl[["b9_3"]] + params$g_s[4]*spl[["b9_4"]] +
+          params$g_s[5]*w[2]
+      )
+      if (x==1) { return(prob) } else { return(1-prob) }
+    }
+  }
+  
 }
 
 
@@ -480,6 +509,21 @@ if (cfg$model_version==7) {
         params$g_y[4]*spl[["b9_4"]] + params$t_y[1]*spl[["b12_1"]] +
         params$t_y[2]*spl[["b12_2"]] + params$t_y[3]*spl[["b12_3"]] +
         params$t_y[4]*spl[["b12_4"]]
+    )
+    if (y==1) { return(prob) } else { return(1-prob) }
+  }
+  
+} else if (cfg$model_version==36) {
+  
+  f_y <- function(y, x, w, z, j, spl, params) {
+    prob <- icll(
+      x*(params$beta_x[1] + params$beta_x[2]*j +
+           params$beta_x[3]*w[1] + params$beta_x[4]*j*w[1]) +
+        params$a_y + params$g_y[1]*spl[["b9_1"]] +
+        params$g_y[2]*spl[["b9_2"]] + params$g_y[3]*spl[["b9_3"]] +
+        params$g_y[4]*spl[["b9_4"]] + params$g_y[5]*w[2] +
+        params$t_y[1]*spl[["b10_1"]] + params$t_y[2]*spl[["b10_2"]] +
+        params$t_y[3]*spl[["b10_3"]] + params$t_y[4]*spl[["b10_4"]]
     )
     if (y==1) { return(prob) } else { return(1-prob) }
   }

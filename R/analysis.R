@@ -23,7 +23,7 @@ cfg2 <- list(
   opt_maxit = 5000,
   opt_r = 2,
   opt_reltol = 1e-5,
-  window_start = 2017, # Spline bases for year must reflect this
+  window_start = 2010, # Spline bases for year must reflect this
   window_end = 2022, # Spline bases for year must reflect this
   age_end = 60, # Spline bases for age must reflect this
   model_sex = Sys.getenv("model_sex")
@@ -88,7 +88,7 @@ if (cfg2$use_simulated_dataset) {
     
     # Read in data
     # dat_prc <- dat_raw <- read.csv("../Data/data_raw_full_v2.csv")
-    dat_prc <- dat_raw <- read.csv("../Data/data_raw_full_v3.csv")
+    dat_prc <- dat_raw <- read.csv("../Data/pip_hiv_missingness_Avi_2024-11-21_mod.csv")
     log_note("# rows, original", nrow(dat_prc))
     log_note("# individuals, original", length(unique(dat_prc$IIntId)))
     
@@ -107,7 +107,7 @@ if (cfg2$use_simulated_dataset) {
     )
     
     # Drop unnecessary columns
-    dat_prc %<>% subset(select=-c(X, EarliestARTInitDate, HIV_update, age_start,
+    dat_prc %<>% subset(select=-c(X, LocationId, EarliestARTInitDate, HIV_update, age_start,
                                   age_end, first_hiv_pos, last_hiv_neg))
 
     # Function to convert dates
@@ -121,6 +121,11 @@ if (cfg2$use_simulated_dataset) {
     rows_pre <- nrow(dat_prc)
     dat_prc %<>% dplyr::filter(sex!="Unknown")
     log_note("# rows dropped, sex=='Unknown'", rows_pre-nrow(dat_prc))
+    
+    # Filter out obs with missing `PIPSA`
+    rows_pre <- nrow(dat_prc)
+    dat_prc %<>% dplyr::filter(!is.na(PIPSA))
+    log_note("# rows dropped, missing `PIPSA`", rows_pre-nrow(dat_prc))
     
     # Filter dataset based on sex
     rows_pre <- nrow(dat_prc)
@@ -332,8 +337,12 @@ if (cfg2$use_simulated_dataset) {
     attr(dat_prc, "s_i") <- (attr(dat_prc, "s_i") - cfg2$window_start) + 1
     attr(dat_prc, "t_i") <- (attr(dat_prc, "t_i") - cfg2$window_start) + 1
     
-    # Create (scaled) age variable
-    dat_prc %<>% dplyr::mutate(w_1 = (t_end-dob)/100)
+    # Create scaled age variable (w_1) and geography covariate (w_2)
+    # Geography covariate: 1="PIPSA North", 0="PIPSA South"
+    dat_prc %<>% dplyr::mutate(
+      w_1 = (t_end-dob)/100,
+      w_2 = In(PIPSA=="N")
+    )
     
     # DQA
     if (F) {
@@ -358,10 +367,10 @@ if (cfg2$use_simulated_dataset) {
     # write.table(dat_raw, file="dat_raw.csv", sep=",", row.names=FALSE)
     
     cols_to_drop <- c(
-      "dob", "age", "ResultDate", "HIVResult", "hiv_result_fill",
+      "DoB", "dob", "age", "ResultDate", "HIVResult", "hiv_result_fill",
       "VisitDate", "ReceivedHIVTestResult", "CurrentlyOnART", "HadPosHIVResult",
       "first_hiv_pos_dt", "last_hiv_neg_dt", "ART_update", "first_art_pos_dt",
-      "sex", "id_orig"
+      "sex", "id_orig", "PIPSA", "year_begin", "year_end"
     )
     for (col in cols_to_drop) { dat[[col]] <- NULL }
     
@@ -557,7 +566,7 @@ if (cfg2$run_analysis) {
   
   dat_i_names <- names(dat_objs[[1]]$dat_i)
   inds <- list(
-    w = which(dat_i_names %in% c("w_1")),
+    w = which(dat_i_names %in% c("w_1", "w_2")),
     spl = which(
       substr(dat_i_names, 1, 1)=="b" & (
         substr(dat_i_names, 3, 3)=="_" | substr(dat_i_names, 4, 4)=="_"
@@ -610,6 +619,8 @@ if (cfg2$run_analysis) {
     par_init <- c(a_x=-5.564, g_x1=0.569, g_x2=-1.992, g_x3=1.610, g_x4=-1.229, t_x1=1.113, t_x2=-1.773, t_x3=-1.267, t_x4=-0.453, a_s=-3.198, g_s1=3.563, g_s2=2.150, g_s3=4.358, g_s4=0.510, beta_x1=0, beta_x2=0, beta_x3=0, beta_x4=0, a_y=-8.075, g_y1=2.393, g_y2=1.799, g_y3=5.165, g_y4=2.703, t_y1=-0.393, t_y2=-0.460, t_y3=-0.785, t_y4=0.233)
   } else if (cfg$model_version==35) {
     par_init <- c(a_x=-5.564, g_x1=0.569, g_x2=-1.992, g_x3=1.610, g_x4=-1.229, t_x1=0, a_s=-3.198, g_s1=3.563, g_s2=2.150, g_s3=4.358, g_s4=0.510, beta_x1=0, beta_x2=0, beta_x3=0, beta_x4=0, a_y=-8.075, g_y1=2.393, g_y2=1.799, g_y3=5.165, g_y4=2.703, t_y1=-0.393, t_y2=-0.460, t_y3=-0.785, t_y4=0.233)
+  } else if (cfg$model_version==36) {
+    par_init <- c(a_x=-6.0, g_x1=0.8, g_x2=-1.7, g_x3=2.1, g_x4=-1.5, g_x5=0, t_x1=0.9, t_x2=-1.5, t_x3=-1.3, t_x4=-0.8, a_s=-3.1, g_s1=3.5, g_s2=2.1, g_s3=4.3, g_s4=0.5, g_s5=0, beta_x1=1.6, beta_x2=-0.1, beta_x3=0.4, beta_x4=-1.6, a_y=-7.9, g_y1=2.2, g_y2=1.6, g_y3=4.6, g_y4=2.7, g_y5=0, t_y1=-0.3, t_y2=-0.3, t_y3=-0.7, t_y4=-0.1)
   }
   
   # Run optimizer

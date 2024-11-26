@@ -5,12 +5,12 @@
 cfg2 <- list(
   process_sims = F,
   process_analysis = T,
-  m = 35,
-  w_start = 2017,
+  m = 36,
+  w_start = 2010,
   w_end = 2022,
   # ests = readRDS("objs/ests_28_full_20240926.rds")
-  ests_M = readRDS("objs/ests_35_full_M_20241113.rds"),
-  ests_F = readRDS("objs/ests_35_full_F_20241113.rds")
+  ests_M = readRDS("objs/ests_36_full_M_20241126.rds"),
+  ests_F = readRDS("objs/ests_36_full_F_20241126.rds")
 )
 
 # Construct spline bases
