@@ -1,3 +1,101 @@
+############################################.
+##### plot_mod, archived on 2024-11-27 #####
+############################################.
+
+if (F) {
+  
+  #' Return plot of modeled probabilities
+  #' @param x_axis One of c("Year", "Age"); the variable to go on the X-axis
+  #' @param type One of c("sero", "init", "mort (HIV-)", "mort (HIV+)",
+  #'     "mort (HIV+ART-)", "mort (HIV+ART+)")
+  #'     
+  #' @param m An integer representing the model version number
+  #' @param w_start An integer representing the window start calendar year
+  #' @param w_end An integer representing the window end calendar year
+  #' @param y_max Maximum Y value for the plot
+  #' @return ggplot2 object
+  plot_mod <- function(x_axis, type, m, w_start, w_end, y_max) {
+    
+    if (w_start==2000) {
+      j_vals <- c(2000,2010,2020)
+    } else if (w_start==2010) {
+      j_vals <- c(2010,2015,2020)
+    } else if (w_start==2017) {
+      j_vals <- c(2017,2019,2022)
+    }
+    
+    if (x_axis=="Age") {
+      grid <- seq(13,60,0.1)
+      color <- "Year"
+      plot_data <- data.frame(
+        x = rep(grid,6),
+        Probability = c(
+          sapply(grid, function(w_1) { prob(type, m, j=j_vals[1], w_1, w_2=0, w_3=0, year_start=w_start) }),
+          sapply(grid, function(w_1) { prob(type, m, j=j_vals[1], w_1, w_2=0, w_3=1, year_start=w_start) }),
+          sapply(grid, function(w_1) { prob(type, m, j=j_vals[2], w_1, w_2=0, w_3=0, year_start=w_start) }),
+          sapply(grid, function(w_1) { prob(type, m, j=j_vals[2], w_1, w_2=0, w_3=1, year_start=w_start) }),
+          sapply(grid, function(w_1) { prob(type, m, j=j_vals[3], w_1, w_2=0, w_3=0, year_start=w_start) }),
+          sapply(grid, function(w_1) { prob(type, m, j=j_vals[3], w_1, w_2=0, w_3=1, year_start=w_start) })
+        ),
+        Sex = rep(rep(c("Female", "Male"),3), each=length(grid)),
+        color = factor(rep(j_vals, each=2*length(grid)))
+      )
+    } else if (x_axis=="Year") {
+      grid <- seq(w_start,w_end,0.01)
+      color <- "Age"
+      plot_data <- data.frame(
+        x = rep(grid,6),
+        Probability = c(
+          sapply(grid, function(j) { prob(type, m, j, w_1=20, w_2=0, w_3=0, year_start=w_start) }),
+          sapply(grid, function(j) { prob(type, m, j, w_1=20, w_2=0, w_3=1, year_start=w_start) }),
+          sapply(grid, function(j) { prob(type, m, j, w_1=35, w_2=0, w_3=0, year_start=w_start) }),
+          sapply(grid, function(j) { prob(type, m, j, w_1=35, w_2=0, w_3=1, year_start=w_start) }),
+          sapply(grid, function(j) { prob(type, m, j, w_1=50, w_2=0, w_3=0, year_start=w_start) }),
+          sapply(grid, function(j) { prob(type, m, j, w_1=50, w_2=0, w_3=1, year_start=w_start) })
+        ),
+        Sex = rep(rep(c("Female", "Male"),3), each=length(grid)),
+        color = rep(c("20","35","50"), each=2*length(grid))
+      )
+    }
+    plot_data %<>% dplyr::mutate(grp=factor(paste0(Sex,color)))
+    
+    # Seroconversion prob as function of age
+    if (type=="sero") {
+      title = "Seroconversion prob (per year); model"
+    } else if (type=="init") {
+      title = "Prob an individial's initial status is HIV+; model"
+    } else if (type=="mort (HIV-)") {
+      title = "Mortality prob among HIV- (per year); model"
+    } else if (type=="mort (HIV+)") {
+      title = "Mortality prob among HIV+ (per year); model"
+    } else if (type=="mort (HIV+ART-)") {
+      title = "Mortality prob among HIV+ART- (per year); model"
+    } else if (type=="mort (HIV+ART+)") {
+      title = "Mortality prob among HIV+ART+ (per year); model"
+    }
+    title <- paste0(title, " v", m)
+    plot <- ggplot(
+      plot_data,
+      aes(x=x, y=Probability, color=color, group=grp,
+          linetype=Sex)
+    ) +
+      geom_line() +
+      coord_cartesian(ylim=c(0,y_max)) +
+      labs(title=title, x=x_axis, color=color) +
+      theme(plot.background = element_rect(color="black"))
+    
+    return(plot)
+    
+  }
+  
+  
+  
+  
+  
+}
+
+
+
 #################################################.
 ##### Old model code archived on 2024-11-02 #####
 #################################################.
