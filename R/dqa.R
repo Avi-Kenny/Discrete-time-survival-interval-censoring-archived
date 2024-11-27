@@ -25,7 +25,7 @@ if(cfg2$m==26) {
   status_vec <- c("no HIV")
   colors_1 <- c("cyan4", "brown3")
   colors_2 <- c("cyan4", "brown3", "orange")
-} else if (cfg2$m %in% c(29:35)) {
+} else if (cfg2$m %in% c(29:36)) {
   sources <- c("raw", "Model (HIV-)", "Model (HIV+)")
   status_vec <- c("HIV-", "HIV+")
   colors_1 <- c("cyan3", "cyan4", "brown3")
@@ -170,8 +170,8 @@ for (year_ in c(cfg2$w_start:cfg2$w_end)) {
         age_ <- mean(age_bin)
         type <- paste0("mort (", status, ")")
         rate <- round(1000 * prob(
-          type=type, m=cfg2$m, j=year_sc, w_1=age_,
-          w_2=as.integer(sex_=="Male"), which="est"
+          type=type, m=cfg2$m, j=year_sc, w_1=age_, w_2=0,
+          w_3=as.integer(sex_=="Male"), which="est"
         ), 1)
         df_summ[nrow(df_summ)+1,] <- list(
           year_, sex_, paste0(age_bin, collapse="-"), NA, NA,
@@ -323,8 +323,8 @@ for (year_ in c(cfg2$w_start:cfg2$w_end)) {
         year_sc <- year_ - cfg2$w_start + 1
         type <- paste0("mort (", status, ")")
         rate <- round(1000 * prob(
-          type=type, m=cfg2$m, j=year_sc, w_1=age_,
-          w_2=as.integer(sex_=="Male"), which="est"
+          type=type, m=cfg2$m, j=year_sc, w_1=age_, w_2=0,
+          w_3=as.integer(sex_=="Male"), which="est"
         ), 1)
         df_summ2[nrow(df_summ2)+1,] <- list(
           year_, sex_, age_, NA, NA,

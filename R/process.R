@@ -153,11 +153,12 @@ if (cfg2$process_sims) {
 #' @param j Calendar time (in years, starting at 1, where 1 represents the
 #'     first year in the dataset)
 #' @param w_1 Age (in years)
-#' @param w_2 Sex (0=female, 1=male)
+#' @param w_2 Geography (0="PIPSA South", 1="PIPSA North")
+#' @param w_3 Sex (0=female, 1=male)
 #' @param m An integer representing the model version number
 #' @param which One of c("est", "ci_lo", "ci_up")
 #' @return Numeric probability
-prob <- function(type, m, j, w_1, w_2, which="est") {
+prob <- function(type, m, j, w_1, w_2, w_3, which="est") {
   
   j <- j/10
   w_1 <- w_1/100
@@ -189,15 +190,33 @@ prob <- function(type, m, j, w_1, w_2, which="est") {
       )))
       p2 <- c("a_x", "t_x1", "g_x1", "g_x2", "g_x3", "g_x4")
       
+    } else if (m==36) {
+      
+      A <- t(matrix(c(
+        1, b10(j,1), b10(j,2), b10(j,3), b10(j,4), b9(w_1,1), b9(w_1,2),
+        b9(w_1,3), b9(w_1,4), w_2
+      )))
+      p2 <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3",
+              "g_x4", "g_x5")
+      
     }
     
   } else if (type=="init") {
     
     if (m %in% c(29:35)) {
+      
       A <- t(matrix(c(
         1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4)
       )))
       p2 <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4")
+      
+    } else if (m==36) {
+      
+      A <- t(matrix(c(
+        1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4), w_2
+      )))
+      p2 <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4", "g_s5")
+      
     }
     
   } else {
@@ -268,11 +287,20 @@ prob <- function(type, m, j, w_1, w_2, which="est") {
       p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2",
               "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
       
+    } else if (m==36) {
+      
+      A <- t(matrix(c(
+        x, x*j, x*w_1, x*j*w_1, 1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4),
+        w_2, b12(j,1), b12(j,2), b12(j,3), b12(j,4)
+      )))
+      p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2",
+              "g_y3", "g_y4", "g_y5", "t_y1", "t_y2", "t_y3", "t_y4")
+      
     }
     
   }
   
-  if (w_2==1) { ests <- cfg2$ests_M } else { ests <- cfg2$ests_F }
+  if (w_3==1) { ests <- cfg2$ests_M } else { ests <- cfg2$ests_F }
   indices <- as.numeric(sapply(p2, function(p) {
     which(names(ests$opt$par)==p)
   }))
@@ -325,12 +353,12 @@ plot_mod <- function(x_axis, type, m, w_start, w_end, y_max) {
     plot_data <- data.frame(
       x = rep(grid,6),
       Probability = c(
-        sapply(grid, function(w_1) { prob(type, m, j=j_vals[1], w_1, w_2=0) }),
-        sapply(grid, function(w_1) { prob(type, m, j=j_vals[1], w_1, w_2=1) }),
-        sapply(grid, function(w_1) { prob(type, m, j=j_vals[2], w_1, w_2=0) }),
-        sapply(grid, function(w_1) { prob(type, m, j=j_vals[2], w_1, w_2=1) }),
-        sapply(grid, function(w_1) { prob(type, m, j=j_vals[3], w_1, w_2=0) }),
-        sapply(grid, function(w_1) { prob(type, m, j=j_vals[3], w_1, w_2=1) })
+        sapply(grid, function(w_1) { prob(type, m, j=j_vals[1], w_1, w_2=0, w_3=0) }),
+        sapply(grid, function(w_1) { prob(type, m, j=j_vals[1], w_1, w_2=0, w_3=1) }),
+        sapply(grid, function(w_1) { prob(type, m, j=j_vals[2], w_1, w_2=0, w_3=0) }),
+        sapply(grid, function(w_1) { prob(type, m, j=j_vals[2], w_1, w_2=0, w_3=1) }),
+        sapply(grid, function(w_1) { prob(type, m, j=j_vals[3], w_1, w_2=0, w_3=0) }),
+        sapply(grid, function(w_1) { prob(type, m, j=j_vals[3], w_1, w_2=0, w_3=1) })
       ),
       Sex = rep(rep(c("Female", "Male"),3), each=length(grid)),
       color = rep(j_labs, each=2*length(grid))
@@ -341,12 +369,12 @@ plot_mod <- function(x_axis, type, m, w_start, w_end, y_max) {
     plot_data <- data.frame(
       x = rep(grid,6) + (w_start-1),
       Probability = c(
-        sapply(grid, function(j) { prob(type, m, j, w_1=20, w_2=0) }),
-        sapply(grid, function(j) { prob(type, m, j, w_1=20, w_2=1) }),
-        sapply(grid, function(j) { prob(type, m, j, w_1=35, w_2=0) }),
-        sapply(grid, function(j) { prob(type, m, j, w_1=35, w_2=1) }),
-        sapply(grid, function(j) { prob(type, m, j, w_1=50, w_2=0) }),
-        sapply(grid, function(j) { prob(type, m, j, w_1=50, w_2=1) })
+        sapply(grid, function(j) { prob(type, m, j, w_1=20, w_2=0, w_3=0) }),
+        sapply(grid, function(j) { prob(type, m, j, w_1=20, w_2=0, w_3=1) }),
+        sapply(grid, function(j) { prob(type, m, j, w_1=35, w_2=0, w_3=0) }),
+        sapply(grid, function(j) { prob(type, m, j, w_1=35, w_2=0, w_3=1) }),
+        sapply(grid, function(j) { prob(type, m, j, w_1=50, w_2=0, w_3=0) }),
+        sapply(grid, function(j) { prob(type, m, j, w_1=50, w_2=0, w_3=1) })
       ),
       Sex = rep(rep(c("Female", "Male"),3), each=length(grid)),
       color = rep(c("20","35","50"), each=2*length(grid))
@@ -409,7 +437,7 @@ plot_mort3 <- function(x_axis, m, w_start, w_end, y_max=NA, title=T) {
     }
     prob2 <- function(type, which, outer) {
       1000 * sapply(grid, function(inner) {
-        prob(type=type, m=m, j=outer, w_1=inner, w_2=sex, which=which)
+        prob(type=type, m=m, j=outer, w_1=inner, w_2=0, w_3=sex, which=which)
       })
     }
     
@@ -421,7 +449,7 @@ plot_mort3 <- function(x_axis, m, w_start, w_end, y_max=NA, title=T) {
     outer <- c(20,35,50)
     prob2 <- function(type, which, outer) {
       1000 * sapply(grid, function(inner) {
-        prob(type=type, m=m, j=inner, w_1=outer, w_2=sex, which=which)
+        prob(type=type, m=m, j=inner, w_1=outer, w_2=0, w_3=sex, which=which)
       })
     }
     
@@ -518,7 +546,7 @@ plot_sero3 <- function(m, w_start, y_max=NA, title=T) {
   }
   prob2 <- function(which, outer) {
     sapply(grid, function(inner) {
-      prob(type="sero", m=m, j=outer, w_1=inner, w_2=sex, which=which)
+      prob(type="sero", m=m, j=outer, w_1=inner, w_2=0, w_3=sex, which=which)
     })
   }
   
@@ -819,7 +847,7 @@ if (cfg2$process_analysis) {
     if (plot_name=="HR_mort_hiv_cal") {
       
       title <- "HR of mortality, HIV+ vs. HIV- individuals"
-      if (cfg2$m==30) {
+      if (cfg2$m %in% c(30,34:36)) {
         params <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4")
         A <- function(j, w_1) { t(matrix(c(1, j, w_1, j*w_1))) }
       } else if (cfg2$m==31) {
@@ -842,22 +870,19 @@ if (cfg2$process_analysis) {
         A <- function(j, w_1) { t(matrix(c(
           1, j, j^2, w_1, w_1*j, w_1*j^2, w_1^2, w_1^2*j, w_1^2*j^2
         ))) }
-      } else if (cfg2$m %in% c(34:35)) {
-        params <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4")
-        A <- function(j, w_1) { t(matrix(c(1, j, w_1, j*w_1))) }
       }
       
     } else if (plot_name=="HR_mort_age") {
       title <- "HR of mortality (age)"
       x_axis <- "age"
-      if (cfg2$m %in% c(30:35)) {
+      if (cfg2$m %in% c(30:36)) {
         params <- c("g_y1", "g_y2", "g_y3", "g_y4")
         A <- A_b9
       }
     } else if (plot_name=="HR_mort_cal") {
       title <- "HR of mortality (calendar time)"
       x_axis <- "cal time"
-      if (cfg2$m %in% c(30:33)) {
+      if (cfg2$m %in% c(30:33,36)) {
         params <- c("t_y1", "t_y2", "t_y3", "t_y4")
         A <- A_b10
       } else if (cfg2$m==35) {
@@ -866,7 +891,7 @@ if (cfg2$process_analysis) {
       }
     } else if (plot_name=="HR_sero_cal") {
       title <- "HR of seroconversion (calendar time)"
-      if (cfg2$m %in% c(30:33)) {
+      if (cfg2$m %in% c(30:33,36)) {
         params <- c("t_x1", "t_x2", "t_x3", "t_x4")
         A <- A_b10
       } else if (cfg2$m==34) {
@@ -880,20 +905,20 @@ if (cfg2$process_analysis) {
     } else if (plot_name=="HR_sero_age") {
       title <- "HR of seroconversion (age)"
       x_axis <- "age"
-      if (cfg2$m %in% c(30:35)) {
+      if (cfg2$m %in% c(30:36)) {
         params <- c("g_x1", "g_x2", "g_x3", "g_x4")
         A <- A_b9
       }
     } else if (plot_name=="HR_init_age") {
       title <- "HR of HIV+ initial status (age)"
       x_axis <- "age"
-      if (cfg2$m %in% c(30:35)) {
+      if (cfg2$m %in% c(30:36)) {
         params <- c("g_s1", "g_s2", "g_s3", "g_s4")
         A <- A_b9
       }
     }
     
-    if (cfg2$m %in% c(30:35)) {
+    if (cfg2$m %in% c(30:36)) {
       indices_M <- which(names(cfg2$ests_M$opt$par) %in% params)
       beta_M <- matrix(cfg2$ests_M$opt$par[indices_M])
       Sigma_M <- cfg2$ests_M$hessian_inv[indices_M,indices_M]
@@ -1131,14 +1156,14 @@ if (cfg2$process_analysis) {
         )
       # assign(paste0("plot_", log), plot)
       
+      # plot <- ggpubr::ggarrange(plot_FALSE, plot_TRUE)
+      ggsave(
+        filename = paste0("../Figures + Tables/", cfg2$d, " ", plot_name,
+                          " - model ", cfg2$m, ".pdf"),
+        plot=plot, device="pdf", width=8, height=4 # 6x4
+      )
+      
     }
-    
-    # plot <- ggpubr::ggarrange(plot_FALSE, plot_TRUE)
-    ggsave(
-      filename = paste0("../Figures + Tables/", cfg2$d, " ", plot_name,
-                        " - model ", cfg2$m, ".pdf"),
-      plot=plot, device="pdf", width=8, height=4 # 6x4
-    )
     
   }
   
@@ -1170,13 +1195,13 @@ if (F) {
           year_sc <- year - cfg2$w_start + 1
           type <- paste0("mort (", status, ")")
           rate <- 1000 * prob(
-            type=type, m=cfg2$m, j=year_sc, w_1=sex, w_2=age, which="est"
+            type=type, m=cfg2$m, j=year_sc, w_1=sex, w_2=0, w_3=age, which="est"
           )
           ci_lo <- 1000 * prob(
-            type=type, m=cfg2$m, j=year_sc, w_1=sex, w_2=age, which="ci_lo"
+            type=type, m=cfg2$m, j=year_sc, w_1=sex, w_2=0, w_3=age, which="ci_lo"
           )
           ci_up <- 1000 * prob(
-            type=type, m=cfg2$m, j=year_sc, w_1=sex, w_2=age, which="ci_up"
+            type=type, m=cfg2$m, j=year_sc, w_1=sex, w_2=0, w_3=age, which="ci_up"
           )
           df_tab[nrow(df_tab)+1,] <- list(year,age,sex,rate,status,ci_lo,ci_up)
         }

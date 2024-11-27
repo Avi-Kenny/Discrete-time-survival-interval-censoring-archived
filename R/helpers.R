@@ -118,6 +118,46 @@ chk <- function(num, msg="") {
 
 
 
+#' Scale age variable (scaled variable goes into the model)
+#' 
+#' @param age Age, in completed years
+scale_age <- function(age) {
+  (age-30)/100
+}
+
+
+
+#' Unscale age variable (unscaled variable used for display)
+#' 
+#' @param age Age, in completed years
+unscale_age <- function(age) {
+  (age*100)+30
+}
+
+
+
+#' Scale calendar time variable (scaled variable goes into the model)
+#' 
+#' @param year Year
+#' @param st Start year of model
+#' @param unit One of c("month", "year"); currently, only "year" implemented
+scale_time <- function(year, st, unit="year") {
+  as.integer(year - st + 1)
+}
+
+
+
+#' Unscale calendar time variable (unscaled variable used for display)
+#' 
+#' @param year Year
+#' @param st Start year of model
+#' @param unit One of c("month", "year"); currently, only "year" implemented
+unscale_time <- function(year, st, unit="year") {
+  as.integer(year + st - 1)
+}
+
+
+
 #' Create a vector of ones and zeros
 #' 
 #' @param len Length of vector to output

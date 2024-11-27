@@ -225,7 +225,7 @@ if (cfg2$use_simulated_dataset) {
     dat_prc %<>% dplyr::mutate(
       ART_status_new = ifelse(year>=first_art_pos_dt, 1, 0),
       .by = id
-    )    
+    )
     
     # Filter out records with a negative test after a positive test
     rows_pre <- nrow(dat_prc)
@@ -327,20 +327,22 @@ if (cfg2$use_simulated_dataset) {
       u = In(!is.na(first_hiv_pos_dt) & t_end>=first_hiv_pos_dt)
     )
     
-    # Rescale time variable to start at 1
+    # Rescale time variables via scale_time function
     dat_prc %<>% dplyr::mutate(
-      dob = (dob - cfg2$window_start) + 1,
-      t_end = (t_end - cfg2$window_start) + 1,
-      first_hiv_pos_dt = (first_hiv_pos_dt - cfg2$window_start) + 1,
-      last_hiv_neg_dt = (last_hiv_neg_dt - cfg2$window_start) + 1
+      dob = scale_time(dob, st=cfg2$window_start),
+      t_end = scale_time(t_end, st=cfg2$window_start),
+      first_hiv_pos_dt = scale_time(first_hiv_pos_dt, st=cfg2$window_start),
+      last_hiv_neg_dt = scale_time(last_hiv_neg_dt, st=cfg2$window_start)
     )
-    attr(dat_prc, "s_i") <- (attr(dat_prc, "s_i") - cfg2$window_start) + 1
-    attr(dat_prc, "t_i") <- (attr(dat_prc, "t_i") - cfg2$window_start) + 1
+    attr(dat_prc, "s_i") <- scale_time(attr(dat_prc, "s_i"),
+                                       st=cfg2$window_start)
+    attr(dat_prc, "t_i") <- scale_time(attr(dat_prc, "t_i"),
+                                       st=cfg2$window_start)
     
     # Create scaled age variable (w_1) and geography covariate (w_2)
     # Geography covariate: 1="PIPSA North", 0="PIPSA South"
     dat_prc %<>% dplyr::mutate(
-      w_1 = (t_end-dob)/100,
+      w_1 = scale_age(t_end-dob),
       w_2 = In(PIPSA=="N")
     )
     
@@ -629,7 +631,6 @@ if (cfg2$run_analysis) {
   st <- system.time({ nll_init <- negloglik(par_init) })
   print(st)
   print(paste("negloglik(par_init):", nll_init))
-  # stop("!!!!! TEMP !!!!!")
   opt <- stats::optim(
     par = par_init,
     fn = negloglik,
@@ -675,7 +676,10 @@ if (cfg2$run_analysis) {
   parallel::stopCluster(cl)
   saveRDS(
     list(opt=opt, hessian_inv=hessian_inv),
-    paste0("ests_", cfg2$model_sex, ".rds")
+    paste0("ests_", cfg$model_version,
+           ifelse(cfg2$samp_size==0, "_full_", "_partial_"),
+           substr(cfg2$model_sex,1,1), "_", format(Sys.time(), "%Y%m%d"),
+           ".rds")
   )
   
   # if (cfg2$parallelize) { stopCluster(cl) }
