@@ -161,7 +161,7 @@ if (cfg2$process_sims) {
 #' @return Numeric probability
 prob <- function(type, m, j, w_1, w_2, w_3, year_start, which="est") {
   
-  j <- In(scale_time(j, st=year_start, unit="year"))
+  j <- scale_time(j, st=year_start, unit="year")
   w_1 <- scale_age(w_1)
   
   if (type=="sero") {
@@ -458,7 +458,7 @@ plot_mort3 <- function(x_axis, m, w_start, w_end, y_max=NA, title=T) {
 #' @param y_max Maximum Y value for the plot
 #' @param title Boolean; if F, title is suppressed
 #' @return ggplot2 object
-plot_sero3 <- function(m, w_start, y_max=NA, title=T) {
+plot_sero3 <- function(type, m, w_start, y_max=NA, title=T) {
   
   grid <- seq(13,60,0.1)
   breaks <- seq(20,60, length.out=5)
@@ -472,7 +472,7 @@ plot_sero3 <- function(m, w_start, y_max=NA, title=T) {
   }
   prob2 <- function(which, outer) {
     sapply(grid, function(inner) {
-      prob(type="sero", m=m, j=outer, w_1=inner, w_2=0, w_3=sex,
+      prob(type=type, m=m, j=outer, w_1=inner, w_2=0, w_3=sex,
            year_start=w_start, which=which)
     })
   }
@@ -502,7 +502,13 @@ plot_sero3 <- function(m, w_start, y_max=NA, title=T) {
   }
   
   if (title) {
-    title <- "Probability of seroconversion, by age"
+    if (type=="sero") {
+      title <- "Probability of seroconversion (in one year), by age"
+      y <- "Probability of seroconversion (in one year)"
+    } else if (type=="init") {
+      title <- "Probability that initial status is HIV+, by age"
+      y <- "Probability that initial status is HIV+"
+    }
   } else {
     title <- NULL
   }
@@ -539,7 +545,7 @@ plot_sero3 <- function(m, w_start, y_max=NA, title=T) {
 
 if (cfg2$process_analysis) {
   
-  y_max <- c(0.06, 0.8, 0.2, 0.05)
+  # y_max <- c(0.06, 0.8, 0.2, 0.05)
   
   # Mortality by calendar time, with CIs
   plot_05 <- plot_mort3(x_axis="Year", m=cfg2$m, w_start=cfg2$w_start,
@@ -560,11 +566,19 @@ if (cfg2$process_analysis) {
   )
   
   # Seroconversion by age, with CIs
-  plot_07 <- plot_sero3(m=cfg2$m, w_start=cfg2$w_start, y_max=0.05, title=F)
+  plot_07 <- plot_sero3(type="sero", m=cfg2$m, w_start=cfg2$w_start, y_max=0.05, title=F)
   ggsave(
     filename = paste0("../Figures + Tables/", cfg2$d, " p7 (sero CIs, by age) ",
                       "- model ", cfg2$m, ".pdf"),
     plot = plot_07, device="pdf", width=8, height=5
+  )
+  
+  # Initial status by age, with CIs
+  plot_08 <- plot_sero3(type="init", m=cfg2$m, w_start=cfg2$w_start, y_max=0.75, title=F)
+  ggsave(
+    filename = paste0("../Figures + Tables/", cfg2$d, " p8 (init CIs, by age) ",
+                      "- model ", cfg2$m, ".pdf"),
+    plot = plot_08, device="pdf", width=8, height=5
   )
   
 }

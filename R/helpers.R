@@ -123,7 +123,8 @@ chk <- function(num, msg="") {
 #' @param age Age, in completed years
 scale_age <- function(age) {
   # age - 30
-  (age-30)/100
+  # (age-30)/100
+  age / 100
 }
 
 

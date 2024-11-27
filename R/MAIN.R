@@ -7,8 +7,8 @@
 cfg <- list(
   run_sims = F,
   run_analysis = F,
-  run_process = T,
-  run_dqa = F,
+  run_process = F,
+  run_dqa = T,
   sim_level_set = "level_set_1",
   sim_run_or_update = "run",
   sim_num = 1000,
