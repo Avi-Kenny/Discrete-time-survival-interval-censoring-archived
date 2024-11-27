@@ -5,10 +5,8 @@ transform_dataset <- function(dat, model_version=0, window_start, window_end) {
   
   # Construct spline bases
   b9 <- construct_basis("age (13,20,30,40,60)")
-  b10 <- construct_basis("year (10,13,16,19,22)", window_start=window_start,
-                         window_end=window_end)
-  b12 <- construct_basis("year (17,...,22)", window_start=window_start,
-                         window_end=window_end)
+  b10 <- construct_basis("year (10,13,16,19,22)", window_start=window_start)
+  b12 <- construct_basis("year (17,...,22)", window_start=window_start)
   
   # This procedure assumes the dataset is sorted by id
   row_map <- new.env()
@@ -46,7 +44,7 @@ transform_dataset <- function(dat, model_version=0, window_start, window_end) {
     # Create new variables
     d$dat_i$init_visit <- 0
     d$dat_i[1,"init_visit"] <- 1
-    d$dat_i$cal_time_sc <- d$dat_i$t_end / 10 # Rescaling originally done to prevent optimization issues; check if this is still needed
+    # d$dat_i$cal_time_sc <- d$dat_i$t_end / 10
     
     # Apply spline bases to dataframe
     if (model_version %in% c(29:33,36)) {
@@ -54,19 +52,19 @@ transform_dataset <- function(dat, model_version=0, window_start, window_end) {
       d$dat_i$b9_2 <- signif(sapply(d$dat_i$w_1, function(w_1) { b9(w_1,2) }),4)
       d$dat_i$b9_3 <- signif(sapply(d$dat_i$w_1, function(w_1) { b9(w_1,3) }),4)
       d$dat_i$b9_4 <- signif(sapply(d$dat_i$w_1, function(w_1) { b9(w_1,4) }),4)
-      d$dat_i$b10_1 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b10(j,1) }),4)
-      d$dat_i$b10_2 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b10(j,2) }),4)
-      d$dat_i$b10_3 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b10(j,3) }),4)
-      d$dat_i$b10_4 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b10(j,4) }),4)
+      d$dat_i$b10_1 <- signif(sapply(d$dat_i$t_end, function(j) { b10(j,1) }),4)
+      d$dat_i$b10_2 <- signif(sapply(d$dat_i$t_end, function(j) { b10(j,2) }),4)
+      d$dat_i$b10_3 <- signif(sapply(d$dat_i$t_end, function(j) { b10(j,3) }),4)
+      d$dat_i$b10_4 <- signif(sapply(d$dat_i$t_end, function(j) { b10(j,4) }),4)
     } else if (model_version %in% c(34:35)) {
       d$dat_i$b9_1 <- signif(sapply(d$dat_i$w_1, function(w_1) { b9(w_1,1) }),4)
       d$dat_i$b9_2 <- signif(sapply(d$dat_i$w_1, function(w_1) { b9(w_1,2) }),4)
       d$dat_i$b9_3 <- signif(sapply(d$dat_i$w_1, function(w_1) { b9(w_1,3) }),4)
       d$dat_i$b9_4 <- signif(sapply(d$dat_i$w_1, function(w_1) { b9(w_1,4) }),4)
-      d$dat_i$b12_1 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b12(j,1) }),4)
-      d$dat_i$b12_2 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b12(j,2) }),4)
-      d$dat_i$b12_3 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b12(j,3) }),4)
-      d$dat_i$b12_4 <- signif(sapply(d$dat_i$cal_time_sc, function(j) { b12(j,4) }),4)
+      d$dat_i$b12_1 <- signif(sapply(d$dat_i$t_end, function(j) { b12(j,1) }),4)
+      d$dat_i$b12_2 <- signif(sapply(d$dat_i$t_end, function(j) { b12(j,2) }),4)
+      d$dat_i$b12_3 <- signif(sapply(d$dat_i$t_end, function(j) { b12(j,3) }),4)
+      d$dat_i$b12_4 <- signif(sapply(d$dat_i$t_end, function(j) { b12(j,4) }),4)
     }
     
     # Calculate the set X_i to sum over
@@ -155,7 +153,8 @@ construct_negloglik <- function(
     } else if (model_version==35) {
       params <- list(a_x=p[1], g_x=p[2:5], t_x=p[6], a_s=p[7], g_s=p[8:11], beta_x=p[12:15], a_y=p[16], g_y=p[17:20], t_y=p[21:24])
     } else if (model_version==36) {
-      params <- list(a_x=p[1], g_x=p[2:6], t_x=p[7:10], a_s=p[11], g_s=p[12:16], beta_x=p[17:20], a_y=p[21], g_y=p[22:26], t_y=p[27:30])
+      # params <- list(a_x=p[1], g_x=p[2:6], t_x=p[7:10], a_s=p[11], g_s=p[12:16], beta_x=p[17:20], a_y=p[21], g_y=p[22:26], t_y=p[27:30])
+      params <- list(a_x=p[1], g_x=p[2:5], t_x=p[6:9], a_s=p[10], g_s=p[11:14], beta_x=p[15:18], a_y=p[19], g_y=p[20:23], t_y=p[24:27])
     }
     
     # Compute the negative likelihood across individuals
@@ -202,7 +201,7 @@ lik_fn2 <- function(d, params, inds) {
     # Precompute values
     f_xy_vals <- apply(X=d$dat_i, MARGIN=1, FUN = function(r) {
       w_ij <- as.numeric(r[inds$w])
-      j <- r[["cal_time_sc"]]
+      j <- r[["t_end"]]
       spl_ij <- r[inds$spl]
       
       f_x_00 <- f_x(x=0, x_prev=0, w=w_ij, j=j, s=r[["init_visit"]], spl=spl_ij,
@@ -364,16 +363,16 @@ if (cfg$model_version==7) {
             params$t_x[2]*spl[["b10_2"]] + params$t_x[3]*spl[["b10_3"]] +
             params$t_x[4]*spl[["b10_4"]] +
             params$g_x[1]*spl[["b9_1"]] + params$g_x[2]*spl[["b9_2"]] +
-            params$g_x[3]*spl[["b9_3"]] + params$g_x[4]*spl[["b9_4"]] +
-            params$g_x[5]*w[2]
+            params$g_x[3]*spl[["b9_3"]] + params$g_x[4]*spl[["b9_4"]]
+            # params$g_x[5]*w[2]
         )
         if (x==1) { return(prob) } else { return(1-prob) }
       }
     } else {
       prob <- icll(
         params$a_s + params$g_s[1]*spl[["b9_1"]] + params$g_s[2]*spl[["b9_2"]] +
-          params$g_s[3]*spl[["b9_3"]] + params$g_s[4]*spl[["b9_4"]] +
-          params$g_s[5]*w[2]
+          params$g_s[3]*spl[["b9_3"]] + params$g_s[4]*spl[["b9_4"]]
+          # params$g_s[5]*w[2]
       )
       if (x==1) { return(prob) } else { return(1-prob) }
     }
@@ -521,7 +520,8 @@ if (cfg$model_version==7) {
            params$beta_x[3]*w[1] + params$beta_x[4]*j*w[1]) +
         params$a_y + params$g_y[1]*spl[["b9_1"]] +
         params$g_y[2]*spl[["b9_2"]] + params$g_y[3]*spl[["b9_3"]] +
-        params$g_y[4]*spl[["b9_4"]] + params$g_y[5]*w[2] +
+        params$g_y[4]*spl[["b9_4"]] +
+        # params$g_y[5]*w[2] +
         params$t_y[1]*spl[["b10_1"]] + params$t_y[2]*spl[["b10_2"]] +
         params$t_y[3]*spl[["b10_3"]] + params$t_y[4]*spl[["b10_4"]]
     )

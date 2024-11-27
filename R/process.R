@@ -9,16 +9,18 @@ cfg2 <- list(
   w_start = 2010,
   w_end = 2022,
   # ests = readRDS("objs/ests_28_full_20240926.rds")
-  ests_M = readRDS("objs/ests_36_full_M_20241126.rds"),
-  ests_F = readRDS("objs/ests_36_full_F_20241126.rds")
+  # ests_M = readRDS("objs/ests_36_full_M_20241127.rds"),
+  # ests_F = readRDS("objs/ests_36_full_F_20241127.rds")
+  
+  ests_M = readRDS("objs/ests_36_full_F_20241127.rds"), # !!!!!
+  ests_F = readRDS("objs/ests_36_full_F_20241127.rds") # !!!!!
 )
 
 # Construct spline bases
+# This should be identical to the code at the top of transform_dataset()
 b9 <- construct_basis("age (13,20,30,40,60)")
-b10 <- construct_basis("year (10,13,16,19,22)", window_start=cfg2$w_start,
-                       window_end=cfg2$w_end)
-b12 <- construct_basis("year (17,...,22)", window_start=cfg2$w_start,
-                       window_end=cfg2$w_end)
+b10 <- construct_basis("year (10,13,16,19,22)", window_start=cfg2$w_start)
+b12 <- construct_basis("year (17,...,22)", window_start=cfg2$w_start)
 
 # Get current date
 cfg2$d <- format(Sys.time(), "%Y-%m-%d")
@@ -150,18 +152,17 @@ if (cfg2$process_sims) {
 #' Return modeled probability
 #' @param type One of c("sero", "init", "mort (HIV-)", "mort (HIV+)",
 #'     "mort (HIV+ART-)", "mort (HIV+ART+)")
-#' @param j Calendar time (in years, starting at 1, where 1 represents the
-#'     first year in the dataset)
-#' @param w_1 Age (in years)
+#' @param j Calendar time, unscaled (e.g., 2010)
+#' @param w_1 Age, unscaled (in completed years)
 #' @param w_2 Geography (0="PIPSA South", 1="PIPSA North")
 #' @param w_3 Sex (0=female, 1=male)
 #' @param m An integer representing the model version number
 #' @param which One of c("est", "ci_lo", "ci_up")
 #' @return Numeric probability
-prob <- function(type, m, j, w_1, w_2, w_3, which="est") {
+prob <- function(type, m, j, w_1, w_2, w_3, year_start, which="est") {
   
-  j <- j/10
-  w_1 <- w_1/100
+  j <- In(scale_time(j, st=year_start, unit="year"))
+  w_1 <- scale_age(w_1)
   
   if (type=="sero") {
     
@@ -192,12 +193,18 @@ prob <- function(type, m, j, w_1, w_2, w_3, which="est") {
       
     } else if (m==36) {
       
+      # A <- t(matrix(c(
+      #   1, b10(j,1), b10(j,2), b10(j,3), b10(j,4), b9(w_1,1), b9(w_1,2),
+      #   b9(w_1,3), b9(w_1,4), w_2
+      # )))
+      # p2 <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3",
+      #         "g_x4", "g_x5")
       A <- t(matrix(c(
         1, b10(j,1), b10(j,2), b10(j,3), b10(j,4), b9(w_1,1), b9(w_1,2),
-        b9(w_1,3), b9(w_1,4), w_2
+        b9(w_1,3), b9(w_1,4)
       )))
       p2 <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3",
-              "g_x4", "g_x5")
+              "g_x4")
       
     }
     
@@ -212,10 +219,14 @@ prob <- function(type, m, j, w_1, w_2, w_3, which="est") {
       
     } else if (m==36) {
       
+      # A <- t(matrix(c(
+      #   1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4), w_2
+      # )))
+      # p2 <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4", "g_s5")
       A <- t(matrix(c(
-        1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4), w_2
+        1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4)
       )))
-      p2 <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4", "g_s5")
+      p2 <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4")
       
     }
     
@@ -289,12 +300,18 @@ prob <- function(type, m, j, w_1, w_2, w_3, which="est") {
       
     } else if (m==36) {
       
+      # A <- t(matrix(c(
+      #   x, x*j, x*w_1, x*j*w_1, 1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4),
+      #   w_2, b12(j,1), b12(j,2), b12(j,3), b12(j,4)
+      # )))
+      # p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2",
+      #         "g_y3", "g_y4", "g_y5", "t_y1", "t_y2", "t_y3", "t_y4")
       A <- t(matrix(c(
         x, x*j, x*w_1, x*j*w_1, 1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4),
-        w_2, b12(j,1), b12(j,2), b12(j,3), b12(j,4)
+        b12(j,1), b12(j,2), b12(j,3), b12(j,4)
       )))
       p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2",
-              "g_y3", "g_y4", "g_y5", "t_y1", "t_y2", "t_y3", "t_y4")
+              "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
       
     }
     
@@ -315,7 +332,6 @@ prob <- function(type, m, j, w_1, w_2, w_3, which="est") {
   }
   est <- c(A %*% beta)
   se <- c(sqrt(A %*% Sigma %*% t(A)))
-  # se <- 0.1 # !!!!! For debugging
   prob <- icll(est+fac*se)
   
   return(prob)
@@ -337,14 +353,11 @@ prob <- function(type, m, j, w_1, w_2, w_3, which="est") {
 plot_mod <- function(x_axis, type, m, w_start, w_end, y_max) {
   
   if (w_start==2000) {
-    j_vals <- c(1,11,21) # This was formerly incorrectly set to c(0,10,20)
-    j_labs <- c("2000","2010","2020")
+    j_vals <- c(2000,2010,2020)
   } else if (w_start==2010) {
-    j_vals <- c(1,6,11)
-    j_labs <- c("2010","2015","2020")
+    j_vals <- c(2010,2015,2020)
   } else if (w_start==2017) {
-    j_vals <- c(1,3,6)
-    j_labs <- c("2017","2019","2022")
+    j_vals <- c(2017,2019,2022)
   }
   
   if (x_axis=="Age") {
@@ -353,28 +366,28 @@ plot_mod <- function(x_axis, type, m, w_start, w_end, y_max) {
     plot_data <- data.frame(
       x = rep(grid,6),
       Probability = c(
-        sapply(grid, function(w_1) { prob(type, m, j=j_vals[1], w_1, w_2=0, w_3=0) }),
-        sapply(grid, function(w_1) { prob(type, m, j=j_vals[1], w_1, w_2=0, w_3=1) }),
-        sapply(grid, function(w_1) { prob(type, m, j=j_vals[2], w_1, w_2=0, w_3=0) }),
-        sapply(grid, function(w_1) { prob(type, m, j=j_vals[2], w_1, w_2=0, w_3=1) }),
-        sapply(grid, function(w_1) { prob(type, m, j=j_vals[3], w_1, w_2=0, w_3=0) }),
-        sapply(grid, function(w_1) { prob(type, m, j=j_vals[3], w_1, w_2=0, w_3=1) })
+        sapply(grid, function(w_1) { prob(type, m, j=j_vals[1], w_1, w_2=0, w_3=0, year_start=w_start) }),
+        sapply(grid, function(w_1) { prob(type, m, j=j_vals[1], w_1, w_2=0, w_3=1, year_start=w_start) }),
+        sapply(grid, function(w_1) { prob(type, m, j=j_vals[2], w_1, w_2=0, w_3=0, year_start=w_start) }),
+        sapply(grid, function(w_1) { prob(type, m, j=j_vals[2], w_1, w_2=0, w_3=1, year_start=w_start) }),
+        sapply(grid, function(w_1) { prob(type, m, j=j_vals[3], w_1, w_2=0, w_3=0, year_start=w_start) }),
+        sapply(grid, function(w_1) { prob(type, m, j=j_vals[3], w_1, w_2=0, w_3=1, year_start=w_start) })
       ),
       Sex = rep(rep(c("Female", "Male"),3), each=length(grid)),
-      color = rep(j_labs, each=2*length(grid))
+      color = factor(rep(j_vals, each=2*length(grid)))
     )
   } else if (x_axis=="Year") {
-    grid <- seq(w_start,w_end,0.01) %>% (function(x) { x-(w_start-1) })
+    grid <- seq(w_start,w_end,0.01)
     color <- "Age"
     plot_data <- data.frame(
-      x = rep(grid,6) + (w_start-1),
+      x = rep(grid,6),
       Probability = c(
-        sapply(grid, function(j) { prob(type, m, j, w_1=20, w_2=0, w_3=0) }),
-        sapply(grid, function(j) { prob(type, m, j, w_1=20, w_2=0, w_3=1) }),
-        sapply(grid, function(j) { prob(type, m, j, w_1=35, w_2=0, w_3=0) }),
-        sapply(grid, function(j) { prob(type, m, j, w_1=35, w_2=0, w_3=1) }),
-        sapply(grid, function(j) { prob(type, m, j, w_1=50, w_2=0, w_3=0) }),
-        sapply(grid, function(j) { prob(type, m, j, w_1=50, w_2=0, w_3=1) })
+        sapply(grid, function(j) { prob(type, m, j, w_1=20, w_2=0, w_3=0, year_start=w_start) }),
+        sapply(grid, function(j) { prob(type, m, j, w_1=20, w_2=0, w_3=1, year_start=w_start) }),
+        sapply(grid, function(j) { prob(type, m, j, w_1=35, w_2=0, w_3=0, year_start=w_start) }),
+        sapply(grid, function(j) { prob(type, m, j, w_1=35, w_2=0, w_3=1, year_start=w_start) }),
+        sapply(grid, function(j) { prob(type, m, j, w_1=50, w_2=0, w_3=0, year_start=w_start) }),
+        sapply(grid, function(j) { prob(type, m, j, w_1=50, w_2=0, w_3=1, year_start=w_start) })
       ),
       Sex = rep(rep(c("Female", "Male"),3), each=length(grid)),
       color = rep(c("20","35","50"), each=2*length(grid))
@@ -429,27 +442,29 @@ plot_mort3 <- function(x_axis, m, w_start, w_end, y_max=NA, title=T) {
     breaks <- seq(20,60, length.out=5)
     color <- "Year"
     if (w_start==2000) {
-      outer <- c(1,11,21)
+      outer <- c(2000,2010,2020)
     } else if (w_start==2010) {
-      outer <- c(1,6,11)
+      outer <- c(2010,2015,2020)
     } else if (w_start==2017) {
-      outer <- c(1,3,6)
+      outer <- c(2017,2019,2022)
     }
     prob2 <- function(type, which, outer) {
       1000 * sapply(grid, function(inner) {
-        prob(type=type, m=m, j=outer, w_1=inner, w_2=0, w_3=sex, which=which)
+        prob(type=type, m=m, j=outer, w_1=inner, w_2=0, w_3=sex,
+             year_start=w_start, which=which)
       })
     }
     
   } else if (x_axis=="Year") {
     
-    grid <- seq(w_start,w_end,0.01) %>% (function(x) { x-(w_start-1) })
+    grid <- seq(w_start,w_end,0.01)
     breaks <- seq(w_start,w_end, length.out=5)
     color <- "Age"
     outer <- c(20,35,50)
     prob2 <- function(type, which, outer) {
       1000 * sapply(grid, function(inner) {
-        prob(type=type, m=m, j=inner, w_1=outer, w_2=0, w_3=sex, which=which)
+        prob(type=type, m=m, j=inner, w_1=outer, w_2=0, w_3=sex,
+             year_start=w_start, which=which)
       })
     }
     
@@ -474,10 +489,7 @@ plot_mort3 <- function(x_axis, m, w_start, w_end, y_max=NA, title=T) {
       )
       
       if (x_axis=="Year") {
-        plot_data$x <- plot_data$x + (w_start-1)
         plot_data$outer <- paste0("Age: ", plot_data$outer)
-      } else if (x_axis=="Age") {
-        plot_data$outer <- plot_data$outer + (w_start-1)
       }
       
       if (init) {
@@ -538,15 +550,16 @@ plot_sero3 <- function(m, w_start, y_max=NA, title=T) {
   breaks <- seq(20,60, length.out=5)
   color <- "Year"
   if (w_start==2000) {
-    outer <- c(1,11,21)
+    outer <- c(2000,2010,2020)
   } else if (w_start==2010) {
-    outer <- c(1,6,11)
+    outer <- c(2010,2015,2020)
   } else if (w_start==2017) {
-    outer <- c(1,3,6)
+    outer <- c(2017,2019,2022)
   }
   prob2 <- function(which, outer) {
     sapply(grid, function(inner) {
-      prob(type="sero", m=m, j=outer, w_1=inner, w_2=0, w_3=sex, which=which)
+      prob(type="sero", m=m, j=outer, w_1=inner, w_2=0, w_3=sex,
+           year_start=w_start, which=which)
     })
   }
   
@@ -563,8 +576,6 @@ plot_sero3 <- function(m, w_start, y_max=NA, title=T) {
         outer = o,
         sex = ifelse(sex, "Male", "Female")
       )
-      
-      plot_data$outer <- plot_data$outer + (w_start-1)
       
       if (init) {
         plot_data2 <- plot_data
@@ -822,8 +833,8 @@ if (cfg2$process_analysis) {
 if (cfg2$process_analysis) {
   
   # Functions to return spline basis function as a matrix
-  A_b9 <- function(w_2) {
-    t(matrix(c(b9(w_2,1), b9(w_2,2), b9(w_2,3), b9(w_2,4))))
+  A_b9 <- function(w_1) {
+    t(matrix(c(b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4))))
   }
   A_b10 <- function(j) {
     t(matrix(c(b10(j,1),b10(j,2),b10(j,3),b10(j,4))))
@@ -927,7 +938,12 @@ if (cfg2$process_analysis) {
       Sigma_F <- cfg2$ests_F$hessian_inv[indices_F,indices_F]
     }
     
-    hr <- function(x, sex, log=F) {
+    hr <- function(x, which, sex, log=F) {
+      if (which=="cal time") {
+        x <- scale_time(x, st=cfg2$w_start)
+      } else if (which=="age") {
+        x <- scale_age(x)
+      }
       if (sex=="M") {
         est <- c(A(x) %*% beta_M)
         se <- c(sqrt(A(x) %*% Sigma_M %*% t(A(x))))
@@ -943,6 +959,8 @@ if (cfg2$process_analysis) {
     }
     
     hr2 <- function(j, w_1, sex, log=F) {
+      j <- scale_time(j, st=cfg2$w_start)
+      w_1 <- scale_age(w_1)
       if (sex=="M") {
         est <- c(A(j, w_1) %*% beta_M)
         se <- c(sqrt(A(j, w_1) %*% Sigma_M %*% t(A(j, w_1))))
@@ -962,39 +980,38 @@ if (cfg2$process_analysis) {
       log <- F
       
       # First, make graph with x_axis=="cal time"
-      x_grid <- seq(cfg2$w_start,cfg2$w_end,0.1)
-      grid <- sapply(x_grid, function(x) { (x-cfg2$w_start+1)/10 })
+      grid <- seq(cfg2$w_start,cfg2$w_end,0.1)
       breaks <- seq(cfg2$w_start, cfg2$w_end, length.out=5)
       df_plot <- data.frame(
-        x = rep(x_grid,6),
+        x = rep(grid,6),
         y = c(
-          sapply(grid, function(j) { hr2(j=j, w_1=0.20, sex="M", log=log)[1] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=0.20, sex="F", log=log)[1] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=0.40, sex="M", log=log)[1] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=0.40, sex="F", log=log)[1] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=0.60, sex="M", log=log)[1] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=0.60, sex="F", log=log)[1] })
+          sapply(grid, function(j) { hr2(j=j, w_1=20, sex="M", log=log)[1] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=20, sex="F", log=log)[1] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=40, sex="M", log=log)[1] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=40, sex="F", log=log)[1] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=60, sex="M", log=log)[1] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=60, sex="F", log=log)[1] })
         ),
         ci_lo = c(
-          sapply(grid, function(j) { hr2(j=j, w_1=0.20, sex="M", log=log)[2] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=0.20, sex="F", log=log)[2] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=0.40, sex="M", log=log)[2] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=0.40, sex="F", log=log)[2] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=0.60, sex="M", log=log)[2] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=0.60, sex="F", log=log)[2] })
+          sapply(grid, function(j) { hr2(j=j, w_1=20, sex="M", log=log)[2] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=20, sex="F", log=log)[2] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=40, sex="M", log=log)[2] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=40, sex="F", log=log)[2] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=60, sex="M", log=log)[2] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=60, sex="F", log=log)[2] })
         ),
         ci_up = c(
-          sapply(grid, function(j) { hr2(j=j, w_1=0.20, sex="M", log=log)[3] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=0.20, sex="F", log=log)[3] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=0.40, sex="M", log=log)[3] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=0.40, sex="F", log=log)[3] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=0.60, sex="M", log=log)[3] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=0.60, sex="F", log=log)[3] })
+          sapply(grid, function(j) { hr2(j=j, w_1=20, sex="M", log=log)[3] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=20, sex="F", log=log)[3] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=40, sex="M", log=log)[3] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=40, sex="F", log=log)[3] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=60, sex="M", log=log)[3] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=60, sex="F", log=log)[3] })
         ),
-        sex = rep(rep(c("Male", "Female"),3), each=length(x_grid)),
+        sex = rep(rep(c("Male", "Female"),3), each=length(grid)),
         age = rep(
           rep(c("Age: 20", "Age: 40", "Age: 60"), each=2),
-          each=length(x_grid)
+          each=length(grid)
         )
       )
       plot <- ggplot(
@@ -1035,39 +1052,38 @@ if (cfg2$process_analysis) {
       )
       
       # Second, make graph with x_axis=="age"
-      x_grid <- seq(13,60,0.1)
-      grid <- sapply(x_grid, function(x) { x / 100 })
+      grid <- seq(13,60,0.1)
       breaks <- seq(20,60, length.out=5)
       df_plot <- data.frame(
-        x = rep(x_grid,6),
+        x = rep(grid,6),
         y = c(
-          sapply(grid, function(w_1) { hr2(j=0.1, w_1=w_1, sex="M", log=log)[1] }),
-          sapply(grid, function(w_1) { hr2(j=0.1, w_1=w_1, sex="F", log=log)[1] }),
-          sapply(grid, function(w_1) { hr2(j=0.7, w_1=w_1, sex="M", log=log)[1] }),
-          sapply(grid, function(w_1) { hr2(j=0.7, w_1=w_1, sex="F", log=log)[1] }),
-          sapply(grid, function(w_1) { hr2(j=1.3, w_1=w_1, sex="M", log=log)[1] }),
-          sapply(grid, function(w_1) { hr2(j=1.3, w_1=w_1, sex="F", log=log)[1] })
+          sapply(grid, function(w_1) { hr2(j=2010, w_1=w_1, sex="M", log=log)[1] }),
+          sapply(grid, function(w_1) { hr2(j=2010, w_1=w_1, sex="F", log=log)[1] }),
+          sapply(grid, function(w_1) { hr2(j=2016, w_1=w_1, sex="M", log=log)[1] }),
+          sapply(grid, function(w_1) { hr2(j=2016, w_1=w_1, sex="F", log=log)[1] }),
+          sapply(grid, function(w_1) { hr2(j=2022, w_1=w_1, sex="M", log=log)[1] }),
+          sapply(grid, function(w_1) { hr2(j=2022, w_1=w_1, sex="F", log=log)[1] })
         ),
         ci_lo = c(
-          sapply(grid, function(w_1) { hr2(j=0.1, w_1=w_1, sex="M", log=log)[2] }),
-          sapply(grid, function(w_1) { hr2(j=0.1, w_1=w_1, sex="F", log=log)[2] }),
-          sapply(grid, function(w_1) { hr2(j=0.7, w_1=w_1, sex="M", log=log)[2] }),
-          sapply(grid, function(w_1) { hr2(j=0.7, w_1=w_1, sex="F", log=log)[2] }),
-          sapply(grid, function(w_1) { hr2(j=1.3, w_1=w_1, sex="M", log=log)[2] }),
-          sapply(grid, function(w_1) { hr2(j=1.3, w_1=w_1, sex="F", log=log)[2] })
+          sapply(grid, function(w_1) { hr2(j=2010, w_1=w_1, sex="M", log=log)[2] }),
+          sapply(grid, function(w_1) { hr2(j=2010, w_1=w_1, sex="F", log=log)[2] }),
+          sapply(grid, function(w_1) { hr2(j=2016, w_1=w_1, sex="M", log=log)[2] }),
+          sapply(grid, function(w_1) { hr2(j=2016, w_1=w_1, sex="F", log=log)[2] }),
+          sapply(grid, function(w_1) { hr2(j=2022, w_1=w_1, sex="M", log=log)[2] }),
+          sapply(grid, function(w_1) { hr2(j=2022, w_1=w_1, sex="F", log=log)[2] })
         ),
         ci_up = c(
-          sapply(grid, function(w_1) { hr2(j=0.1, w_1=w_1, sex="M", log=log)[3] }),
-          sapply(grid, function(w_1) { hr2(j=0.1, w_1=w_1, sex="F", log=log)[3] }),
-          sapply(grid, function(w_1) { hr2(j=0.7, w_1=w_1, sex="M", log=log)[3] }),
-          sapply(grid, function(w_1) { hr2(j=0.7, w_1=w_1, sex="F", log=log)[3] }),
-          sapply(grid, function(w_1) { hr2(j=1.3, w_1=w_1, sex="M", log=log)[3] }),
-          sapply(grid, function(w_1) { hr2(j=1.3, w_1=w_1, sex="F", log=log)[3] })
+          sapply(grid, function(w_1) { hr2(j=2010, w_1=w_1, sex="M", log=log)[3] }),
+          sapply(grid, function(w_1) { hr2(j=2010, w_1=w_1, sex="F", log=log)[3] }),
+          sapply(grid, function(w_1) { hr2(j=2016, w_1=w_1, sex="M", log=log)[3] }),
+          sapply(grid, function(w_1) { hr2(j=2016, w_1=w_1, sex="F", log=log)[3] }),
+          sapply(grid, function(w_1) { hr2(j=2022, w_1=w_1, sex="M", log=log)[3] }),
+          sapply(grid, function(w_1) { hr2(j=2022, w_1=w_1, sex="F", log=log)[3] })
         ),
-        sex = rep(rep(c("Male", "Female"),3), each=length(x_grid)),
+        sex = rep(rep(c("Male", "Female"),3), each=length(grid)),
         age = rep(
           rep(c("2010", "2016", "2022"), each=2),
-          each=length(x_grid)
+          each=length(grid)
         )
       )
       plot <- ggplot(
@@ -1104,37 +1120,35 @@ if (cfg2$process_analysis) {
     } else {
       
       if (x_axis=="cal time") {
-        x_grid <- seq(cfg2$w_start,cfg2$w_end,0.1)
-        grid <- sapply(x_grid, function(x) { (x-cfg2$w_start+1)/10 })
+        grid <- seq(cfg2$w_start,cfg2$w_end,0.1)
         breaks <- seq(cfg2$w_start, cfg2$w_end, length.out=5)
       } else if (x_axis=="age") {
-        x_grid <- seq(13,60,0.1)
-        grid <- sapply(x_grid, function(x) { x / 100 })
+        grid <- seq(13,60,0.1)
         breaks <- seq(20,60, length.out=5)
       }
       
       df_plot <- data.frame(
-        x = rep(x_grid,4),
+        x = rep(grid,4),
         y = c(
-          sapply(grid, function(x) { hr(x, sex="M", log=T)[1] }),
-          sapply(grid, function(x) { hr(x, sex="M", log=F)[1] }),
-          sapply(grid, function(x) { hr(x, sex="F", log=T)[1] }),
-          sapply(grid, function(x) { hr(x, sex="F", log=F)[1] })
+          sapply(grid, function(x) { hr(x, x_axis, sex="M", log=T)[1] }),
+          sapply(grid, function(x) { hr(x, x_axis, sex="M", log=F)[1] }),
+          sapply(grid, function(x) { hr(x, x_axis, sex="F", log=T)[1] }),
+          sapply(grid, function(x) { hr(x, x_axis, sex="F", log=F)[1] })
         ),
         ci_lo = c(
-          sapply(grid, function(x) { hr(x, sex="M", log=T)[2] }),
-          sapply(grid, function(x) { hr(x, sex="M", log=F)[2] }),
-          sapply(grid, function(x) { hr(x, sex="F", log=T)[2] }),
-          sapply(grid, function(x) { hr(x, sex="F", log=F)[2] })
+          sapply(grid, function(x) { hr(x, x_axis, sex="M", log=T)[2] }),
+          sapply(grid, function(x) { hr(x, x_axis, sex="M", log=F)[2] }),
+          sapply(grid, function(x) { hr(x, x_axis, sex="F", log=T)[2] }),
+          sapply(grid, function(x) { hr(x, x_axis, sex="F", log=F)[2] })
         ),
         ci_up = c(
-          sapply(grid, function(x) { hr(x, sex="M", log=T)[3] }),
-          sapply(grid, function(x) { hr(x, sex="M", log=F)[3] }),
-          sapply(grid, function(x) { hr(x, sex="F", log=T)[3] }),
-          sapply(grid, function(x) { hr(x, sex="F", log=F)[3] })
+          sapply(grid, function(x) { hr(x, x_axis, sex="M", log=T)[3] }),
+          sapply(grid, function(x) { hr(x, x_axis, sex="M", log=F)[3] }),
+          sapply(grid, function(x) { hr(x, x_axis, sex="F", log=T)[3] }),
+          sapply(grid, function(x) { hr(x, x_axis, sex="F", log=F)[3] })
         ),
-        sex = rep(c("Male", "Female"), each=2*length(x_grid)),
-        log = rep(c("log(HR)", "HR", "log(HR)", "HR"), each=length(x_grid))
+        sex = rep(c("Male", "Female"), each=2*length(grid)),
+        log = rep(c("log(HR)", "HR", "log(HR)", "HR"), each=length(grid))
       )
       
       plot <- ggplot(
@@ -1192,17 +1206,13 @@ if (F) {
     # for (age in c(15:59)) { # !!!!!
       for (sex in c(0,1)) {
         for (status in c("HIV-", "HIV+")) {
-          year_sc <- year - cfg2$w_start + 1
           type <- paste0("mort (", status, ")")
-          rate <- 1000 * prob(
-            type=type, m=cfg2$m, j=year_sc, w_1=sex, w_2=0, w_3=age, which="est"
-          )
-          ci_lo <- 1000 * prob(
-            type=type, m=cfg2$m, j=year_sc, w_1=sex, w_2=0, w_3=age, which="ci_lo"
-          )
-          ci_up <- 1000 * prob(
-            type=type, m=cfg2$m, j=year_sc, w_1=sex, w_2=0, w_3=age, which="ci_up"
-          )
+          rate <- 1000 * prob(type=type, m=cfg2$m, j=year, w_1=sex, w_2=0,
+                              w_3=age, year_start=cfg2$w_start, which="est")
+          ci_lo <- 1000 * prob(type=type, m=cfg2$m, j=year, w_1=sex, w_2=0,
+                               w_3=age, year_start=cfg2$w_start, which="ci_lo")
+          ci_up <- 1000 * prob(type=type, m=cfg2$m, j=year, w_1=sex, w_2=0,
+                               w_3=age, year_start=cfg2$w_start, which="ci_up")
           df_tab[nrow(df_tab)+1,] <- list(year,age,sex,rate,status,ci_lo,ci_up)
         }
       }

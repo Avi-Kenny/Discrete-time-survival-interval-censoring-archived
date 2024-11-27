@@ -122,17 +122,19 @@ chk <- function(num, msg="") {
 #' 
 #' @param age Age, in completed years
 scale_age <- function(age) {
+  # age - 30
   (age-30)/100
 }
 
 
 
-#' Unscale age variable (unscaled variable used for display)
-#' 
-#' @param age Age, in completed years
-unscale_age <- function(age) {
-  (age*100)+30
-}
+#' #' Unscale age variable (unscaled variable used for display)
+#' #' 
+#' #' @param age Age, in completed years
+#' unscale_age <- function(age) {
+#'   # age + 30
+#'   (age*100)+30
+#' }
 
 
 
@@ -142,19 +144,19 @@ unscale_age <- function(age) {
 #' @param st Start year of model
 #' @param unit One of c("month", "year"); currently, only "year" implemented
 scale_time <- function(year, st, unit="year") {
-  as.integer(year - st + 1)
+  year - st + 1
 }
 
 
 
-#' Unscale calendar time variable (unscaled variable used for display)
-#' 
-#' @param year Year
-#' @param st Start year of model
-#' @param unit One of c("month", "year"); currently, only "year" implemented
-unscale_time <- function(year, st, unit="year") {
-  as.integer(year + st - 1)
-}
+#' #' Unscale calendar time variable (unscaled variable used for display)
+#' #' 
+#' #' @param year Year
+#' #' @param st Start year of model
+#' #' @param unit One of c("month", "year"); currently, only "year" implemented
+#' unscale_time <- function(year, st, unit="year") {
+#'   year + st - 1
+#' }
 
 
 
@@ -172,20 +174,17 @@ uncompress <- function(len, num_ones) {
 #' 
 #' @param which Which basis to construct
 #' @param window_start Start year
-construct_basis <- function(which, window_start=NA, window_end=NA) {
-  
-  scale_age <- function(x) { x / 100 }
-  scale_year <- function(x) { (x-window_start+1)/10 }
+construct_basis <- function(which, window_start=NA) {
   
   if (which %in% c("year (10,13,16,19,22)","year (10,13,16,19,22) +i")) {
-    grid <- scale_year(seq(2010,2022, length.out=500))
-    k <- scale_year(seq(2010,2022, length.out=5))
+    grid <- scale_time(seq(2010,2022, length.out=500), st=window_start)
+    k <- scale_time(seq(2010,2022, length.out=5), st=window_start)
   } else if (which=="age (13,20,30,40,60)") {
     grid <- scale_age(seq(13,60, length.out=500))
     k <- scale_age(c(13,20,30,40,60))
   } else if (which=="year (17,...,22)") {
-    grid <- scale_year(seq(2017,2022, length.out=500))
-    k <- scale_year(seq(2010,2022, length.out=5))
+    grid <- scale_time(seq(2017,2022, length.out=500), st=window_start)
+    k <- scale_time(seq(2010,2022, length.out=5), st=window_start)
   }
   
   if (substr(which, nchar(which)-1, nchar(which))=="+i") {

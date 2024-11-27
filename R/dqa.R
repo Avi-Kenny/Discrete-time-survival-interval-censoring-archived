@@ -166,12 +166,11 @@ for (year_ in c(cfg2$w_start:cfg2$w_end)) {
       # Note: if this code is uncommented, the code in sections 1 and 3 of
       #       process.R needs to be run first
       for (status in status_vec) {
-        year_sc <- year_ - cfg2$w_start + 1
         age_ <- mean(age_bin)
         type <- paste0("mort (", status, ")")
         rate <- round(1000 * prob(
-          type=type, m=cfg2$m, j=year_sc, w_1=age_, w_2=0,
-          w_3=as.integer(sex_=="Male"), which="est"
+          type=type, m=cfg2$m, j=year_, w_1=age_, w_2=0,
+          w_3=as.integer(sex_=="Male"), year_start=cfg2$w_start, which="est"
         ), 1)
         df_summ[nrow(df_summ)+1,] <- list(
           year_, sex_, paste0(age_bin, collapse="-"), NA, NA,
@@ -320,11 +319,10 @@ for (year_ in c(cfg2$w_start:cfg2$w_end)) {
       # Note: if this code is uncommented, the code in sections 1 and 3 of
       #       process.R needs to be run first
       for (status in status_vec) {
-        year_sc <- year_ - cfg2$w_start + 1
         type <- paste0("mort (", status, ")")
         rate <- round(1000 * prob(
-          type=type, m=cfg2$m, j=year_sc, w_1=age_, w_2=0,
-          w_3=as.integer(sex_=="Male"), which="est"
+          type=type, m=cfg2$m, j=year_, w_1=age_, w_2=0,
+          w_3=as.integer(sex_=="Male"), year_start=cfg2$w_start, which="est"
         ), 1)
         df_summ2[nrow(df_summ2)+1,] <- list(
           year_, sex_, age_, NA, NA,
