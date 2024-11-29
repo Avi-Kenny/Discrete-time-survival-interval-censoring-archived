@@ -87,8 +87,19 @@ if (cfg2$use_simulated_dataset) {
     }
     
     # Read in data
-    # dat_prc <- dat_raw <- read.csv("../Data/data_raw_full_v2.csv")
-    dat_prc <- dat_raw <- read.csv("../Data/pip_hiv_missingness_Avi_2024-11-21_mod.csv")
+    dat_prc <- read.csv("../Data/data_raw_full_v2.csv") # !!!!! Temporarily reverting to this version until Stephen adds 2023 back in
+    dat_prc$PIPSA <- 1 # !!!!!! TEMP
+    dat_prc$LocationId <- 1 # !!!!!! TEMP
+    dat_prc$HIV_update <- 1 # !!!!!! TEMP
+    dat_prc$age_start <- 1 # !!!!! TEMP
+    dat_prc$age_end <- 1 # !!!!! TEMP
+    dat_prc$first_hiv_pos <- 1 # !!!!! TEMP
+    dat_prc$last_hiv_neg <- 1 # !!!!! TEMP
+    dat_prc$HIV_status <- NULL # !!!!! TEMP
+    dat_prc$dod <- NULL # !!!!! TEMP
+    dat_prc %<>% dplyr::rename("ART_update"=ART_status) # !!!!! TEMP
+    
+    # dat_prc <- read.csv("../Data/pip_hiv_missingness_Avi_2024-11-21_mod.csv")
     log_note("# rows, original", nrow(dat_prc))
     log_note("# individuals, original", length(unique(dat_prc$IIntId)))
     
@@ -366,8 +377,7 @@ if (cfg2$use_simulated_dataset) {
     # # Save datasets for validation
     # write.table(dat, file="dat.csv", sep=",", row.names=FALSE)
     # write.table(dat_prc, file="dat_prc.csv", sep=",", row.names=FALSE)
-    # write.table(dat_raw, file="dat_raw.csv", sep=",", row.names=FALSE)
-    
+
     cols_to_drop <- c(
       "DoB", "dob", "age", "ResultDate", "HIVResult", "hiv_result_fill",
       "VisitDate", "ReceivedHIVTestResult", "CurrentlyOnART", "HadPosHIVResult",
@@ -376,7 +386,7 @@ if (cfg2$use_simulated_dataset) {
     )
     for (col in cols_to_drop) { dat[[col]] <- NULL }
     
-    rm(dat_raw,dat_prc)
+    rm(dat_prc)
     
     # Create transformed dataset object
     dat_objs <- transform_dataset(
@@ -622,8 +632,22 @@ if (cfg2$run_analysis) {
   } else if (cfg$model_version==35) {
     par_init <- c(a_x=-5.564, g_x1=0.569, g_x2=-1.992, g_x3=1.610, g_x4=-1.229, t_x1=0, a_s=-3.198, g_s1=3.563, g_s2=2.150, g_s3=4.358, g_s4=0.510, beta_x1=0, beta_x2=0, beta_x3=0, beta_x4=0, a_y=-8.075, g_y1=2.393, g_y2=1.799, g_y3=5.165, g_y4=2.703, t_y1=-0.393, t_y2=-0.460, t_y3=-0.785, t_y4=0.233)
   } else if (cfg$model_version==36) {
-    # par_init <- c(a_x=-6.0, g_x1=0.8, g_x2=-1.7, g_x3=2.1, g_x4=-1.5, g_x5=0, t_x1=0.9, t_x2=-1.5, t_x3=-1.3, t_x4=-0.8, a_s=-3.1, g_s1=3.5, g_s2=2.1, g_s3=4.3, g_s4=0.5, g_s5=0, beta_x1=1.6, beta_x2=-0.1, beta_x3=0.4, beta_x4=-1.6, a_y=-7.9, g_y1=2.2, g_y2=1.6, g_y3=4.6, g_y4=2.7, g_y5=0, t_y1=-0.3, t_y2=-0.3, t_y3=-0.7, t_y4=-0.1)
     par_init <- c(a_x=-5.2, g_x1=0.6, g_x2=-1.8, g_x3=0.3, g_x4=-2.0, t_x1=0.8, t_x2=-1.1, t_x3=-0.8, t_x4=-0.6, a_s=-3.1, g_s1=3.5, g_s2=2.0, g_s3=4.3, g_s4=0.6, beta_x1=2.0, beta_x2=0, beta_x3=-0.8, beta_x4=-0.1, a_y=-7.9, g_y1=2.0, g_y2=1.8, g_y3=4.6, g_y4=2.8, t_y1=-0.1, t_y2=-0.4, t_y3=-0.5, t_y4=0.3)
+  } else if (cfg$model_version==37) {
+    if (cfg2$model_sex=="Female") { par_init <- c(a_x=-5.6, g_x1=0.69, g_x2=-1.27, g_x3=1.04, g_x4=-2.38, t_x1=1.21, t_x2=-1.64, t_x3=-1.04, t_x4=-0.51, a_s=-3.18, g_s1=3.51, g_s2=2.13, g_s3=4.35, g_s4=0.57, beta_x1=2.11, beta_x2=-0.03, beta_x3=-0.39, beta_x4=-0.15, beta_x5=0, beta_x6=0, a_y=-8.02, g_y1=2.13, g_y2=1.66, g_y3=4.37, g_y4=2.8, t_y1=-0.17, t_y2=-0.17, t_y3=-0.37, t_y4=0.06) }
+    if (cfg2$model_sex=="Male") { par_init <- c(a_x=-6.61, g_x1=2.41, g_x2=-1.89, g_x3=-0.42, g_x4=-1.73, t_x1=0.48, t_x2=-3.19, t_x3=-0.52, t_x4=-0.43, a_s=-3.75, g_s1=3.84, g_s2=3.03, g_s3=4.03, g_s4=2.09, beta_x1=2.22, beta_x2=-0.03, beta_x3=-1.15, beta_x4=-0.17, beta_x5=0, beta_x6=0, a_y=-7.18, g_y1=1.91, g_y2=1.9, g_y3=3.95, g_y4=2.71, t_y1=-0.27, t_y2=-0.03, t_y3=-0.12, t_y4=0.02) }
+  }
+  
+  # Construct param init vector
+  if (F) {
+    # ests <- readRDS("objs/ests_36_full_F_20241127.rds")
+    ests <- readRDS("objs/ests_36_full_M_20241127.rds")
+    str <- "par_init <- c("
+    for (par in names(ests$opt$par)) {
+      str <- paste0(str, par, "=", round(ests$opt$par[[par]], 2), ", ")
+    }
+    str <- paste0(substr(str, 1, nchar(str)-2), ")")
+    print(str)
   }
   
   # Run optimizer

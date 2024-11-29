@@ -395,17 +395,49 @@ for (sex_ in c("Male", "Female")) {
   }
 }
 
-# Plot 45q15 death rates
-# Export 6x4
-plot <- ggplot(
-  df_45q15,
-  aes(x=year, y=rate, color=factor(source))
-) +
-  geom_line() +
-  facet_grid(cols=dplyr::vars(sex)) +
-  scale_x_continuous(breaks=breaks_year) +
-  scale_color_manual(values=colors_1) +
-  labs(color="Source", y="Probability of death between ages 15-60")
+# Add Thembisa lines
+add_thembisa <- F
+if (add_thembisa) {
+  
+  df_45q15_thembisa <- data.frame(
+    year = rep(c(2010:2022), 4),
+    sex = rep(c("Female", "Male"), each=26),
+    rate = c(c(0.2,0.2,0.2,0.2,0.19,0.19,0.19,0.18,0.18,0.18,0.28,0.24,0.2), # Female HIV-
+             c(0.77,0.7,0.62,0.59,0.55,0.52,0.49,0.46,0.42,0.39,0.46,0.39,0.37), # Female HIV+
+             c(0.38,0.37,0.37,0.36,0.35,0.35,0.34,0.33,0.33,0.31,0.41,0.39,0.33), # Male HIV-
+             c(0.89,0.85,0.80,0.78,0.77,0.75,0.73,0.71,0.7,0.68,0.71,0.68,0.67)), # Male HIV+
+    source = rep(rep(c("Thembisa (HIV-)", "Thembisa (HIV+)"), 2), each=13)
+  )
+  df_45q15 <- rbind(df_45q15, df_45q15_thembisa)
+  
+  # Plot 45q15 death rates
+  plot <- ggplot(
+    df_45q15,
+    aes(x=year, y=rate, color=factor(source), linetype=factor(source))
+  ) +
+    geom_line() +
+    facet_grid(cols=dplyr::vars(sex)) +
+    scale_x_continuous(breaks=breaks_year) +
+    scale_color_manual(values=c(colors_1,colors_1[1:2])) +
+    scale_linetype_manual(values=c(rep("solid",3), rep("dashed",2))) +
+    labs(color="Source", linetype="Source",
+         y="Probability of death between ages 15-60")
+  
+} else {
+  
+  # Plot 45q15 death rates
+  plot <- ggplot(
+    df_45q15,
+    aes(x=year, y=rate, color=factor(source))
+  ) +
+    geom_line() +
+    facet_grid(cols=dplyr::vars(sex)) +
+    scale_x_continuous(breaks=breaks_year) +
+    scale_color_manual(values=colors_1) +
+    labs(color="Source", y="Probability of death between ages 15-60")
+  
+}
+
 ggsave(
   filename = paste0("../Figures + Tables/", cfg2$d, " 45q15 - ",
                     "model ", cfg2$m, ".pdf"),

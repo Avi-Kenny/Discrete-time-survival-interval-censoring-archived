@@ -9,11 +9,8 @@ cfg2 <- list(
   w_start = 2010,
   w_end = 2022,
   # ests = readRDS("objs/ests_28_full_20240926.rds")
-  # ests_M = readRDS("objs/ests_36_full_M_20241127.rds"),
-  # ests_F = readRDS("objs/ests_36_full_F_20241127.rds")
-  
-  ests_M = readRDS("objs/ests_36_full_F_20241127.rds"), # !!!!!
-  ests_F = readRDS("objs/ests_36_full_F_20241127.rds") # !!!!!
+  ests_M = readRDS("objs/ests_36_full_M_20241127.rds"),
+  ests_F = readRDS("objs/ests_36_full_F_20241127.rds")
 )
 
 # Construct spline bases
