@@ -7,8 +7,8 @@ transform_dataset <- function(dat, model_version=0, window_start, window_end) {
   b9 <- construct_basis("age (13,20,30,40,60)")
   b10 <- construct_basis("year (10,13,16,19,22)", window_start=window_start)
   b12 <- construct_basis("year (17,...,22)", window_start=window_start)
-  b13 <- construct_basis("age (13,20,30,40,60)", linear=T)
-  b14 <- construct_basis("year (10,13,16,19,22)", window_start=window_start,
+  b13 <- construct_basis("age (13,30,45,60)", linear=T)
+  b14 <- construct_basis("year (10,14,18,22)", window_start=window_start,
                           linear=T)
   
   # This procedure assumes the dataset is sorted by id
@@ -72,11 +72,9 @@ transform_dataset <- function(dat, model_version=0, window_start, window_end) {
       d$dat_i$b13_1 <- signif(sapply(d$dat_i$w_1, function(w_1) { b13(w_1,1) }),4)
       d$dat_i$b13_2 <- signif(sapply(d$dat_i$w_1, function(w_1) { b13(w_1,2) }),4)
       d$dat_i$b13_3 <- signif(sapply(d$dat_i$w_1, function(w_1) { b13(w_1,3) }),4)
-      d$dat_i$b13_4 <- signif(sapply(d$dat_i$w_1, function(w_1) { b13(w_1,4) }),4)
       d$dat_i$b14_1 <- signif(sapply(d$dat_i$t_end, function(j) { b14(j,1) }),4)
       d$dat_i$b14_2 <- signif(sapply(d$dat_i$t_end, function(j) { b14(j,2) }),4)
       d$dat_i$b14_3 <- signif(sapply(d$dat_i$t_end, function(j) { b14(j,3) }),4)
-      d$dat_i$b14_4 <- signif(sapply(d$dat_i$t_end, function(j) { b14(j,4) }),4)
     }
     
     # Calculate the set X_i to sum over
@@ -169,7 +167,7 @@ construct_negloglik <- function(
     } else if (model_version==37) {
       params <- list(a_x=p[1], g_x=p[2:5], t_x=p[6:9], a_s=p[10], g_s=p[11:14], t_s=p[15], beta_x=p[16:19], a_y=p[20], g_y=p[21:24], t_y=p[25:28])
     } else if (model_version==38) {
-      params <- list(a_x=p[1], g_x=p[2:5], t_x=p[6:9], a_s=p[10], g_s=p[11:14], beta_x=p[15:18], a_y=p[19], g_y=p[20:23], t_y=p[24:27])
+      params <- list(a_x=p[1], g_x=p[2:4], t_x=p[5:7], a_s=p[8], g_s=p[9:11], beta_x=p[12:15], a_y=p[16], g_y=p[17:19], t_y=p[20:22])
     }
     
     # Compute the negative likelihood across individuals
@@ -428,17 +426,15 @@ if (cfg$model_version==7) {
         prob <- icll(
           params$a_x + params$t_x[1]*spl[["b14_1"]] +
             params$t_x[2]*spl[["b14_2"]] + params$t_x[3]*spl[["b14_3"]] +
-            params$t_x[4]*spl[["b14_4"]] +
             params$g_x[1]*spl[["b13_1"]] + params$g_x[2]*spl[["b13_2"]] +
-            params$g_x[3]*spl[["b13_3"]] + params$g_x[4]*spl[["b13_4"]]
+            params$g_x[3]*spl[["b13_3"]]
         )
         if (x==1) { return(prob) } else { return(1-prob) }
       }
     } else {
       prob <- icll(
         params$a_s + params$g_s[1]*spl[["b13_1"]] +
-          params$g_s[2]*spl[["b13_2"]] + params$g_s[3]*spl[["b13_3"]] +
-          params$g_s[4]*spl[["b13_4"]]
+          params$g_s[2]*spl[["b13_2"]] + params$g_s[3]*spl[["b13_3"]]
       )
       if (x==1) { return(prob) } else { return(1-prob) }
     }
@@ -617,9 +613,8 @@ if (cfg$model_version==7) {
            params$beta_x[3]*w[1] + params$beta_x[4]*j*w[1]) +
         params$a_y + params$g_y[1]*spl[["b13_1"]] +
         params$g_y[2]*spl[["b13_2"]] + params$g_y[3]*spl[["b13_3"]] +
-        params$g_y[4]*spl[["b13_4"]] +
         params$t_y[1]*spl[["b14_1"]] + params$t_y[2]*spl[["b14_2"]] +
-        params$t_y[3]*spl[["b14_3"]] + params$t_y[4]*spl[["b14_4"]]
+        params$t_y[3]*spl[["b14_3"]]
     )
     if (y==1) { return(prob) } else { return(1-prob) }
   }

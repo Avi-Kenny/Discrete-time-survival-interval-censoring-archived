@@ -177,30 +177,38 @@ uncompress <- function(len, num_ones) {
 #' @param window_start Start year
 construct_basis <- function(which, window_start=NA, linear=FALSE) {
   
-  if (which %in% c("year (10,13,16,19,22)","year (10,13,16,19,22) +i")) {
+  if (which==c("year (10,13,16,19,22)")) {
     grid <- scale_time(seq(2010,2022, length.out=500), st=window_start)
     k <- scale_time(seq(2010,2022, length.out=5), st=window_start)
+    num_df <- 4
+  } else if (which==c("year (10,14,18,22)")) {
+    grid <- scale_time(seq(2010,2022, length.out=500), st=window_start)
+    k <- scale_time(seq(2010,2022, length.out=4), st=window_start)
+    num_df <- 3
+  } else if (which=="age (13,30,45,60)") {
+    grid <- scale_age(seq(13,60, length.out=500))
+    k <- scale_age(c(13,30,45,60))
+    num_df <- 3
   } else if (which=="age (13,20,30,40,60)") {
     grid <- scale_age(seq(13,60, length.out=500))
     k <- scale_age(c(13,20,30,40,60))
+    num_df <- 4
   } else if (which=="year (17,...,22)") {
     grid <- scale_time(seq(2017,2022, length.out=500), st=window_start)
     k <- scale_time(seq(2010,2022, length.out=5), st=window_start)
-  }
-  
-  if (substr(which, nchar(which)-1, nchar(which))=="+i") {
-    num_df <- 5
-    int <- TRUE
-  } else {
     num_df <- 4
-    int <- FALSE
   }
   
   if (linear) {
     b <- Vectorize(function(x, i) { max(0, x-k[i]) }, vectorize.args="x")
   } else {
     b <- Vectorize(function(x, i) {
-      splines::ns(x=x, knots=k[2:4], intercept=int, Boundary.knots=k[c(1,5)])[i]
+      splines::ns(
+        x = x,
+        knots = k[2:num_df],
+        intercept = F,
+        Boundary.knots = k[c(1,num_df+1)]
+      )[i]
     }, vectorize.args="x")
   }
   y <- matrix(NA, nrow=length(grid), ncol=num_df)

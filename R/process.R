@@ -19,8 +19,8 @@ cfg2 <- list(
 b9 <- construct_basis("age (13,20,30,40,60)")
 b10 <- construct_basis("year (10,13,16,19,22)", window_start=cfg2$w_start)
 b12 <- construct_basis("year (17,...,22)", window_start=cfg2$w_start)
-b13 <- construct_basis("age (13,20,30,40,60)", linear=T)
-b14 <- construct_basis("year (10,13,16,19,22)", window_start=cfg2$w_start,
+b13 <- construct_basis("age (13,30,45,60)", linear=T)
+b14 <- construct_basis("year (10,14,18,22)", window_start=cfg2$w_start,
                        linear=T)
 
 # Get current date
@@ -204,11 +204,9 @@ prob <- function(type, m, j, w_1, w_2, w_3, year_start, which="est") {
     } else if (m==38) {
       
       A <- t(matrix(c(
-        1, b14(j,1), b14(j,2), b14(j,3), b14(j,4), b13(w_1,1), b13(w_1,2),
-        b13(w_1,3), b13(w_1,4)
+        1, b14(j,1), b14(j,2), b14(j,3), b13(w_1,1), b13(w_1,2), b13(w_1,3)
       )))
-      p2 <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3",
-              "g_x4")
+      p2 <- c("a_x", "t_x1", "t_x2", "t_x3", "g_x1", "g_x2", "g_x3")
       
     }
     
@@ -238,9 +236,9 @@ prob <- function(type, m, j, w_1, w_2, w_3, year_start, which="est") {
     } else if (m==38) {
       
       A <- t(matrix(c(
-        1, b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4)
+        1, b13(w_1,1), b13(w_1,2), b13(w_1,3)
       )))
-      p2 <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4")
+      p2 <- c("a_s", "g_s1", "g_s2", "g_s3")
       
     }
     
@@ -325,10 +323,10 @@ prob <- function(type, m, j, w_1, w_2, w_3, year_start, which="est") {
       
       A <- t(matrix(c(
         x, x*j, x*w_1, x*j*w_1, 1, b13(w_1,1), b13(w_1,2), b13(w_1,3),
-        b13(w_1,4), b14(j,1), b14(j,2), b14(j,3), b14(j,4)
+        b14(j,1), b14(j,2), b14(j,3)
       )))
       p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2",
-              "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
+              "g_y3", "t_y1", "t_y2", "t_y3")
       
     }
     
@@ -741,16 +739,16 @@ if (cfg2$process_analysis) {
     t(matrix(c(b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4))))
   }
   A_b10 <- function(j) {
-    t(matrix(c(b10(j,1),b10(j,2),b10(j,3),b10(j,4))))
+    t(matrix(c(b10(j,1), b10(j,2), b10(j,3), b10(j,4))))
   }
   A_b12 <- function(j) {
-    t(matrix(c(b12(j,1),b12(j,2),b12(j,3),b12(j,4))))
+    t(matrix(c(b12(j,1), b12(j,2), b12(j,3), b12(j,4))))
   }
   A_b13 <- function(w_1) {
-    t(matrix(c(b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4))))
+    t(matrix(c(b13(w_1,1), b13(w_1,2), b13(w_1,3))))
   }
   A_b14 <- function(j) {
-    t(matrix(c(b14(j,1),b14(j,2),b14(j,3),b14(j,4))))
+    t(matrix(c(b14(j,1), b14(j,2), b14(j,3))))
   }
   
   # Extract estimates and SEs
@@ -800,7 +798,7 @@ if (cfg2$process_analysis) {
         params <- c("g_y1", "g_y2", "g_y3", "g_y4")
         A <- A_b9
       } else if (cfg2$m==38) {
-        params <- c("g_y1", "g_y2", "g_y3", "g_y4")
+        params <- c("g_y1", "g_y2", "g_y3")
         A <- A_b13
       }
     } else if (plot_name=="HR_mort_cal") {
@@ -813,7 +811,7 @@ if (cfg2$process_analysis) {
         params <- c("t_y1", "t_y2", "t_y3", "t_y4")
         A <- A_b12
       } else if (cfg2$m==38) {
-        params <- c("t_y1", "t_y2", "t_y3", "t_y4")
+        params <- c("t_y1", "t_y2", "t_y3")
         A <- A_b14
       }
     } else if (plot_name=="HR_sero_cal") {
@@ -828,7 +826,7 @@ if (cfg2$process_analysis) {
         params <- c("t_x1")
         A <- function(j) { matrix(j) }
       } else if (cfg2$m==38) {
-        params <- c("t_x1", "t_x2", "t_x3", "t_x4")
+        params <- c("t_x1", "t_x2", "t_x3")
         A <- A_b14
       }
       x_axis <- "cal time"
@@ -839,7 +837,7 @@ if (cfg2$process_analysis) {
         params <- c("g_x1", "g_x2", "g_x3", "g_x4")
         A <- A_b9
       } else if (cfg2$m==38) {
-        params <- c("g_x1", "g_x2", "g_x3", "g_x4")
+        params <- c("g_x1", "g_x2", "g_x3")
         A <- A_b13
       }
     } else if (plot_name=="HR_init_age") {
@@ -849,7 +847,7 @@ if (cfg2$process_analysis) {
         params <- c("g_s1", "g_s2", "g_s3", "g_s4")
         A <- A_b9
       } else if (cfg2$m==38) {
-        params <- c("g_s1", "g_s2", "g_s3", "g_s4")
+        params <- c("g_s1", "g_s2", "g_s3")
         A <- A_b13
       }
     }
