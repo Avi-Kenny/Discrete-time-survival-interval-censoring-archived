@@ -5,19 +5,23 @@
 cfg2 <- list(
   process_sims = F,
   process_analysis = T,
-  m = 36,
+  m = 38,
   w_start = 2010,
   w_end = 2022,
-  # ests = readRDS("objs/ests_28_full_20240926.rds")
-  ests_M = readRDS("objs/ests_36_full_M_20241127.rds"),
-  ests_F = readRDS("objs/ests_36_full_F_20241127.rds")
+  # ests_M = readRDS("objs/ests_36_full_M_20241127.rds"),
+  # ests_F = readRDS("objs/ests_36_full_F_20241127.rds")
+  ests_M = readRDS("objs/ests_38_full_M_20241203.rds"),
+  ests_F = readRDS("objs/ests_38_full_F_20241203.rds")
 )
 
 # Construct spline bases
-# This should be identical to the code at the top of transform_dataset()
+# This should match the code at the top of transform_dataset()
 b9 <- construct_basis("age (13,20,30,40,60)")
 b10 <- construct_basis("year (10,13,16,19,22)", window_start=cfg2$w_start)
 b12 <- construct_basis("year (17,...,22)", window_start=cfg2$w_start)
+b13 <- construct_basis("age (13,20,30,40,60)", linear=T)
+b14 <- construct_basis("year (10,13,16,19,22)", window_start=cfg2$w_start,
+                       linear=T)
 
 # Get current date
 cfg2$d <- format(Sys.time(), "%Y-%m-%d")
@@ -188,17 +192,20 @@ prob <- function(type, m, j, w_1, w_2, w_3, year_start, which="est") {
       )))
       p2 <- c("a_x", "t_x1", "g_x1", "g_x2", "g_x3", "g_x4")
       
-    } else if (m==36) {
+    } else if (m %in% c(36:37)) {
       
-      # A <- t(matrix(c(
-      #   1, b10(j,1), b10(j,2), b10(j,3), b10(j,4), b9(w_1,1), b9(w_1,2),
-      #   b9(w_1,3), b9(w_1,4), w_2
-      # )))
-      # p2 <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3",
-      #         "g_x4", "g_x5")
       A <- t(matrix(c(
         1, b10(j,1), b10(j,2), b10(j,3), b10(j,4), b9(w_1,1), b9(w_1,2),
         b9(w_1,3), b9(w_1,4)
+      )))
+      p2 <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3",
+              "g_x4")
+      
+    } else if (m==38) {
+      
+      A <- t(matrix(c(
+        1, b14(j,1), b14(j,2), b14(j,3), b14(j,4), b13(w_1,1), b13(w_1,2),
+        b13(w_1,3), b13(w_1,4)
       )))
       p2 <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3",
               "g_x4")
@@ -216,12 +223,22 @@ prob <- function(type, m, j, w_1, w_2, w_3, year_start, which="est") {
       
     } else if (m==36) {
       
-      # A <- t(matrix(c(
-      #   1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4), w_2
-      # )))
-      # p2 <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4", "g_s5")
       A <- t(matrix(c(
         1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4)
+      )))
+      p2 <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4")
+      
+    } else if (m==37) {
+      
+      A <- t(matrix(c(
+        1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4), j
+      )))
+      p2 <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4", "t_s1")
+      
+    } else if (m==38) {
+      
+      A <- t(matrix(c(
+        1, b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4)
       )))
       p2 <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4")
       
@@ -295,17 +312,20 @@ prob <- function(type, m, j, w_1, w_2, w_3, year_start, which="est") {
       p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2",
               "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
       
-    } else if (m==36) {
+    } else if (m %in% c(36:37)) {
       
-      # A <- t(matrix(c(
-      #   x, x*j, x*w_1, x*j*w_1, 1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4),
-      #   w_2, b12(j,1), b12(j,2), b12(j,3), b12(j,4)
-      # )))
-      # p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2",
-      #         "g_y3", "g_y4", "g_y5", "t_y1", "t_y2", "t_y3", "t_y4")
       A <- t(matrix(c(
         x, x*j, x*w_1, x*j*w_1, 1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4),
-        b12(j,1), b12(j,2), b12(j,3), b12(j,4)
+        b10(j,1), b10(j,2), b10(j,3), b10(j,4)
+      )))
+      p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2",
+              "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
+      
+    } else if (m==38) {
+      
+      A <- t(matrix(c(
+        x, x*j, x*w_1, x*j*w_1, 1, b13(w_1,1), b13(w_1,2), b13(w_1,3),
+        b13(w_1,4), b14(j,1), b14(j,2), b14(j,3), b14(j,4)
       )))
       p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2",
               "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
@@ -726,6 +746,12 @@ if (cfg2$process_analysis) {
   A_b12 <- function(j) {
     t(matrix(c(b12(j,1),b12(j,2),b12(j,3),b12(j,4))))
   }
+  A_b13 <- function(w_1) {
+    t(matrix(c(b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4))))
+  }
+  A_b14 <- function(j) {
+    t(matrix(c(b14(j,1),b14(j,2),b14(j,3),b14(j,4))))
+  }
   
   # Extract estimates and SEs
   plot_names <- c(
@@ -742,7 +768,7 @@ if (cfg2$process_analysis) {
     if (plot_name=="HR_mort_hiv_cal") {
       
       title <- "HR of mortality, HIV+ vs. HIV- individuals"
-      if (cfg2$m %in% c(30,34:36)) {
+      if (cfg2$m %in% c(30,34:38)) {
         params <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4")
         A <- function(j, w_1) { t(matrix(c(1, j, w_1, j*w_1))) }
       } else if (cfg2$m==31) {
@@ -770,23 +796,29 @@ if (cfg2$process_analysis) {
     } else if (plot_name=="HR_mort_age") {
       title <- "HR of mortality (age)"
       x_axis <- "age"
-      if (cfg2$m %in% c(30:36)) {
+      if (cfg2$m %in% c(30:37)) {
         params <- c("g_y1", "g_y2", "g_y3", "g_y4")
         A <- A_b9
+      } else if (cfg2$m==38) {
+        params <- c("g_y1", "g_y2", "g_y3", "g_y4")
+        A <- A_b13
       }
     } else if (plot_name=="HR_mort_cal") {
       title <- "HR of mortality (calendar time)"
       x_axis <- "cal time"
-      if (cfg2$m %in% c(30:33,36)) {
+      if (cfg2$m %in% c(30:33,36:37)) {
         params <- c("t_y1", "t_y2", "t_y3", "t_y4")
         A <- A_b10
       } else if (cfg2$m==35) {
         params <- c("t_y1", "t_y2", "t_y3", "t_y4")
         A <- A_b12
+      } else if (cfg2$m==38) {
+        params <- c("t_y1", "t_y2", "t_y3", "t_y4")
+        A <- A_b14
       }
     } else if (plot_name=="HR_sero_cal") {
       title <- "HR of seroconversion (calendar time)"
-      if (cfg2$m %in% c(30:33,36)) {
+      if (cfg2$m %in% c(30:33,36:37)) {
         params <- c("t_x1", "t_x2", "t_x3", "t_x4")
         A <- A_b10
       } else if (cfg2$m==34) {
@@ -795,32 +827,39 @@ if (cfg2$process_analysis) {
       } else if (cfg2$m==35) {
         params <- c("t_x1")
         A <- function(j) { matrix(j) }
+      } else if (cfg2$m==38) {
+        params <- c("t_x1", "t_x2", "t_x3", "t_x4")
+        A <- A_b14
       }
       x_axis <- "cal time"
     } else if (plot_name=="HR_sero_age") {
       title <- "HR of seroconversion (age)"
       x_axis <- "age"
-      if (cfg2$m %in% c(30:36)) {
+      if (cfg2$m %in% c(30:37)) {
         params <- c("g_x1", "g_x2", "g_x3", "g_x4")
         A <- A_b9
+      } else if (cfg2$m==38) {
+        params <- c("g_x1", "g_x2", "g_x3", "g_x4")
+        A <- A_b13
       }
     } else if (plot_name=="HR_init_age") {
       title <- "HR of HIV+ initial status (age)"
       x_axis <- "age"
-      if (cfg2$m %in% c(30:36)) {
+      if (cfg2$m %in% c(30:37)) {
         params <- c("g_s1", "g_s2", "g_s3", "g_s4")
         A <- A_b9
+      } else if (cfg2$m==38) {
+        params <- c("g_s1", "g_s2", "g_s3", "g_s4")
+        A <- A_b13
       }
     }
     
-    if (cfg2$m %in% c(30:36)) {
-      indices_M <- which(names(cfg2$ests_M$opt$par) %in% params)
-      beta_M <- matrix(cfg2$ests_M$opt$par[indices_M])
-      Sigma_M <- cfg2$ests_M$hessian_inv[indices_M,indices_M]
-      indices_F <- which(names(cfg2$ests_F$opt$par) %in% params)
-      beta_F <- matrix(cfg2$ests_F$opt$par[indices_F])
-      Sigma_F <- cfg2$ests_F$hessian_inv[indices_F,indices_F]
-    }
+    indices_M <- which(names(cfg2$ests_M$opt$par) %in% params)
+    beta_M <- matrix(cfg2$ests_M$opt$par[indices_M])
+    Sigma_M <- cfg2$ests_M$hessian_inv[indices_M,indices_M]
+    indices_F <- which(names(cfg2$ests_F$opt$par) %in% params)
+    beta_F <- matrix(cfg2$ests_F$opt$par[indices_F])
+    Sigma_F <- cfg2$ests_F$hessian_inv[indices_F,indices_F]
     
     hr <- function(x, which, sex, log=F) {
       if (which=="cal time") {

@@ -1,4 +1,58 @@
 
+# Debuging splines
+if (F) {
+  
+  grid <- scale_age(seq(13,60, length.out=500))
+  k <- scale_age(c(13,20,30,40,60))
+  num_df <- 4
+  
+  b <- Vectorize(function(x, i) {
+    splines::ns(x=x, knots=k[2:4], intercept=F, Boundary.knots=k[c(1,5)])[i]
+  }, vectorize.args="x")
+  y <- matrix(NA, nrow=length(grid), ncol=num_df)
+  for (i in c(1:num_df)) { y[,i] <- sapply(grid, function(x) { b(x, i=i) }) }
+  rm(b)
+  
+  b9 <- function(x=NA, i=NA) {
+    row <- unlist(lapply(x, function(x) { which.min(abs(x-grid)) } ))
+    if (is.na(i)) { return(y[row,]) } else { return(y[row,i]) }
+  }
+  
+  curve <- Vectorize(function(x, par) {
+    x <- scale_age(x)
+    val <- sum(par * sapply(c(1:4), function(i) { b9(x,i) }) )
+    return(val)
+  }, vectorize.args="x")
+  
+  # g_x <- c(0.5676, -1.5649, 1.1433, -2.145)
+  # g_y <- c(2.2125, 1.7237, 4.4628, 2.8438)
+  
+  grid2 <- seq(13, 60, by=0.1)
+  
+  #########################################################
+  
+  # 1 affects height of midsection
+  # 2 affects height of peak and midsection
+  # 3 affects overall height
+  # 4 affects height of peak and tail
+  # y_vals_1 <- sapply(grid2, function(x) { curve(x, c(0.568, -1.565, 1.143, -2.15)) })
+  # y_vals_2 <- sapply(grid2, function(x) { curve(x, c(0.568, -1.565, 1.143+50, -2.15)) })
+  # y_vals_3 <- sapply(grid2, function(x) { curve(x, c(0.568, -1.565, 1.143, -2.15)) })
+  
+  y_vals_1 <- sapply(grid2, function(x) { curve(x, c(1, 0, 0, 0)) })
+  y_vals_2 <- sapply(grid2, function(x) { curve(x, c(0, 1, 0, 0)) })
+  y_vals_3 <- sapply(grid2, function(x) { curve(x, c(0, 0, 1, 0)) })
+  y_vals_4 <- sapply(grid2, function(x) { curve(x, c(0, 0, 0, 1)) })
+  
+  df_plot <- data.frame(
+    x = rep(grid2, 4),
+    y = c(y_vals_1, y_vals_2, y_vals_3, y_vals_4),
+    which = rep(c("One", "Two", "Three", "Four"), each=length(grid2))
+  )
+  ggplot(df_plot, aes(x=x, y=y, color=which)) + geom_line()
+  
+}
+
 # Getting spline basis initial parameters
 if (F) {
   

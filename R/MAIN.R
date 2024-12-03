@@ -6,8 +6,8 @@
 # Sys.setenv(avi_reltol=1e-5) # For running locally
 cfg <- list(
   run_sims = F,
-  run_analysis = T,
-  run_process = F,
+  run_analysis = F,
+  run_process = T,
   run_dqa = F,
   sim_level_set = "level_set_1",
   sim_run_or_update = "run",
@@ -16,7 +16,7 @@ cfg <- list(
   # sim_n_cores = 300,
   sim_n_cores = as.integer(Sys.getenv("SLURM_CPUS_PER_TASK")), # For parallelizing across multiple CPUs within a single task
   sim_stop_at_error = F,
-  model_version = 37 # For analysis
+  model_version = 38 # For analysis
   # model_version = 7 # For simulations
 )
 

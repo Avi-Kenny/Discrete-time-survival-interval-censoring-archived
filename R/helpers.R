@@ -175,7 +175,7 @@ uncompress <- function(len, num_ones) {
 #' 
 #' @param which Which basis to construct
 #' @param window_start Start year
-construct_basis <- function(which, window_start=NA) {
+construct_basis <- function(which, window_start=NA, linear=FALSE) {
   
   if (which %in% c("year (10,13,16,19,22)","year (10,13,16,19,22) +i")) {
     grid <- scale_time(seq(2010,2022, length.out=500), st=window_start)
@@ -196,9 +196,13 @@ construct_basis <- function(which, window_start=NA) {
     int <- FALSE
   }
   
-  b <- Vectorize(function(x, i) {
-    splines::ns(x=x, knots=k[2:4], intercept=int, Boundary.knots=k[c(1,5)])[i]
-  }, vectorize.args="x")
+  if (linear) {
+    b <- Vectorize(function(x, i) { max(0, x-k[i]) }, vectorize.args="x")
+  } else {
+    b <- Vectorize(function(x, i) {
+      splines::ns(x=x, knots=k[2:4], intercept=int, Boundary.knots=k[c(1,5)])[i]
+    }, vectorize.args="x")
+  }
   y <- matrix(NA, nrow=length(grid), ncol=num_df)
   for (i in c(1:num_df)) { y[,i] <- sapply(grid, function(x) { b(x, i=i) }) }
   rm(b)
