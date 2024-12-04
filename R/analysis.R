@@ -637,14 +637,16 @@ if (cfg2$run_analysis) {
     if (cfg2$model_sex=="Female") { par_init <- c(a_x=-5.6, g_x1=0.69, g_x2=-1.27, g_x3=1.04, g_x4=-2.38, t_x1=1.21, t_x2=-1.64, t_x3=-1.04, t_x4=-0.51, a_s=-3.18, g_s1=3.51, g_s2=2.13, g_s3=4.35, g_s4=0.57, t_s1=0, beta_x1=2.11, beta_x2=-0.03, beta_x3=-0.39, beta_x4=-0.15, a_y=-8.02, g_y1=2.13, g_y2=1.66, g_y3=4.37, g_y4=2.8, t_y1=-0.17, t_y2=-0.17, t_y3=-0.37, t_y4=0.06) }
     if (cfg2$model_sex=="Male") { par_init <- c(a_x=-6.61, g_x1=2.41, g_x2=-1.89, g_x3=-0.42, g_x4=-1.73, t_x1=0.48, t_x2=-3.19, t_x3=-0.52, t_x4=-0.43, a_s=-3.75, g_s1=3.84, g_s2=3.03, g_s3=4.03, g_s4=2.09, t_s1=0, beta_x1=2.22, beta_x2=-0.03, beta_x3=-1.15, beta_x4=-0.17, a_y=-7.18, g_y1=1.91, g_y2=1.9, g_y3=3.95, g_y4=2.71, t_y1=-0.27, t_y2=-0.03, t_y3=-0.12, t_y4=0.02) }
   } else if (cfg$model_version==38) {
-    if (cfg2$model_sex=="Female") { par_init <- c(a_x=-5.6, g_x1=0.69, g_x2=-1.27, g_x3=1.04, t_x1=1.21, t_x2=-1.64, t_x3=-1.04, a_s=-3.18, g_s1=3.51, g_s2=2.13, g_s3=4.35, beta_x1=2.11, beta_x2=-0.03, beta_x3=-0.39, beta_x4=-0.15, a_y=-8.02, g_y1=2.13, g_y2=1.66, g_y3=4.37, t_y1=-0.17, t_y2=-0.17, t_y3=-0.37) }
-    if (cfg2$model_sex=="Male") { par_init <- c(a_x=-6.61, g_x1=2.41, g_x2=-1.89, g_x3=-0.42, t_x1=0.48, t_x2=-3.19, t_x3=-0.52, a_s=-3.75, g_s1=3.84, g_s2=3.03, g_s3=4.03, beta_x1=2.22, beta_x2=-0.03, beta_x3=-1.15, beta_x4=-0.17, a_y=-7.18, g_y1=1.91, g_y2=1.9, g_y3=3.95, t_y1=-0.27, t_y2=-0.03, t_y3=-0.12) }
+    if (cfg2$model_sex=="Female") { par_init <- c(a_x=-8.7354, g_x1=0, g_x2=0, g_x3=0, t_x1=1.2636, t_x2=-1.517, t_x3=-0.161, a_s=-2.468, g_s1=16, g_s2=-21, g_s3=-1.499, beta_x1=2.445, beta_x2=0.0611, beta_x3=-1.917, beta_x4=-0.244, a_y=-7.74, g_y1=10, g_y2=-11, g_y3=15, t_y1=-0.040, t_y2=-0.0264, t_y3=0.0823) }
+    if (cfg2$model_sex=="Male") { par_init <- c(a_x=-8.7354, g_x1=0, g_x2=0, g_x3=0, t_x1=1.2636, t_x2=-1.517, t_x3=-0.161, a_s=-2.468, g_s1=16, g_s2=-21, g_s3=-1.499, beta_x1=2.445, beta_x2=0.0611, beta_x3=-1.917, beta_x4=-0.244, a_y=-7.74, g_y1=10, g_y2=-11, g_y3=15, t_y1=-0.040, t_y2=-0.0264, t_y3=0.0823) }
+  } else if (cfg$model_version==39) {
+    if (cfg2$model_sex=="Female") { par_init <- c(a_x=-9.05, g_x1=-1.95, g_x2=-0.86, g_x3=1.97, t_x1=1.37, t_x2=-1.69, t_x3=-0.06, a_s=-2.47, g_s1=16.3, g_s2=-20.58, g_s3=-2.85, beta_x1=2.47, beta_x2=-0.01, beta_x3=-0.98, beta_x4=-0.2, a_y=-7.92, g_y1=11.47, g_y2=-12.82, g_y3=15.24, t_y1=-0.04, t_y2=0.03, t_y3=0.05) }
+    if (cfg2$model_sex=="Male") { par_init <- c(a_x=-10.17, g_x1=-2.76, g_x2=0.35, g_x3=10.29, t_x1=1.13, t_x2=-1.18, t_x3=-0.1, a_s=-3.57, g_s1=19.02, g_s2=-18.93, g_s3=-4.94, beta_x1=1.4, beta_x2=-0.04, beta_x3=-0.63, beta_x4=0.02, a_y=-6.71, g_y1=12.11, g_y2=-10.72, g_y3=4.3, t_y1=-0.12, t_y2=0.1, t_y3=-0.01) }
   }
   
   # Construct param init vector
   if (F) {
-    # ests <- readRDS("objs/ests_36_full_F_20241127.rds")
-    ests <- readRDS("objs/ests_36_full_M_20241127.rds")
+    ests <- readRDS("objs/ests_38_full_M_20241204.rds")
     str <- "par_init <- c("
     for (par in names(ests$opt$par)) {
       str <- paste0(str, par, "=", round(ests$opt$par[[par]], 2), ", ")

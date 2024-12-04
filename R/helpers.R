@@ -185,11 +185,15 @@ construct_basis <- function(which, window_start=NA, linear=FALSE) {
     grid <- scale_time(seq(2010,2022, length.out=500), st=window_start)
     k <- scale_time(seq(2010,2022, length.out=4), st=window_start)
     num_df <- 3
-  } else if (which=="age (13,30,45,60)") {
+  } else if (which=="age (13,20,30,60)") { # sero
+    grid <- scale_age(seq(13,60, length.out=500))
+    k <- scale_age(c(13,20,30,60))
+    num_df <- 3
+  } else if (which=="age (13,30,45,60)") { # mort
     grid <- scale_age(seq(13,60, length.out=500))
     k <- scale_age(c(13,30,45,60))
     num_df <- 3
-  } else if (which=="age (13,20,30,40,60)") {
+  } else if (which=="age (13,20,30,40,60)") { # sero/mort
     grid <- scale_age(seq(13,60, length.out=500))
     k <- scale_age(c(13,20,30,40,60))
     num_df <- 4

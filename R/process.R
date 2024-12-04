@@ -5,13 +5,11 @@
 cfg2 <- list(
   process_sims = F,
   process_analysis = T,
-  m = 38,
+  m = 39,
   w_start = 2010,
   w_end = 2022,
-  # ests_M = readRDS("objs/ests_36_full_M_20241127.rds"),
-  # ests_F = readRDS("objs/ests_36_full_F_20241127.rds")
-  ests_M = readRDS("objs/ests_38_full_M_20241203.rds"),
-  ests_F = readRDS("objs/ests_38_full_F_20241203.rds")
+  ests_M = readRDS("objs/ests_39_full_M_20241204.rds"),
+  ests_F = readRDS("objs/ests_39_full_F_20241204.rds")
 )
 
 # Construct spline bases
@@ -19,8 +17,9 @@ cfg2 <- list(
 b9 <- construct_basis("age (13,20,30,40,60)")
 b10 <- construct_basis("year (10,13,16,19,22)", window_start=cfg2$w_start)
 b12 <- construct_basis("year (17,...,22)", window_start=cfg2$w_start)
-b13 <- construct_basis("age (13,30,45,60)", linear=T)
-b14 <- construct_basis("year (10,14,18,22)", window_start=cfg2$w_start,
+b13 <- construct_basis("age (13,20,30,60)", linear=T)
+b14 <- construct_basis("age (13,30,45,60)", linear=T)
+b15 <- construct_basis("year (10,14,18,22)", window_start=cfg2$w_start,
                        linear=T)
 
 # Get current date
@@ -208,6 +207,13 @@ prob <- function(type, m, j, w_1, w_2, w_3, year_start, which="est") {
       )))
       p2 <- c("a_x", "t_x1", "t_x2", "t_x3", "g_x1", "g_x2", "g_x3")
       
+    } else if (m==39) {
+      
+      A <- t(matrix(c(
+        1, b15(j,1), b15(j,2), b15(j,3), b13(w_1,1), b13(w_1,2), b13(w_1,3)
+      )))
+      p2 <- c("a_x", "t_x1", "t_x2", "t_x3", "g_x1", "g_x2", "g_x3")
+      
     }
     
   } else if (type=="init") {
@@ -234,6 +240,13 @@ prob <- function(type, m, j, w_1, w_2, w_3, year_start, which="est") {
       p2 <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4", "t_s1")
       
     } else if (m==38) {
+      
+      A <- t(matrix(c(
+        1, b13(w_1,1), b13(w_1,2), b13(w_1,3)
+      )))
+      p2 <- c("a_s", "g_s1", "g_s2", "g_s3")
+      
+    } else if (m==39) {
       
       A <- t(matrix(c(
         1, b13(w_1,1), b13(w_1,2), b13(w_1,3)
@@ -324,6 +337,15 @@ prob <- function(type, m, j, w_1, w_2, w_3, year_start, which="est") {
       A <- t(matrix(c(
         x, x*j, x*w_1, x*j*w_1, 1, b13(w_1,1), b13(w_1,2), b13(w_1,3),
         b14(j,1), b14(j,2), b14(j,3)
+      )))
+      p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2",
+              "g_y3", "t_y1", "t_y2", "t_y3")
+      
+    } else if (m==39) {
+      
+      A <- t(matrix(c(
+        x, x*j, x*w_1, x*j*w_1, 1, b14(w_1,1), b14(w_1,2), b14(w_1,3),
+        b15(j,1), b15(j,2), b15(j,3)
       )))
       p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2",
               "g_y3", "t_y1", "t_y2", "t_y3")
@@ -750,6 +772,9 @@ if (cfg2$process_analysis) {
   A_b14 <- function(j) {
     t(matrix(c(b14(j,1), b14(j,2), b14(j,3))))
   }
+  A_b15 <- function(j) {
+    t(matrix(c(b15(j,1), b15(j,2), b15(j,3))))
+  }
   
   # Extract estimates and SEs
   plot_names <- c(
@@ -766,7 +791,7 @@ if (cfg2$process_analysis) {
     if (plot_name=="HR_mort_hiv_cal") {
       
       title <- "HR of mortality, HIV+ vs. HIV- individuals"
-      if (cfg2$m %in% c(30,34:38)) {
+      if (cfg2$m %in% c(30,34:39)) {
         params <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4")
         A <- function(j, w_1) { t(matrix(c(1, j, w_1, j*w_1))) }
       } else if (cfg2$m==31) {
@@ -800,6 +825,9 @@ if (cfg2$process_analysis) {
       } else if (cfg2$m==38) {
         params <- c("g_y1", "g_y2", "g_y3")
         A <- A_b13
+      } else if (cfg2$m==39) {
+        params <- c("g_y1", "g_y2", "g_y3")
+        A <- A_b14
       }
     } else if (plot_name=="HR_mort_cal") {
       title <- "HR of mortality (calendar time)"
@@ -813,6 +841,9 @@ if (cfg2$process_analysis) {
       } else if (cfg2$m==38) {
         params <- c("t_y1", "t_y2", "t_y3")
         A <- A_b14
+      } else if (cfg2$m==39) {
+        params <- c("t_y1", "t_y2", "t_y3")
+        A <- A_b15
       }
     } else if (plot_name=="HR_sero_cal") {
       title <- "HR of seroconversion (calendar time)"
@@ -828,6 +859,9 @@ if (cfg2$process_analysis) {
       } else if (cfg2$m==38) {
         params <- c("t_x1", "t_x2", "t_x3")
         A <- A_b14
+      } else if (cfg2$m==39) {
+        params <- c("t_x1", "t_x2", "t_x3")
+        A <- A_b15
       }
       x_axis <- "cal time"
     } else if (plot_name=="HR_sero_age") {
@@ -836,7 +870,7 @@ if (cfg2$process_analysis) {
       if (cfg2$m %in% c(30:37)) {
         params <- c("g_x1", "g_x2", "g_x3", "g_x4")
         A <- A_b9
-      } else if (cfg2$m==38) {
+      } else if (cfg2$m %in% c(38:39)) {
         params <- c("g_x1", "g_x2", "g_x3")
         A <- A_b13
       }
@@ -846,7 +880,7 @@ if (cfg2$process_analysis) {
       if (cfg2$m %in% c(30:37)) {
         params <- c("g_s1", "g_s2", "g_s3", "g_s4")
         A <- A_b9
-      } else if (cfg2$m==38) {
+      } else if (cfg2$m %in% c(38:39)) {
         params <- c("g_s1", "g_s2", "g_s3")
         A <- A_b13
       }
