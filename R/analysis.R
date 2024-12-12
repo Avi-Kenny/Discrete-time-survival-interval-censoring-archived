@@ -632,21 +632,22 @@ if (cfg2$run_analysis) {
   } else if (cfg$model_version==35) {
     par_init <- c(a_x=-5.564, g_x1=0.569, g_x2=-1.992, g_x3=1.610, g_x4=-1.229, t_x1=0, a_s=-3.198, g_s1=3.563, g_s2=2.150, g_s3=4.358, g_s4=0.510, beta_x1=0, beta_x2=0, beta_x3=0, beta_x4=0, a_y=-8.075, g_y1=2.393, g_y2=1.799, g_y3=5.165, g_y4=2.703, t_y1=-0.393, t_y2=-0.460, t_y3=-0.785, t_y4=0.233)
   } else if (cfg$model_version==36) {
-    par_init <- c(a_x=-5.2, g_x1=0.6, g_x2=-1.8, g_x3=0.3, g_x4=-2.0, t_x1=0.8, t_x2=-1.1, t_x3=-0.8, t_x4=-0.6, a_s=-3.1, g_s1=3.5, g_s2=2.0, g_s3=4.3, g_s4=0.6, beta_x1=2.0, beta_x2=0, beta_x3=-0.8, beta_x4=-0.1, a_y=-7.9, g_y1=2.0, g_y2=1.8, g_y3=4.6, g_y4=2.8, t_y1=-0.1, t_y2=-0.4, t_y3=-0.5, t_y4=0.3)
+    # par_init <- c(a_x=-5.2, g_x1=0.6, g_x2=-1.8, g_x3=0.3, g_x4=-2.0, t_x1=0.8, t_x2=-1.1, t_x3=-0.8, t_x4=-0.6, a_s=-3.1, g_s1=3.5, g_s2=2.0, g_s3=4.3, g_s4=0.6, beta_x1=2.0, beta_x2=0, beta_x3=-0.8, beta_x4=-0.1, a_y=-7.9, g_y1=2.0, g_y2=1.8, g_y3=4.6, g_y4=2.8, t_y1=-0.1, t_y2=-0.4, t_y3=-0.5, t_y4=0.3)
+    if (cfg2$model_sex=="Female") { par_init <- c(a_x=-5.6, g_x1=0.69, g_x2=-1.27, g_x3=1.04, g_x4=-2.38, t_x1=1.21, t_x2=-1.64, t_x3=-1.04, t_x4=-0.51, a_s=-3.18, g_s1=3.51, g_s2=2.13, g_s3=4.35, g_s4=0.57, beta_x1=2.11, beta_x2=-0.03, beta_x3=-0.39, beta_x4=-0.15, a_y=-8.02, g_y1=2.13, g_y2=1.66, g_y3=4.37, g_y4=2.8, t_y1=-0.17, t_y2=-0.17, t_y3=-0.37, t_y4=0.06) }
+    if (cfg2$model_sex=="Male") { par_init <- c(a_x=-6.61, g_x1=2.41, g_x2=-1.89, g_x3=-0.42, g_x4=-1.73, t_x1=0.48, t_x2=-3.19, t_x3=-0.52, t_x4=-0.43, a_s=-3.75, g_s1=3.84, g_s2=3.03, g_s3=4.03, g_s4=2.09, beta_x1=2.22, beta_x2=-0.03, beta_x3=-1.15, beta_x4=-0.17, a_y=-7.18, g_y1=1.91, g_y2=1.9, g_y3=3.95, g_y4=2.71, t_y1=-0.27, t_y2=-0.03, t_y3=-0.12, t_y4=0.02) }
   } else if (cfg$model_version==37) {
-    if (cfg2$model_sex=="Female") { par_init <- c(a_x=-5.6, g_x1=0.69, g_x2=-1.27, g_x3=1.04, g_x4=-2.38, t_x1=1.21, t_x2=-1.64, t_x3=-1.04, t_x4=-0.51, a_s=-3.18, g_s1=3.51, g_s2=2.13, g_s3=4.35, g_s4=0.57, t_s1=0, beta_x1=2.11, beta_x2=-0.03, beta_x3=-0.39, beta_x4=-0.15, a_y=-8.02, g_y1=2.13, g_y2=1.66, g_y3=4.37, g_y4=2.8, t_y1=-0.17, t_y2=-0.17, t_y3=-0.37, t_y4=0.06) }
-    if (cfg2$model_sex=="Male") { par_init <- c(a_x=-6.61, g_x1=2.41, g_x2=-1.89, g_x3=-0.42, g_x4=-1.73, t_x1=0.48, t_x2=-3.19, t_x3=-0.52, t_x4=-0.43, a_s=-3.75, g_s1=3.84, g_s2=3.03, g_s3=4.03, g_s4=2.09, t_s1=0, beta_x1=2.22, beta_x2=-0.03, beta_x3=-1.15, beta_x4=-0.17, a_y=-7.18, g_y1=1.91, g_y2=1.9, g_y3=3.95, g_y4=2.71, t_y1=-0.27, t_y2=-0.03, t_y3=-0.12, t_y4=0.02) }
+    if (cfg2$model_sex=="Female") { par_init <- c(a_x=-5.6, g_x1=25, g_x2=-32, g_x3=-5, g_x4=7, t_x1=0.02, t_x2=0.2, t_x3=-0.8, t_x4=0.7, a_s=-3.18, g_s1=30, g_s2=-17, g_s3=-18, g_s4=0, beta_x1=2.11, beta_x2=-0.03, beta_x3=-0.39, beta_x4=-0.15, a_y=-8.02, g_y1=20, g_y2=-13, g_y3=-5, g_y4=4, t_y1=-0.07, t_y2=0.075, t_y3=-0.01, t_y4=0.04) }
+    if (cfg2$model_sex=="Male") { par_init <- c(a_x=-6.61, g_x1=13, g_x2=-3, g_x3=-30, g_x4=13, t_x1=0.2, t_x2=-0.4, t_x3=-0.5, t_x4=1.3, a_s=-3.75, g_s1=15, g_s2=10, g_s3=-25, g_s4=-4, beta_x1=2.22, beta_x2=-0.03, beta_x3=-1.15, beta_x4=-0.17, a_y=-7.18, g_y1=15, g_y2=-7, g_y3=-4, g_y4=1, t_y1=-0.04, t_y2=0.01, t_y3=0.07, t_y4=-0.02) }
   } else if (cfg$model_version==38) {
-    if (cfg2$model_sex=="Female") { par_init <- c(a_x=-8.7354, g_x1=0, g_x2=0, g_x3=0, t_x1=1.2636, t_x2=-1.517, t_x3=-0.161, a_s=-2.468, g_s1=16, g_s2=-21, g_s3=-1.499, beta_x1=2.445, beta_x2=0.0611, beta_x3=-1.917, beta_x4=-0.244, a_y=-7.74, g_y1=10, g_y2=-11, g_y3=15, t_y1=-0.040, t_y2=-0.0264, t_y3=0.0823) }
-    if (cfg2$model_sex=="Male") { par_init <- c(a_x=-8.7354, g_x1=0, g_x2=0, g_x3=0, t_x1=1.2636, t_x2=-1.517, t_x3=-0.161, a_s=-2.468, g_s1=16, g_s2=-21, g_s3=-1.499, beta_x1=2.445, beta_x2=0.0611, beta_x3=-1.917, beta_x4=-0.244, a_y=-7.74, g_y1=10, g_y2=-11, g_y3=15, t_y1=-0.040, t_y2=-0.0264, t_y3=0.0823) }
-  } else if (cfg$model_version==39) {
-    if (cfg2$model_sex=="Female") { par_init <- c(a_x=-9.05, g_x1=-1.95, g_x2=-0.86, g_x3=1.97, t_x1=1.37, t_x2=-1.69, t_x3=-0.06, a_s=-2.47, g_s1=16.3, g_s2=-20.58, g_s3=-2.85, beta_x1=2.47, beta_x2=-0.01, beta_x3=-0.98, beta_x4=-0.2, a_y=-7.92, g_y1=11.47, g_y2=-12.82, g_y3=15.24, t_y1=-0.04, t_y2=0.03, t_y3=0.05) }
-    if (cfg2$model_sex=="Male") { par_init <- c(a_x=-10.17, g_x1=-2.76, g_x2=0.35, g_x3=10.29, t_x1=1.13, t_x2=-1.18, t_x3=-0.1, a_s=-3.57, g_s1=19.02, g_s2=-18.93, g_s3=-4.94, beta_x1=1.4, beta_x2=-0.04, beta_x3=-0.63, beta_x4=0.02, a_y=-6.71, g_y1=12.11, g_y2=-10.72, g_y3=4.3, t_y1=-0.12, t_y2=0.1, t_y3=-0.01) }
+    # if (cfg2$model_sex=="Female") { par_init <- c(a_x=-5.6, g_x1=10, g_x2=-28, g_x3=13, t_x1=0.02, t_x2=0.2, t_x3=-0.8, t_x4=0.7, a_s=-3.18, g_s1=30, g_s2=-17, g_s3=-18, g_s4=0, beta_x1=2.11, beta_x2=-0.03, beta_x3=-0.39, beta_x4=-0.15, a_y=-8.02, g_y1=20, g_y2=-13, g_y3=-5, g_y4=4, t_y1=-0.07, t_y2=0.075, t_y3=-0.01, t_y4=0.04) }
+    # if (cfg2$model_sex=="Male") { par_init <- c(a_x=-6.61, g_x1=11, g_x2=-30, g_x3=12, t_x1=0.2, t_x2=-0.4, t_x3=-0.5, t_x4=1.3, a_s=-3.75, g_s1=15, g_s2=10, g_s3=-25, g_s4=-4, beta_x1=2.22, beta_x2=-0.03, beta_x3=-1.15, beta_x4=-0.17, a_y=-7.18, g_y1=15, g_y2=-7, g_y3=-4, g_y4=1, t_y1=-0.04, t_y2=0.01, t_y3=0.07, t_y4=-0.02) }
+    if (cfg2$model_sex=="Female") { par_init <- c(a_x=-5.47, g_x1=10.01, g_x2=-27.66, g_x3=13.78, t_x1=0.01, t_x2=0.2, t_x3=-0.81, t_x4=0.7, a_s=-3.17, g_s1=30.03, g_s2=-16.89, g_s3=-17.81, g_s4=0.04, beta_x1=2.1, beta_x2=-0.03, beta_x3=-0.4, beta_x4=-0.15, a_y=-8.03, g_y1=19.99, g_y2=-12.99, g_y3=-4.94, g_y4=4.24, t_y1=-0.07, t_y2=0.08, t_y3=-0.02, t_y4=0.03) }
+    if (cfg2$model_sex=="Male") { par_init <- c(a_x=-6.59, g_x1=11.58, g_x2=-30.05, g_x3=13.13, t_x1=0.2, t_x2=-0.4, t_x3=-0.5, t_x4=1.32, a_s=-3.75, g_s1=14.95, g_s2=9.95, g_s3=-24.96, g_s4=-3.94, beta_x1=2.22, beta_x2=-0.03, beta_x3=-1.18, beta_x4=-0.18, a_y=-7.18, g_y1=15, g_y2=-7.04, g_y3=-4.05, g_y4=1.23, t_y1=-0.04, t_y2=0.01, t_y3=0.07, t_y4=-0.01) }
   }
   
   # Construct param init vector
   if (F) {
-    ests <- readRDS("objs/ests_38_full_M_20241204.rds")
+    ests <- readRDS("objs/ests_38_full_F_20241209.rds")
     str <- "par_init <- c("
     for (par in names(ests$opt$par)) {
       str <- paste0(str, par, "=", round(ests$opt$par[[par]], 2), ", ")

@@ -1,53 +1,157 @@
 
+# !!!!! TEMP
+if (F) {
+  
+  grid <- scale_age(seq(13,60, length.out=500))
+  k4 <- scale_age(c(13,20,30,40,60))
+  k3 <- scale_age(c(13,30,40,60))
+
+  bL4 <- Vectorize(function(x, i) { max(0, x-k4[i]) }, vectorize.args="x")
+  bL3 <- Vectorize(function(x, i) { max(0, x-k3[i]) }, vectorize.args="x")
+  y4 <- matrix(NA, nrow=length(grid), ncol=4)
+  y3 <- matrix(NA, nrow=length(grid), ncol=3)
+  for (i in c(1:4)) { y4[,i] <- sapply(grid, function(x) { bL4(x, i=i) }) }
+  for (i in c(1:3)) { y3[,i] <- sapply(grid, function(x) { bL3(x, i=i) }) }
+
+  b4L <- function(x=NA, i=NA) {
+    row <- unlist(lapply(x, function(x) { which.min(abs(x-grid)) } ))
+    if (is.na(i)) { return(y4[row,]) } else { return(y4[row,i]) }
+  }
+  b3L <- function(x=NA, i=NA) {
+    row <- unlist(lapply(x, function(x) { which.min(abs(x-grid)) } ))
+    if (is.na(i)) { return(y3[row,]) } else { return(y3[row,i]) }
+  }
+  
+  curve4 <- Vectorize(function(x, par) {
+    val <- sum(par * sapply(c(1:4), function(i) { b4L(x,i) }) )
+    return(val)
+  }, vectorize.args="x")
+  curve3 <- Vectorize(function(x, par) {
+    val <- sum(par * sapply(c(1:3), function(i) { b3L(x,i) }) )
+    return(val)
+  }, vectorize.args="x")
+  
+  y_vals_L4 <- sapply(grid2, function(x) { curve4(x, c(13, -3, -30, 13)) })
+  y_vals_L3 <- sapply(grid2, function(x) { curve3(x, c(11, -30, 12)) })
+  
+  grid2 <- scale_age(seq(13, 60, by=0.1))
+  df_plot <- data.frame(
+    x = rep(grid2, 2),
+    y = c(y_vals_L4, y_vals_L3),
+    which = rep(c("Four", "Three"), each=length(grid2))
+  )
+  ggplot(df_plot, aes(x=x, y=y, color=which)) + geom_line()
+  
+}
+
+
+
+# Debuging splines (linear vs NCS)
+if (F) {
+  
+  grid <- scale_age(seq(13,60, length.out=500))
+  grid2 <- scale_age(seq(13, 60, by=0.1))
+  k <- scale_age(c(13,20,30,40,60))
+  # grid <- scale_time(seq(2010,2022, length.out=500), st=2010)
+  # grid2 <- scale_time(seq(2010, 2022, by=0.1), st=2010)
+  # k <- scale_time(seq(2010,2022, length.out=5), st=2010)
+  num_df <- 4
+  
+  bL <- Vectorize(function(x, i) { max(0, x-k[i]) }, vectorize.args="x")
+  bC <- Vectorize(function(x, i) {
+    splines::ns(
+      x = x,
+      knots = k[2:num_df],
+      intercept = F,
+      Boundary.knots = k[c(1,num_df+1)]
+    )[i]
+  }, vectorize.args="x")
+  
+  yL <- yC <- matrix(NA, nrow=length(grid), ncol=num_df)
+  for (i in c(1:num_df)) { yL[,i] <- sapply(grid, function(x) { bL(x, i=i) }) }
+  for (i in c(1:num_df)) { yC[,i] <- sapply(grid, function(x) { bC(x, i=i) }) }
+  rm(bL,bC)
+  
+  b0L <- function(x=NA, i=NA) {
+    row <- unlist(lapply(x, function(x) { which.min(abs(x-grid)) } ))
+    if (is.na(i)) { return(yL[row,]) } else { return(yL[row,i]) }
+  }
+  b0C <- function(x=NA, i=NA) {
+    row <- unlist(lapply(x, function(x) { which.min(abs(x-grid)) } ))
+    if (is.na(i)) { return(yC[row,]) } else { return(yC[row,i]) }
+  }
+  
+  curve <- Vectorize(function(x, par, linear) {
+    if (linear) {
+      val <- sum(par * sapply(c(1:num_df), function(i) { b0L(x,i) }) )
+    } else {
+      val <- sum(par * sapply(c(1:num_df), function(i) { b0C(x,i) }) )
+    }
+    return(val)
+  }, vectorize.args="x")
+  
+  y_vals_C <- sapply(grid2, function(x) { curve(x, c(-0.1685, -0.173, -0.3721, 0.0634), linear=F) })
+  y_vals_L <- sapply(grid2, function(x) { curve(x, c(-0.07, 0.075, -0.01, 0.04), linear=T) })
+  
+  df_plot <- data.frame(
+    x = rep(grid2, 2),
+    y = c(y_vals_L, y_vals_C),
+    which = rep(c("Linear", "NCS"), each=length(grid2))
+  )
+  ggplot(df_plot, aes(x=x, y=y, color=which)) + geom_line()
+  
+}
+
+
 # Debuging splines
 if (F) {
+  
+  linear <- FALSE
   
   grid <- scale_age(seq(13,60, length.out=500))
   k <- scale_age(c(13,20,30,40,60))
   num_df <- 4
   
-  b <- Vectorize(function(x, i) {
-    splines::ns(x=x, knots=k[2:4], intercept=F, Boundary.knots=k[c(1,5)])[i]
-  }, vectorize.args="x")
+  if (linear) {
+    b <- Vectorize(function(x, i) { max(0, x-k[i]) }, vectorize.args="x")
+  } else {
+    b <- Vectorize(function(x, i) {
+      splines::ns(
+        x = x,
+        knots = k[2:num_df],
+        intercept = F,
+        Boundary.knots = k[c(1,num_df+1)]
+      )[i]
+    }, vectorize.args="x")
+  }
   y <- matrix(NA, nrow=length(grid), ncol=num_df)
   for (i in c(1:num_df)) { y[,i] <- sapply(grid, function(x) { b(x, i=i) }) }
   rm(b)
   
-  b9 <- function(x=NA, i=NA) {
+  b00 <- function(x=NA, i=NA) {
     row <- unlist(lapply(x, function(x) { which.min(abs(x-grid)) } ))
     if (is.na(i)) { return(y[row,]) } else { return(y[row,i]) }
   }
   
   curve <- Vectorize(function(x, par) {
     x <- scale_age(x)
-    val <- sum(par * sapply(c(1:4), function(i) { b9(x,i) }) )
+    val <- sum(par * sapply(c(1:num_df), function(i) { b00(x,i) }) )
     return(val)
   }, vectorize.args="x")
   
-  # g_x <- c(0.5676, -1.5649, 1.1433, -2.145)
-  # g_y <- c(2.2125, 1.7237, 4.4628, 2.8438)
-  
   grid2 <- seq(13, 60, by=0.1)
-  
-  #########################################################
-  
-  # 1 affects height of midsection
-  # 2 affects height of peak and midsection
-  # 3 affects overall height
-  # 4 affects height of peak and tail
-  # y_vals_1 <- sapply(grid2, function(x) { curve(x, c(0.568, -1.565, 1.143, -2.15)) })
-  # y_vals_2 <- sapply(grid2, function(x) { curve(x, c(0.568, -1.565, 1.143+50, -2.15)) })
-  # y_vals_3 <- sapply(grid2, function(x) { curve(x, c(0.568, -1.565, 1.143, -2.15)) })
-  
-  y_vals_1 <- sapply(grid2, function(x) { curve(x, c(1, 0, 0, 0)) })
-  y_vals_2 <- sapply(grid2, function(x) { curve(x, c(0, 1, 0, 0)) })
-  y_vals_3 <- sapply(grid2, function(x) { curve(x, c(0, 0, 1, 0)) })
-  y_vals_4 <- sapply(grid2, function(x) { curve(x, c(0, 0, 0, 1)) })
-  
+
+  y_vals_1 <- sapply(grid2, function(x) { curve(x, c(2.4121, -1.8892, -0.4184, -1.732)) })
+  # y_vals_2 <- sapply(grid2, function(x) { curve(x, c(0, 1, 0)) })
+  # y_vals_3 <- sapply(grid2, function(x) { curve(x, c(0, 0, 1)) })
+
   df_plot <- data.frame(
-    x = rep(grid2, 4),
-    y = c(y_vals_1, y_vals_2, y_vals_3, y_vals_4),
-    which = rep(c("One", "Two", "Three", "Four"), each=length(grid2))
+    # x = rep(grid2, 3),
+    # y = c(y_vals_1, y_vals_2, y_vals_3),
+    # which = rep(c("One", "Two", "Three"), each=length(grid2))
+    x = rep(grid2, 1),
+    y = c(y_vals_1),
+    which = rep(c("One"), each=length(grid2))
   )
   ggplot(df_plot, aes(x=x, y=y, color=which)) + geom_line()
   
