@@ -23,8 +23,7 @@ one_simulation <- function() {
   dat <- generate_data(
     n = L$n,
     max_time = L$max_time,
-    params = L$params,
-    art = F
+    params = L$params
   )
   
   dat_objs <- transform_dataset(
