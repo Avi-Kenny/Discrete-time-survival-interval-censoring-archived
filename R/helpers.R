@@ -10,30 +10,6 @@ expit <- function(x) {1/(1+exp(-x))}
 
 
 
-#' #' Modified exp function (see scratch for derivation)
-#' #' 
-#' #' @param x Numeric input
-#' #' @return Numeric output
-#' exp2 <- (function() {
-#'   
-#'   expit <- function(x) {1/(1+exp(-x))}
-#'   logit <- function(x) { log(x/(1-x)) }
-#'   e <- -0.1 # This value configurable but hard-coded
-#'   ell <- logit(exp(e))
-#'   x_0 <- e - (ell*exp(ell))/(exp(e)*(1+exp(ell))^2)
-#'   k_0 <- exp(e-ell)*(1+exp(ell))^2
-#'   exp2 <- function(x) {
-#'     if (x<=e) {
-#'       return(exp(x))
-#'     } else {
-#'       return(1/(1+exp(k_0*(x_0-x))))
-#'     }
-#'   }
-#'   return(exp2)
-#' })()
-
-
-
 #' Inverse of complementary log-log link function
 #' 
 #' @param x Numeric input
@@ -58,14 +34,6 @@ case <- function(T_minus, T_plus) {
   } else {
     if (T_plus==0) { return(2) } else { return(3) }
   }
-  
-  # return(dplyr::case_when(
-  #   T_minus==0 & T_plus==0 ~ 1,
-  #   T_minus!=0 & T_plus==0 ~ 2,
-  #   T_minus!=0 & T_plus!=0 ~ 3,
-  #   T_minus==0 & T_plus!=0 ~ 4,
-  #   TRUE ~ 999
-  # ))
   
 }
 
@@ -150,6 +118,49 @@ chk <- function(num, msg="") {
 
 
 
+#' Scale age variable (scaled variable goes into the model)
+#' 
+#' @param age Age, in completed years
+scale_age <- function(age) {
+  # age - 30
+  # (age-30)/100
+  age / 100
+}
+
+
+
+#' #' Unscale age variable (unscaled variable used for display)
+#' #' 
+#' #' @param age Age, in completed years
+#' unscale_age <- function(age) {
+#'   # age + 30
+#'   (age*100)+30
+#' }
+
+
+
+#' Scale calendar time variable (scaled variable goes into the model)
+#' 
+#' @param year Year
+#' @param st Start year of model
+#' @param unit One of c("month", "year"); currently, only "year" implemented
+scale_time <- function(year, st, unit="year") {
+  year - st + 1
+}
+
+
+
+#' #' Unscale calendar time variable (unscaled variable used for display)
+#' #' 
+#' #' @param year Year
+#' #' @param st Start year of model
+#' #' @param unit One of c("month", "year"); currently, only "year" implemented
+#' unscale_time <- function(year, st, unit="year") {
+#'   year + st - 1
+#' }
+
+
+
 #' Create a vector of ones and zeros
 #' 
 #' @param len Length of vector to output
@@ -164,51 +175,46 @@ uncompress <- function(len, num_ones) {
 #' 
 #' @param which Which basis to construct
 #' @param window_start Start year
-construct_basis <- function(which, window_start=NA, window_end=NA) {
+construct_basis <- function(which, window_start=NA, linear=FALSE) {
   
-  scale_age <- function(x) { x / 100 }
-  scale_year <- function(x) { (x-window_start+1)/10 }
-  
-  if (which=="age (0-100), 4DF") {
-    grid <- scale_age(seq(0,100, length.out=500))
-    k <- scale_age(c(0,25,50,75,100))
-  } else if (which=="age (13,20,30,60,90)") {
-    grid <- scale_age(seq(13,90, length.out=500))
-    k <- scale_age(c(13, 20, 30, 60, 90))
-  } else if (which=="age (13,30,60,75,90)") {
-    grid <- scale_age(seq(13,90, length.out=500))
-    k <- scale_age(c(13, 30, 60, 75, 90))
-  } else if (which=="age (13,32,52,71,90)") {
-    grid <- scale_age(seq(13,90, length.out=500))
-    k <- scale_age(seq(13,90, length.out=5))
-  } else if (which %in% c("age (13,28,44,60,75)", "age (13,28,44,60,75) +i")) {
-    grid <- scale_age(seq(13,75, length.out=500))
-    k <- scale_age(round(seq(13,75, length.out=5)))
-  } else if (which=="year (00,05,10,15,20)") {
-    grid <- scale_year(seq(2000,2022, length.out=500))
-    k <- scale_year(seq(2000,2020, length.out=5))
-  } else if (which %in% c("year (10,13,17,20,23)", "year (10,13,17,20,23) +i")) {
-    grid <- scale_year(seq(2010,2023, length.out=500))
-    k <- scale_year(seq(2010,2023, length.out=5))
-  } else if (which %in% c("year (10,13,16,19,22)", "year (10,13,16,19,22) +i")) {
-    grid <- scale_year(seq(2010,2022, length.out=500))
-    k <- scale_year(seq(2010,2022, length.out=5))
+  if (which==c("year (10,13,16,19,22)")) {
+    grid <- scale_time(seq(2010,2022, length.out=500), st=window_start)
+    k <- scale_time(seq(2010,2022, length.out=5), st=window_start)
+    num_df <- 4
+  } else if (which==c("year (10,14,18,22)")) {
+    grid <- scale_time(seq(2010,2022, length.out=500), st=window_start)
+    k <- scale_time(seq(2010,2022, length.out=4), st=window_start)
+    num_df <- 3
+  } else if (which=="age (13,20,30,60)") {
+    grid <- scale_age(seq(13,60, length.out=500))
+    k <- scale_age(c(13,20,30,60))
+    num_df <- 3
+  } else if (which=="age (13,30,40,60)") {
+    grid <- scale_age(seq(13,60, length.out=500))
+    k <- scale_age(c(13,30,40,60))
+    num_df <- 3
   } else if (which=="age (13,20,30,40,60)") {
     grid <- scale_age(seq(13,60, length.out=500))
     k <- scale_age(c(13,20,30,40,60))
-  }
-  
-  if (substr(which, nchar(which)-1, nchar(which))=="+i") {
-    num_df <- 5
-    int <- TRUE
-  } else {
     num_df <- 4
-    int <- FALSE
+  } else if (which=="year (17,...,22)") {
+    grid <- scale_time(seq(2017,2022, length.out=500), st=window_start)
+    k <- scale_time(seq(2010,2022, length.out=5), st=window_start)
+    num_df <- 4
   }
   
-  b <- Vectorize(function(x, i) {
-    splines::ns(x=x, knots=k[2:4], intercept=int, Boundary.knots=k[c(1,5)])[i]
-  }, vectorize.args="x")
+  if (linear) {
+    b <- Vectorize(function(x, i) { max(0, x-k[i]) }, vectorize.args="x")
+  } else {
+    b <- Vectorize(function(x, i) {
+      splines::ns(
+        x = x,
+        knots = k[2:num_df],
+        intercept = F,
+        Boundary.knots = k[c(1,num_df+1)]
+      )[i]
+    }, vectorize.args="x")
+  }
   y <- matrix(NA, nrow=length(grid), ncol=num_df)
   for (i in c(1:num_df)) { y[,i] <- sapply(grid, function(x) { b(x, i=i) }) }
   rm(b)

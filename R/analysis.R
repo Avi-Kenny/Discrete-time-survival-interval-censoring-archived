@@ -21,11 +21,12 @@ cfg2 <- list(
   # samp_size = as.integer(Sys.getenv("samp_size")),
   samp_size = 0, # Full sample
   opt_maxit = 5000,
-  opt_r = 2,
+  opt_r = 2, # 2 for speed, 4 for accuracy
   opt_reltol = 1e-5,
   window_start = 2010, # Spline bases for year must reflect this
   window_end = 2022, # Spline bases for year must reflect this
-  age_end = 60 # Spline bases for age must reflect this
+  age_end = 60, # Spline bases for age must reflect this
+  model_sex = Sys.getenv("model_sex")
   # temp = T
 )
 
@@ -37,6 +38,7 @@ if (T) {
   print(paste("reltol:", cfg2$opt_reltol))
   print(paste("r:", cfg2$opt_r))
   print(paste("sample size:", cfg2$samp_size))
+  print(paste("sex:", cfg2$model_sex))
   print("------------")
 }
 
@@ -85,7 +87,19 @@ if (cfg2$use_simulated_dataset) {
     }
     
     # Read in data
-    dat_prc <- dat_raw <- read.csv("../Data/data_raw_full_v2.csv")
+    dat_prc <- read.csv("../Data/data_raw_full_v2.csv") # !!!!! Temporarily reverting to this version until Stephen adds 2023 back in
+    dat_prc$PIPSA <- 1 # !!!!!! TEMP
+    dat_prc$LocationId <- 1 # !!!!!! TEMP
+    dat_prc$HIV_update <- 1 # !!!!!! TEMP
+    dat_prc$age_start <- 1 # !!!!! TEMP
+    dat_prc$age_end <- 1 # !!!!! TEMP
+    dat_prc$first_hiv_pos <- 1 # !!!!! TEMP
+    dat_prc$last_hiv_neg <- 1 # !!!!! TEMP
+    dat_prc$HIV_status <- NULL # !!!!! TEMP
+    dat_prc$dod <- NULL # !!!!! TEMP
+    dat_prc %<>% dplyr::rename("ART_update"=ART_status) # !!!!! TEMP
+    
+    # dat_prc <- read.csv("../Data/pip_hiv_missingness_Avi_2024-11-21_mod.csv")
     log_note("# rows, original", nrow(dat_prc))
     log_note("# individuals, original", length(unique(dat_prc$IIntId)))
     
@@ -104,7 +118,8 @@ if (cfg2$use_simulated_dataset) {
     )
     
     # Drop unnecessary columns
-    dat_prc %<>% subset(select=-c(X, EarliestARTInitDate))
+    dat_prc %<>% subset(select=-c(X, LocationId, EarliestARTInitDate, HIV_update, age_start,
+                                  age_end, first_hiv_pos, last_hiv_neg))
 
     # Function to convert dates
     convert_date <- memoise(function(date) {
@@ -118,14 +133,23 @@ if (cfg2$use_simulated_dataset) {
     dat_prc %<>% dplyr::filter(sex!="Unknown")
     log_note("# rows dropped, sex=='Unknown'", rows_pre-nrow(dat_prc))
     
+    # Filter out obs with missing `PIPSA`
+    rows_pre <- nrow(dat_prc)
+    dat_prc %<>% dplyr::filter(!is.na(PIPSA))
+    log_note("# rows dropped, missing `PIPSA`", rows_pre-nrow(dat_prc))
+    
+    # Filter dataset based on sex
+    rows_pre <- nrow(dat_prc)
+    dat_prc %<>% dplyr::filter(sex==cfg2$model_sex)
+    if (nrow(dat_prc)==0) { stop("`model_sex` incorrectly specified.") }
+    log_note("# rows after filtering by sex", rows_pre-nrow(dat_prc))
+    
     # Misc data wrangling
     dat_prc %<>% dplyr::mutate(
       died = ifelse(is.na(died), 0, died),
-      sex = ifelse(sex=="Male", 1, 0),
       dob = convert_date(dob),
-      dod = convert_date(dod),
       age = year - dob,
-      ART_status = ifelse(is.na(ART_status), 0, ART_status)
+      ART_update = ifelse(is.na(ART_update), 0, ART_update)
     )
     
     # Filter out children with tests before age 12
@@ -193,7 +217,7 @@ if (cfg2$use_simulated_dataset) {
       hiv_pos_dts = ifelse(is.na(hiv_pos_dts), 9999, hiv_pos_dts),
       hiv_neg_dts = ifelse(HIVResult=="N", year, NA),
       hiv_neg_dts = ifelse(is.na(hiv_neg_dts), 0, hiv_neg_dts),
-      art_pos_dts = ifelse(ART_status==1, year, NA),
+      art_pos_dts = ifelse(ART_update==1, year, NA),
       art_pos_dts = ifelse(is.na(art_pos_dts), 9999, art_pos_dts)
     )
     dat_prc %<>% dplyr::mutate(
@@ -212,7 +236,7 @@ if (cfg2$use_simulated_dataset) {
     dat_prc %<>% dplyr::mutate(
       ART_status_new = ifelse(year>=first_art_pos_dt, 1, 0),
       .by = id
-    )    
+    )
     
     # Filter out records with a negative test after a positive test
     rows_pre <- nrow(dat_prc)
@@ -226,14 +250,13 @@ if (cfg2$use_simulated_dataset) {
     rows_pre <- nrow(dat_prc)
     dupe_time_rows <- which(
       dat_prc$id==c(NA,dat_prc$id[1:length(dat_prc$id)-1]) &
-        dat_prc$t_end==c(NA,dat_prc$t_end[1:length(dat_prc$t_end)-1])
+        dat_prc$year==c(NA,dat_prc$year[1:length(dat_prc$year)-1])
     )
     if (length(dupe_time_rows)>0) { dat_prc <- dat_prc[-dupe_time_rows,] }
     log_note("# rows dropped, duplicate person-time", rows_pre-nrow(dat_prc))
     log_note("# rows, final", nrow(dat_prc))
     log_note("# individuals, final", length(unique(dat_prc$id)))
     log_note("# deaths, final", sum(dat_prc$died))
-    log_note("# male, final", sum(dat_prc$sex))
     
     # Print data log
     print(dat_log)
@@ -243,19 +266,10 @@ if (cfg2$use_simulated_dataset) {
     
     # Rename columns
     dat_prc %<>% dplyr::rename(
-      "w_1" = sex,
       "y" = died,
       "z" = ART_status_new,
       "t_end" = year
     )
-    
-    # # Drop records with ART start date before HIV start date
-    # nrow(dat_prc)
-    # prob_ids <- unique(
-    #   dplyr::filter(dat_prc, first_art_pos_dt<first_hiv_pos_dt)$id
-    # )
-    # dat_prc %<>% dplyr::filter(!(id %in% prob_ids))
-    # nrow(dat_prc)
     
     # Create grouped dataset
     dat_grp <- dat_prc %>% dplyr::group_by(id) %>%
@@ -289,7 +303,10 @@ if (cfg2$use_simulated_dataset) {
     # !!!!! TO DO
 
     # Renumber IDs
-    dat_prc %<>% dplyr::mutate(id=as.integer(factor(id)))
+    dat_prc %<>% dplyr::mutate(
+      id_orig = id,
+      id = as.integer(factor(id))
+    )
     
     # Set data attributes
     attr(dat_prc, "n") <- as.integer(max(dat_prc$id))
@@ -321,19 +338,24 @@ if (cfg2$use_simulated_dataset) {
       u = In(!is.na(first_hiv_pos_dt) & t_end>=first_hiv_pos_dt)
     )
     
-    # Rescale time variable to start at 1
+    # Rescale time variables via scale_time function
     dat_prc %<>% dplyr::mutate(
-      dob = (dob - cfg2$window_start) + 1,
-      dod = (dod - cfg2$window_start) + 1,
-      t_end = (t_end - cfg2$window_start) + 1,
-      first_hiv_pos_dt = (first_hiv_pos_dt - cfg2$window_start) + 1,
-      last_hiv_neg_dt = (last_hiv_neg_dt - cfg2$window_start) + 1
+      dob = scale_time(dob, st=cfg2$window_start),
+      t_end = scale_time(t_end, st=cfg2$window_start),
+      first_hiv_pos_dt = scale_time(first_hiv_pos_dt, st=cfg2$window_start),
+      last_hiv_neg_dt = scale_time(last_hiv_neg_dt, st=cfg2$window_start)
     )
-    attr(dat_prc, "s_i") <- (attr(dat_prc, "s_i") - cfg2$window_start) + 1
-    attr(dat_prc, "t_i") <- (attr(dat_prc, "t_i") - cfg2$window_start) + 1
+    attr(dat_prc, "s_i") <- scale_time(attr(dat_prc, "s_i"),
+                                       st=cfg2$window_start)
+    attr(dat_prc, "t_i") <- scale_time(attr(dat_prc, "t_i"),
+                                       st=cfg2$window_start)
     
-    # Create (scaled) age variable
-    dat_prc %<>% dplyr::mutate(w_2 = (t_end-dob)/100)
+    # Create scaled age variable (w_1) and geography covariate (w_2)
+    # Geography covariate: 1="PIPSA North", 0="PIPSA South"
+    dat_prc %<>% dplyr::mutate(
+      w_1 = scale_age(t_end-dob),
+      w_2 = In(PIPSA=="N")
+    )
     
     # DQA
     if (F) {
@@ -355,17 +377,16 @@ if (cfg2$use_simulated_dataset) {
     # # Save datasets for validation
     # write.table(dat, file="dat.csv", sep=",", row.names=FALSE)
     # write.table(dat_prc, file="dat_prc.csv", sep=",", row.names=FALSE)
-    # write.table(dat_raw, file="dat_raw.csv", sep=",", row.names=FALSE)
-    
+
     cols_to_drop <- c(
-      "dob", "dod", "age", "ResultDate", "HIVResult", "hiv_result_fill",
-      "VisitDate", "ReceivedHIVTestResult", "CurrentlyOnART", "HIV_status",
-      "HadPosHIVResult", "first_hiv_pos_dt", "last_hiv_neg_dt", "ART_status",
-      "first_art_pos_dt"
+      "DoB", "dob", "age", "ResultDate", "HIVResult", "hiv_result_fill",
+      "VisitDate", "ReceivedHIVTestResult", "CurrentlyOnART", "HadPosHIVResult",
+      "first_hiv_pos_dt", "last_hiv_neg_dt", "ART_update", "first_art_pos_dt",
+      "sex", "id_orig", "PIPSA", "year_begin", "year_end"
     )
     for (col in cols_to_drop) { dat[[col]] <- NULL }
     
-    rm(dat_raw,dat_prc)
+    rm(dat_prc)
     
     # Create transformed dataset object
     dat_objs <- transform_dataset(
@@ -376,8 +397,8 @@ if (cfg2$use_simulated_dataset) {
     )
     
     if (cfg2$save_data) {
-      saveRDS(dat, "../Data/dat.rds")
-      saveRDS(dat_objs, "../Data/dat_objs.rds")
+      saveRDS(dat, paste0("../Data/dat_", cfg2$model_sex, ".rds"))
+      saveRDS(dat_objs, paste0("../Data/dat_objs_", cfg2$model_sex, ".rds"))
     }
     
     # Check estimates for model 10 against Cox model estimates
@@ -594,78 +615,45 @@ if (cfg2$run_analysis) {
   chk(3, "construct_negloglik: END")
   
   # Set initial parameter estimates
-  if (cfg$model_version %in% c(0:23)) {
-    
-    if (cfg$model_version==0) {
-      par_init <- c(a_x=-5.603, g_x1=0, g_x2=-0.3655, a_y=-6.020, g_y1=0, g_y2=4.282, beta_x=1.401, beta_z=0.0004, t_x=0.9609, t_y=-3.906, a_s=-1.740, t_s=-2.100, g_s1=0, g_s2=1.271) # Model iteration 0
-    } else if (cfg$model_version==1) {
-      par_init <- c(a_x=-5.651, a_y=-4.942, beta_x=1.423, beta_z=0.2235, a_s=-2.007)
-    } else if (cfg$model_version==2) {
-      par_init <- c(a_x=-5.651, a_y=-4.942, beta_x=1.423, beta_z=0.2235, a_s=-2.007, g_x1=0, g_y1=0, g_s1=0)
-    } else if (cfg$model_version %in% c(3,4)) {
-      par_init <- c(a_x=-5.8039, g_x1=-0.5518, g_x2=0.6733, a_y=-6.4375, g_y1=0.3011, g_y2=4.0686, beta_x=1.6762, beta_z=0.8045, a_s=-2.116, g_s1=-0.3937, g_s2=1.1987)
-    } else if (cfg$model_version==5) {
-      par_init <- c(a_x=-5.8039, g_x1=-0.5518, g_x2=0.6733, a_y=-6.4375, g_y1=0.3011, g_y2=4.0686, beta_x=1.6762, beta_z=0.8045, t_y=0, a_s=-2.116, g_s1=-0.3937, g_s2=1.1987)
-    } else if (cfg$model_version==6) {
-      par_init <- c(a_x=-4.6185, g_x1=-1.3117, g_x2=-0.3883, a_y=-6.1581, g_y1=0.3794, g_y2=4.4762, beta_x=1.8497, beta_z=1.708, t_x=0, t_y=-0.45141, a_s=-2.495, g_s1=-0.0177, g_s2=1.684)
-    } else if (cfg$model_version==7) {
-      # par_init <- c(a_x=-6.2967, g_x1=-0.1535, g_x2=0.9796, a_y=-5.5786, g_y1=0.3278, g_y2=4.2046, beta_x=1.401, beta_z=1.3177, t_x=0.5343, t_y=-0.7198, a_s=-2.3111, t_s=0.4245, g_s1=-0.5649, g_s2=0.6198)
-      par_init <- c(a_x=-6.2967, g_x1=-0.1535, g_x2=0.9796, t_x=0.5343, a_s=-2.3111, g_s1=-0.5649, g_s2=0.6198, t_s=0.4245, beta_x=1.401, a_y=-5.5786, g_y1=0.3278, g_y2=4.2046, t_y=-0.7198)
-    } else if (cfg$model_version==8) {
-      par_init <- c(a_x=-3.5607, g_x1=-0.3244, g_x2=-0.2809, a_y=-5.7446, g_y1=0.3544, g_y2=4.4057, g_y3=0, g_y4=0, beta_x=1.8096, beta_z=1.8153, t_x=-0.786, t_y=-0.7826, a_s=-2.87, t_s=0.6349, g_s1=-0.3768, g_s2=0.6409)
-    } else if (cfg$model_version==9) {
-      par_init <- c(a_x=-2.2308, g_x1=-0.4977, g_x2=-0.9101, a_y=-6.3404, g_y1=0.5996, g_y2=2.4098, g_y3=2.8139, g_y4=7.0955, g_y5=6.0127, beta_x=1.295, beta_z=1.2856, t_x=-1.366, t_y=-0.7141, a_s=-2.0978, t_s=0.3321, g_s1=-0.8771, g_s2=0.8316)
-    } else if (cfg$model_version==10) {
-      par_init <- c(beta_z=0.3, a_y=-9.4955, g_y1=0.3209, g_y2=5.7549, g_y3=5.2759, g_y4=13.7284, g_y5=5.2979, t_y=-0.6637)
-    } else if (cfg$model_version==11) {
-      par_init <- c(a_x=-2.2308, g_x1=-0.4977, g_x2=0, g_x3=0, g_x4=0, g_x5=0, t_x=-1.366, a_s=-2.0978, g_s1=-0.8771, g_s2=0.8316, t_s=0.3321, beta_x=1.295, beta_z=1.2856, a_y=-6.3404, g_y1=0.5996, g_y2=2.4098, g_y3=2.8139, g_y4=7.0955, g_y5=6.0127, t_y=-0.7141)
-    } else if (cfg$model_version==12) {
-      par_init <- c(a_x=-4.667, g_x1=-0.7444, g_x2=3.658, g_x3=-1.970, g_x4=-0.8989, g_x5=-6.690, t_x=-1.169, a_s=-3.299, g_s1=-0.6594, g_s2=0.8443, t_s=1.051, beta_x=0.4, beta_z=0.4, a_y=-5.654, g_y1=0.2733, g_y2=1.759, g_y3=2.802, g_y4=6.180, g_y5=2.649, t_y=-0.6332)
-    } else if (cfg$model_version==13) {
-      par_init <- c(a_x=-6.535, g_x1=-0.6737, g_x2=3.636, g_x3=0.2734, g_x4=0.4366, g_x5=-8.512, t_x1=-1.578, t_x2=-0.2818, t_x3=0.3750, t_x4=-2.160, a_s=-3.369, g_s1=-0.5761, g_s2=0.8899, t_s=1.051, beta_x=1, beta_z=0.5072, a_y=-5.944, g_y1=0.3940, g_y2=1.871, g_y3=2.923, g_y4=6.809, g_y5=3.004, t_y=-0.6077)
-    } else if (cfg$model_version==14) {
-      par_init <- c(a_x=-6.3567, g_x1=-0.7201, g_x2=3.5877, g_x3=0.8982, g_x4=1.2344, g_x5=-7.8761, t_x1=-2.1962, t_x2=-0.396, t_x3=-0.0074, t_x4=-2.2542, a_s=-3.0662, g_s1=-0.6222, g_s2=0.8341, t_s=0.8966, beta_x=0.9409, beta_z=0.7236, a_y=-6.5048, g_y1=0.4056, g_y2=1.9911, g_y3=3.0964, g_y4=6.9362, g_y5=3.4698, t_y1=-0.2982, t_y2=-0.8746, t_y3=-0.5772, t_y4=-1.0723)
-    } else if (cfg$model_version==15) {
-      par_init <- c(a_x=-6.67, g_x1=4.86, g_x2=1.33, g_x3=0.871, g_x4=-6.53, g_x5=3.66, g_x6=1.07, g_x7=2.60, g_x8=-7.59, t_x1=-1.82, t_x2=-0.728, t_x3=-0.593, t_x4=-2.06, a_s=-3.08, g_s1=-0.742, g_s2=0.753, t_s=0.936, beta_x=1.12, beta_z=1.00, a_y=-6.56, g_y1=0.431, g_y2=1.95, g_y3=3.29, g_y4=7.18, g_y5=3.60, t_y1=-0.319, t_y2=-1.00, t_y3=-0.934, t_y4=-1.12)
-    } else if (cfg$model_version==16) {
-      par_init <- c(a_x=-6.67, g_x1=4.86, g_x2=1.33, g_x3=0.871, g_x4=-6.53, g_x5=3.66, g_x6=1.07, g_x7=2.60, g_x8=-7.59, t_x1=-1.82, t_x2=-0.728, t_x3=-0.593, t_x4=-2.06, a_s=-3.08, g_s1=-0.742, g_s2=0.753, t_s1=0, t_s2=0, t_s3=0, t_s4=0, beta_x=1.12, beta_z=1.00, a_y=-6.56, g_y1=0.431, g_y2=1.95, g_y3=3.29, g_y4=7.18, g_y5=3.60, t_y1=-0.319, t_y2=-1.00, t_y3=-0.934, t_y4=-1.12)
-    } else if (cfg$model_version==17) {
-      par_init <- c(a_x=-6.67, g_x1=4.86, g_x2=1.33, g_x3=0.871, g_x4=-6.53, g_x5=3.66, g_x6=1.07, g_x7=2.60, g_x8=-7.59, t_x1=-1.82, t_x2=-0.728, t_x3=-0.593, t_x4=-2.06, a_s=-3.08, g_s1=-0.742, g_s2=0, g_s3=0, g_s4=0, g_s5=0, beta_x=1.12, beta_z=1.00, a_y=-6.56, g_y1=0.431, g_y2=1.95, g_y3=3.29, g_y4=7.18, g_y5=3.60, t_y1=-0.319, t_y2=-1.00, t_y3=-0.934, t_y4=-1.12)
-    } else if (cfg$model_version==18) {
-      par_init <- c(a_x=-7.855, g_x1=4.791, g_x2=-0.935, g_x3=0.844, g_x4=-8.116, g_x5=2.804, g_x6=-2.155, g_x7=5.066, g_x8=-5.616, t_x1=-1.084, t_x2=-0.764, t_x3=-1.505, t_x4=-2.598, a_s=-3.043, g_s1=-0.281, g_s2=1.184, g_s3=0.219, g_s4=3.380, g_s5=-3.239, beta_x1=2.636, beta_x2=-1.051, beta_z1=3.983, beta_z2=-1.870, a_y=-7.221, g_y1=0.411, g_y2=1.692, g_y3=3.440, g_y4=6.288, g_y5=3.826, t_y1=0.413, t_y2=0.030, t_y3=0.530, t_y4=-0.235)
-    } else if (cfg$model_version==19) {
-      par_init <- c(a_x=-8.725, g_x1=3.414, g_x2=-0.561, g_x3=0.040, g_x4=-6.618, g_x5=-0.058, g_x6=0.498, g_x7=6.534, g_x8=-4.481, t_x1=-1.146, t_x2=-1.745, t_x3=-0.895, t_x4=-2.134, a_s=-2.914, g_s1=-0.435, g_s2=1.418, g_s3=-0.779, g_s4=3.834, g_s5=-2.681, beta_x1=1.813, beta_x2=-1.234, beta_z1=3.826, beta_z2=-3.966, a_y=-7.504, g_y1=0.598, g_y2=2.118, g_y3=3.794, g_y4=6.900, g_y5=4.007, t_y1=0.303, t_y2=-0.594, t_y3=-1.262, t_y4=-1.038)
-    } else if (cfg$model_version==20) {
-      par_init <- c(a_x=-8.182, g_x1=3.290, g_x2=-1.767, g_x3=2.711, g_x4=-2.527, g_x5=-0.778, g_x6=0.247, g_x7=7.216, g_x8=-3.587, t_x1=-0.226, t_x2=-1.011, t_x3=-1.618, t_x4=-1.725, a_s=-3.047, g_s1=-0.430, g_s2=1.355, g_s3=-0.465, g_s4=3.651, g_s5=-3.644, beta_x1=0.693, beta_x2=-0.017, beta_x3=2.102, beta_x4=-1.032, beta_z1=1.920, beta_z2=-0.819, beta_z3=1.866, beta_z4=-5.010, a_y=-7.120, g_y1=0.575, g_y2=2.194, g_y3=3.795, g_y4=7.084, g_y5=3.862, t_y1=-0.804, t_y2=-0.073, t_y3=-0.903, t_y4=-0.350)
-    } else if (cfg$model_version==21) {
-      par_init <- c(a_x=-8.106, g_x1=2.437, g_x2=-1.533, g_x3=2.540, g_x4=-2.320, g_x5=-1.679, g_x6=1.008, g_x7=7.416, g_x8=-2.923, t_x1=-0.284, t_x2=-1.655, t_x3=-0.782, t_x4=-1.090, a_s=-3.130, g_s1=-0.443, g_s2=1.369, g_s3=-0.218, g_s4=3.286, g_s5=-4.564, beta_x1=0.119, beta_x2=-0.316, beta_x3=2.065, beta_x4=-1.207, a_y=-6.998, g_y1=0.559, g_y2=2.351, g_y3=3.749, g_y4=7.466, g_y5=3.935, t_y1=-0.824, t_y2=0.082, t_y3=-1.909, t_y4=-0.774)
-    } else if (cfg$model_version==22) {
-      par_init <- c(a_x=-8.106, g_x1=2.437, g_x2=-1.533, g_x3=2.540, g_x4=-2.320, g_x5=-1.679, g_x6=1.008, g_x7=7.416, g_x8=-2.923, t_x1=-0.284, t_x2=-1.655, t_x3=-0.782, t_x4=-1.090, a_s=-3.130, g_s1=-0.443, g_s2=1.369, g_s3=-0.218, g_s4=3.286, g_s5=-4.564, beta_x1=0.119, beta_x2=-0.316, beta_x3=2.065, beta_x4=-1.207, a_y=-6.998, g_y1=0.559, g_y2=2.351, g_y3=3.749, g_y4=7.466, g_y5=3.935, t_y1=-0.824, t_y2=0.082, t_y3=-1.909, t_y4=-0.774)
-    } else if (cfg$model_version==23) {
-      par_init <- c(g_x1=1.378, g_x2=0.652, g_x3=-0.220, g_x4=-1.242, g_x5=3.564, g_x6=2.113, g_x7=-2.053, g_x8=-0.294, g_x9=-0.560, g_x10=-2.843, t_x1=-2.248, t_x2=-5.615, t_x3=-15.796, t_x4=0.996, a_s=-3.074, g_s1=-0.461, g_s2=3.276, g_s3=0.252, g_s4=4.272, g_s5=-0.583, beta_x1=0, beta_x2=0, beta_x3=0, beta_x4=0, beta_x5=0, a_y=-8.222, g_y1=0.657, g_y2=1.982, g_y3=3.492, g_y4=8.479, g_y5=3.900, t_y1=-0.883, t_y2=-0.201, t_y3=-1.170, t_y4=-1.428)
-    }
-    
-  }
-  if (cfg$model_version==24) {
-    par_init <- c(a_x=-5.974, g_x1=-0.153, g_x2=-0.892, g_x3=1.491, g_x4=1.431, g_x5=-6.335, g_x6=-0.520, g_x7=4.633, g_x8=-1.664, t_x1=0.254, t_x2=-4.697, t_x3=-4.189, t_x4=0.077, a_s=-2.931, g_s1=-0.461, g_s2=3.276, g_s3=0.252, g_s4=4.272, g_s5=-0.583, beta_x1=1.257, beta_x2=0.545, beta_x3=-0.298, beta_x4=2.249, beta_x5=-1.334, a_y=-8.222, g_y1=0.657, g_y2=1.982, g_y3=3.492, g_y4=8.479, g_y5=3.900, t_y1=-0.883, t_y2=-0.201, t_y3=-1.170, t_y4=-1.428)
-  } else if (cfg$model_version==25) {
-    par_init <- c(a_x=-6.660, g_x1=2.739, g_x2=-1.388, g_x3=-0.418, g_x4=-2.872, g_x5=1.115, g_x6=-1.687, g_x7=3.922, g_x8=-3.564, t_x1=-0.108, t_x2=-2.928, t_x3=-1.238, t_x4=-0.435, a_s=-3.293, g_s1=-0.518, g_s2=3.702, g_s3=2.628, g_s4=4.248, g_s5=0.814, beta_x1=1.459, beta_x2=0.955, beta_x3=-0.187, beta_x4=2.743, beta_x5=-1.324, a_y=-8.834, g_y1=0.623, g_y2=2.767, g_y3=2.160, g_y4=5.665, g_y5=2.648, t_y1=-0.193, t_y2=0.521, t_y3=-0.161, t_y4=-0.711)
-  } else if (cfg$model_version==26) {
-    par_init <- c(a_x=-6.586, g_x1=1.622, g_x2=-0.340, g_x3=-1.187, g_x4=-2.215, g_x5=0.786, g_x6=-0.299, g_x7=3.819, g_x8=-2.592, t_x1=0.921, t_x2=-2.219, t_x3=-0.694, t_x4=0.235, a_s=-3.250, g_s1=-0.465, g_s2=3.692, g_s3=2.392, g_s4=4.333, g_s5=0.986, beta_x1=1.030, beta_x2=1.061, beta_x3=-0.070, beta_x4=2.966, beta_x5=-0.965, a_y=-8.645, g_y1=0.595, g_y2=2.588, g_y3=1.931, g_y4=5.047, g_y5=2.706, t_y1=-0.142, t_y2=0.554, t_y3=0.172, t_y4=-0.695)
-  } else if (cfg$model_version==27) {
-    par_init <- c(a_x=-6.586, g_x1=1.622, g_x2=-0.340, g_x3=-1.187, g_x4=-2.215, g_x5=0.786, g_x6=-0.299, g_x7=3.819, g_x8=-2.592, t_x1=0.921, t_x2=-2.219, t_x3=-0.694, t_x4=0.235, a_s=-3.250, g_s1=-0.465, g_s2=3.692, g_s3=2.392, g_s4=4.333, g_s5=0.986, a_y=-8.645, g_y1=0.595, g_y2=2.588, g_y3=1.931, g_y4=5.047, g_y5=2.706, t_y1=-0.142, t_y2=0.554, t_y3=0.172, t_y4=-0.695)
-  } else if (cfg$model_version==28) {
-    par_init <- c(a_x=-6.586, g_x1=1.622, g_x2=-0.340, g_x3=-1.187, g_x4=-2.215, g_x5=0.786, g_x6=-0.299, g_x7=3.819, g_x8=-2.592, t_x1=0.921, t_x2=-2.219, t_x3=-0.694, t_x4=0.235, a_s=-3.250, g_s1=-0.465, g_s2=3.692, g_s3=2.392, g_s4=4.333, g_s5=0.986, beta_x1=0, beta_x2=0, beta_x3=0, beta_x4=0, beta_x5=0, beta_x6=0, a_y=-8.645, g_y1=0.595, g_y2=2.588, g_y3=1.931, g_y4=5.047, g_y5=2.706, t_y1=-0.142, t_y2=0.554, t_y3=0.172, t_y4=-0.695)
+  if (cfg$model_version==7) {
+    par_init <- c(a_x=-6.2967, g_x1=-0.1535, g_x2=0.9796, t_x=0.5343, a_s=-2.3111, g_s1=-0.5649, g_s2=0.6198, t_s=0.4245, beta_x=1.401, a_y=-5.5786, g_y1=0.3278, g_y2=4.2046, t_y=-0.7198)
+  } else if (cfg$model_version==29) {
+    par_init <- c(a_x=-6.087, g_x1=1.283, g_x2=-0.983, g_x3=-1.032, g_x4=-0.888, t_x1=0.602, t_x2=-1.874, t_x3=-1.472, t_x4=-0.530, a_s=-3.209, g_s1=3.658, g_s2=2.351, g_s3=4.186, g_s4=0.942, beta_x1=1.981, beta_x2=-0.784, beta_x3=0.0149, beta_x4=-1.884, beta_x5=-2.042, beta_x6=-0.565, a_y=-8.153, g_y1=2.255, g_y2=1.771, g_y3=4.729, g_y4=2.989, t_y1=-0.174, t_y2=-0.103, t_y3=-0.288, t_y4=0.126)
+  } else if (cfg$model_version==30) {
+    par_init <- c(a_x=-6.087, g_x1=1.283, g_x2=-0.983, g_x3=-1.032, g_x4=-0.888, t_x1=0.602, t_x2=-1.874, t_x3=-1.472, t_x4=-0.530, a_s=-3.209, g_s1=3.658, g_s2=2.351, g_s3=4.186, g_s4=0.942, beta_x1=0, beta_x2=0, beta_x3=0, beta_x4=0, a_y=-8.153, g_y1=2.255, g_y2=1.771, g_y3=4.729, g_y4=2.989, t_y1=-0.174, t_y2=-0.103, t_y3=-0.288, t_y4=0.126)
+  } else if (cfg$model_version==31) {
+    par_init <- c(a_x=-5.564, g_x1=0.569, g_x2=-1.992, g_x3=1.610, g_x4=-1.229, t_x1=1.113, t_x2=-1.773, t_x3=-1.267, t_x4=-0.453, a_s=-3.198, g_s1=3.563, g_s2=2.150, g_s3=4.358, g_s4=0.510, beta_x1=1.632, beta_x2=-0.406, beta_x3=-0.511, beta_x4=-0.525, beta_x5=-1.337, beta_x6=-0.472, a_y=-8.075, g_y1=2.393, g_y2=1.799, g_y3=5.165, g_y4=2.703, t_y1=-0.393, t_y2=-0.460, t_y3=-0.785, t_y4=0.233)
+  } else if (cfg$model_version==32) {
+    par_init <- c(a_x=-5.564, g_x1=0.569, g_x2=-1.992, g_x3=1.610, g_x4=-1.229, t_x1=1.113, t_x2=-1.773, t_x3=-1.267, t_x4=-0.453, a_s=-3.198, g_s1=3.563, g_s2=2.150, g_s3=4.358, g_s4=0.510, beta_x1=0, beta_x2=0, beta_x3=0, beta_x4=0, beta_x5=0, beta_x6=0, beta_x7=0, beta_x8=0, beta_x9=0, a_y=-8.075, g_y1=2.393, g_y2=1.799, g_y3=5.165, g_y4=2.703, t_y1=-0.393, t_y2=-0.460, t_y3=-0.785, t_y4=0.233)
+  } else if (cfg$model_version==33) {
+    par_init <- c(a_x=-5.564, g_x1=0.569, g_x2=-1.992, g_x3=1.610, g_x4=-1.229, t_x1=1.113, t_x2=-1.773, t_x3=-1.267, t_x4=-0.453, a_s=-3.198, g_s1=3.563, g_s2=2.150, g_s3=4.358, g_s4=0.510, beta_x1=0, beta_x2=0, beta_x3=0, beta_x4=0, beta_x5=0, beta_x6=0, beta_x7=0, beta_x8=0, beta_x9=0, a_y=-8.075, g_y1=2.393, g_y2=1.799, g_y3=5.165, g_y4=2.703, t_y1=-0.393, t_y2=-0.460, t_y3=-0.785, t_y4=0.233)
+  } else if (cfg$model_version==34) {
+    par_init <- c(a_x=-5.564, g_x1=0.569, g_x2=-1.992, g_x3=1.610, g_x4=-1.229, t_x1=1.113, t_x2=-1.773, t_x3=-1.267, t_x4=-0.453, a_s=-3.198, g_s1=3.563, g_s2=2.150, g_s3=4.358, g_s4=0.510, beta_x1=0, beta_x2=0, beta_x3=0, beta_x4=0, a_y=-8.075, g_y1=2.393, g_y2=1.799, g_y3=5.165, g_y4=2.703, t_y1=-0.393, t_y2=-0.460, t_y3=-0.785, t_y4=0.233)
+  } else if (cfg$model_version==35) {
+    par_init <- c(a_x=-5.564, g_x1=0.569, g_x2=-1.992, g_x3=1.610, g_x4=-1.229, t_x1=0, a_s=-3.198, g_s1=3.563, g_s2=2.150, g_s3=4.358, g_s4=0.510, beta_x1=0, beta_x2=0, beta_x3=0, beta_x4=0, a_y=-8.075, g_y1=2.393, g_y2=1.799, g_y3=5.165, g_y4=2.703, t_y1=-0.393, t_y2=-0.460, t_y3=-0.785, t_y4=0.233)
+  } else if (cfg$model_version==36) {
+    # par_init <- c(a_x=-5.2, g_x1=0.6, g_x2=-1.8, g_x3=0.3, g_x4=-2.0, t_x1=0.8, t_x2=-1.1, t_x3=-0.8, t_x4=-0.6, a_s=-3.1, g_s1=3.5, g_s2=2.0, g_s3=4.3, g_s4=0.6, beta_x1=2.0, beta_x2=0, beta_x3=-0.8, beta_x4=-0.1, a_y=-7.9, g_y1=2.0, g_y2=1.8, g_y3=4.6, g_y4=2.8, t_y1=-0.1, t_y2=-0.4, t_y3=-0.5, t_y4=0.3)
+    if (cfg2$model_sex=="Female") { par_init <- c(a_x=-5.6, g_x1=0.69, g_x2=-1.27, g_x3=1.04, g_x4=-2.38, t_x1=1.21, t_x2=-1.64, t_x3=-1.04, t_x4=-0.51, a_s=-3.18, g_s1=3.51, g_s2=2.13, g_s3=4.35, g_s4=0.57, beta_x1=2.11, beta_x2=-0.03, beta_x3=-0.39, beta_x4=-0.15, a_y=-8.02, g_y1=2.13, g_y2=1.66, g_y3=4.37, g_y4=2.8, t_y1=-0.17, t_y2=-0.17, t_y3=-0.37, t_y4=0.06) }
+    if (cfg2$model_sex=="Male") { par_init <- c(a_x=-6.61, g_x1=2.41, g_x2=-1.89, g_x3=-0.42, g_x4=-1.73, t_x1=0.48, t_x2=-3.19, t_x3=-0.52, t_x4=-0.43, a_s=-3.75, g_s1=3.84, g_s2=3.03, g_s3=4.03, g_s4=2.09, beta_x1=2.22, beta_x2=-0.03, beta_x3=-1.15, beta_x4=-0.17, a_y=-7.18, g_y1=1.91, g_y2=1.9, g_y3=3.95, g_y4=2.71, t_y1=-0.27, t_y2=-0.03, t_y3=-0.12, t_y4=0.02) }
+  } else if (cfg$model_version==37) {
+    if (cfg2$model_sex=="Female") { par_init <- c(a_x=-5.6, g_x1=25, g_x2=-32, g_x3=-5, g_x4=7, t_x1=0.02, t_x2=0.2, t_x3=-0.8, t_x4=0.7, a_s=-3.18, g_s1=30, g_s2=-17, g_s3=-18, g_s4=0, beta_x1=2.11, beta_x2=-0.03, beta_x3=-0.39, beta_x4=-0.15, a_y=-8.02, g_y1=20, g_y2=-13, g_y3=-5, g_y4=4, t_y1=-0.07, t_y2=0.075, t_y3=-0.01, t_y4=0.04) }
+    if (cfg2$model_sex=="Male") { par_init <- c(a_x=-6.61, g_x1=13, g_x2=-3, g_x3=-30, g_x4=13, t_x1=0.2, t_x2=-0.4, t_x3=-0.5, t_x4=1.3, a_s=-3.75, g_s1=15, g_s2=10, g_s3=-25, g_s4=-4, beta_x1=2.22, beta_x2=-0.03, beta_x3=-1.15, beta_x4=-0.17, a_y=-7.18, g_y1=15, g_y2=-7, g_y3=-4, g_y4=1, t_y1=-0.04, t_y2=0.01, t_y3=0.07, t_y4=-0.02) }
+  } else if (cfg$model_version==38) {
+    # if (cfg2$model_sex=="Female") { par_init <- c(a_x=-5.6, g_x1=10, g_x2=-28, g_x3=13, t_x1=0.02, t_x2=0.2, t_x3=-0.8, t_x4=0.7, a_s=-3.18, g_s1=30, g_s2=-17, g_s3=-18, g_s4=0, beta_x1=2.11, beta_x2=-0.03, beta_x3=-0.39, beta_x4=-0.15, a_y=-8.02, g_y1=20, g_y2=-13, g_y3=-5, g_y4=4, t_y1=-0.07, t_y2=0.075, t_y3=-0.01, t_y4=0.04) }
+    # if (cfg2$model_sex=="Male") { par_init <- c(a_x=-6.61, g_x1=11, g_x2=-30, g_x3=12, t_x1=0.2, t_x2=-0.4, t_x3=-0.5, t_x4=1.3, a_s=-3.75, g_s1=15, g_s2=10, g_s3=-25, g_s4=-4, beta_x1=2.22, beta_x2=-0.03, beta_x3=-1.15, beta_x4=-0.17, a_y=-7.18, g_y1=15, g_y2=-7, g_y3=-4, g_y4=1, t_y1=-0.04, t_y2=0.01, t_y3=0.07, t_y4=-0.02) }
+    if (cfg2$model_sex=="Female") { par_init <- c(a_x=-5.47, g_x1=10.01, g_x2=-27.66, g_x3=13.78, t_x1=0.01, t_x2=0.2, t_x3=-0.81, t_x4=0.7, a_s=-3.17, g_s1=30.03, g_s2=-16.89, g_s3=-17.81, g_s4=0.04, beta_x1=2.1, beta_x2=-0.03, beta_x3=-0.4, beta_x4=-0.15, a_y=-8.03, g_y1=19.99, g_y2=-12.99, g_y3=-4.94, g_y4=4.24, t_y1=-0.07, t_y2=0.08, t_y3=-0.02, t_y4=0.03) }
+    if (cfg2$model_sex=="Male") { par_init <- c(a_x=-6.59, g_x1=11.58, g_x2=-30.05, g_x3=13.13, t_x1=0.2, t_x2=-0.4, t_x3=-0.5, t_x4=1.32, a_s=-3.75, g_s1=14.95, g_s2=9.95, g_s3=-24.96, g_s4=-3.94, beta_x1=2.22, beta_x2=-0.03, beta_x3=-1.18, beta_x4=-0.18, a_y=-7.18, g_y1=15, g_y2=-7.04, g_y3=-4.05, g_y4=1.23, t_y1=-0.04, t_y2=0.01, t_y3=0.07, t_y4=-0.01) }
   }
   
+  # Construct param init vector
   if (F) {
-    # par_true <- c(
-    #   par_true_full$a_x, par_true_full$g_x[1], par_true_full$g_x[2],
-    #   par_true_full$a_y, par_true_full$g_y[1], par_true_full$g_y[2],
-    #   par_true_full$beta_x, par_true_full$beta_z, par_true_full$t_x,
-    #   par_true_full$t_y, par_true_full$a_s, par_true_full$t_s,
-    #   par_true_full$g_s[1], par_true_full$g_s[2]
-    # )
+    ests <- readRDS("objs/ests_38_full_F_20241209.rds")
+    str <- "par_init <- c("
+    for (par in names(ests$opt$par)) {
+      str <- paste0(str, par, "=", round(ests$opt$par[[par]], 2), ", ")
+    }
+    str <- paste0(substr(str, 1, nchar(str)-2), ")")
+    print(str)
   }
   
   # Run optimizer
@@ -674,7 +662,6 @@ if (cfg2$run_analysis) {
   st <- system.time({ nll_init <- negloglik(par_init) })
   print(st)
   print(paste("negloglik(par_init):", nll_init))
-  # stop("!!!!! TEMP !!!!!")
   opt <- stats::optim(
     par = par_init,
     fn = negloglik,
@@ -718,7 +705,13 @@ if (cfg2$run_analysis) {
   
   chk(5, "hessian: END")
   parallel::stopCluster(cl)
-  saveRDS(list(opt=opt, hessian_inv=hessian_inv), "ests.rds")
+  saveRDS(
+    list(opt=opt, hessian_inv=hessian_inv),
+    paste0("ests_", cfg$model_version,
+           ifelse(cfg2$samp_size==0, "_full_", "_partial_"),
+           substr(cfg2$model_sex,1,1), "_", format(Sys.time(), "%Y%m%d"),
+           ".rds")
+  )
   
   # if (cfg2$parallelize) { stopCluster(cl) }
   
