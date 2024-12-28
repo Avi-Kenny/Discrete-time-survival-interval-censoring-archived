@@ -71,17 +71,27 @@ transform_dataset <- function(dat, model_version=0, window_start, window_end) {
       d$dat_i$b14_3 <- signif(sapply(d$dat_i$t_end, function(j) { b14(j,3) }),4)
       d$dat_i$b14_4 <- signif(sapply(d$dat_i$t_end, function(j) { b14(j,4) }),4)
     } else if (model_version==38) {
-      d$dat_i$b13_1 <- signif(sapply(d$dat_i$w_1, function(w_1) { b13(w_1,1) }),4)
-      d$dat_i$b13_2 <- signif(sapply(d$dat_i$w_1, function(w_1) { b13(w_1,2) }),4)
-      d$dat_i$b13_3 <- signif(sapply(d$dat_i$w_1, function(w_1) { b13(w_1,3) }),4)
-      d$dat_i$b13_4 <- signif(sapply(d$dat_i$w_1, function(w_1) { b13(w_1,4) }),4)
-      d$dat_i$b14_1 <- signif(sapply(d$dat_i$t_end, function(j) { b14(j,1) }),4)
-      d$dat_i$b14_2 <- signif(sapply(d$dat_i$t_end, function(j) { b14(j,2) }),4)
-      d$dat_i$b14_3 <- signif(sapply(d$dat_i$t_end, function(j) { b14(j,3) }),4)
-      d$dat_i$b14_4 <- signif(sapply(d$dat_i$t_end, function(j) { b14(j,4) }),4)
-      d$dat_i$b15_1 <- signif(sapply(d$dat_i$w_1, function(w_1) { b15(w_1,1) }),4)
-      d$dat_i$b15_2 <- signif(sapply(d$dat_i$w_1, function(w_1) { b15(w_1,2) }),4)
-      d$dat_i$b15_3 <- signif(sapply(d$dat_i$w_1, function(w_1) { b15(w_1,3) }),4)
+      
+      for (s in spl) {
+        for (k in c(1:s$df)) {
+          d$dat_i[[paste0(s$name,"_",k)]] <- signif(sapply(
+            d$dat_i[[s$var]],
+            function(x) { do.call(s$name, list(x,k)) }
+          ),4)
+        }
+      }
+      
+      # d$dat_i$b13_1 <- signif(sapply(d$dat_i$w_1, function(w_1) { b13(w_1,1) }),4)
+      # d$dat_i$b13_2 <- signif(sapply(d$dat_i$w_1, function(w_1) { b13(w_1,2) }),4)
+      # d$dat_i$b13_3 <- signif(sapply(d$dat_i$w_1, function(w_1) { b13(w_1,3) }),4)
+      # d$dat_i$b13_4 <- signif(sapply(d$dat_i$w_1, function(w_1) { b13(w_1,4) }),4)
+      # d$dat_i$b14_1 <- signif(sapply(d$dat_i$t_end, function(j) { b14(j,1) }),4)
+      # d$dat_i$b14_2 <- signif(sapply(d$dat_i$t_end, function(j) { b14(j,2) }),4)
+      # d$dat_i$b14_3 <- signif(sapply(d$dat_i$t_end, function(j) { b14(j,3) }),4)
+      # d$dat_i$b14_4 <- signif(sapply(d$dat_i$t_end, function(j) { b14(j,4) }),4)
+      # d$dat_i$b15_1 <- signif(sapply(d$dat_i$w_1, function(w_1) { b15(w_1,1) }),4)
+      # d$dat_i$b15_2 <- signif(sapply(d$dat_i$w_1, function(w_1) { b15(w_1,2) }),4)
+      # d$dat_i$b15_3 <- signif(sapply(d$dat_i$w_1, function(w_1) { b15(w_1,3) }),4)
     }
     
     # Calculate the set X_i to sum over

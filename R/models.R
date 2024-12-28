@@ -1,12 +1,21 @@
 # This file sets the following global variables:
+#     spl: a list governing which spline bases to apply to the dataset
 #     b9, b10, etc: spline bases
 #     par_init: initial parameter values (for optimization)
 #     par_names: equal to names(par_init); the order matters
+#     par_y: a character vector naming the parameters corresponding to the outcome model
+#     terms_y: data values corresponding to par_y
+#     par_x: a character vector naming the parameters corresponding to the seroconversion discrete hazard model
+#     terms_x: data values corresponding to par_x
+#     par_s: a character vector naming the parameters corresponding to the initial status model
+#     terms_s: data values corresponding to par_s
 
 # Construct spline bases
 if (cfg$model_version==7) {
   # (none)
 } else if (cfg$model_version %in% c(29:33,36)) {
+  spl <- list(list(name="b9", var="w_1", df=4),
+              list(name="b10", var="t_end", df=4))
   b9 <- construct_basis("age (13,20,30,40,60)")
   b10 <- construct_basis("year (10,13,16,19,22)")
 } else if (cfg$model_version %in% c(34:35)) {
@@ -16,6 +25,9 @@ if (cfg$model_version==7) {
   b13 <- construct_basis("age (13,20,30,40,60)", linear=T)
   b14 <- construct_basis("year (10,13,16,19,22)", linear=T)
 } else if (cfg$model_version==38) {
+  spl <- list(list(name="b13", var="w_1", df=4),
+              list(name="b14", var="t_end", df=4),
+              list(name="b15", var="w_1", df=3))
   b13 <- construct_basis("age (13,20,30,40,60)", linear=T)
   b14 <- construct_basis("year (10,13,16,19,22)", linear=T)
   b15 <- construct_basis("age (13,30,40,60)", linear=T)
