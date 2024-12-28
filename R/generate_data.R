@@ -2,13 +2,13 @@
 #'
 #' @param n Number of patients in cohort
 #' @param max_time Number of time points in the study
-#' @param params List of parameters governing the distribution; see levels.R
+#' @param par List of parameters governing the distribution; see levels.R
 #' @return A dataframe, one row per patient, containing the following fields:
 #'     - id: patient ID variable
 #' @notes
 #'     - TO DO
 
-generate_data <- function(n, max_time, params) {
+generate_data <- function(n, max_time, par) {
   
   # Generate dataframe to hold results
   dat <- data.frame(
@@ -35,7 +35,7 @@ generate_data <- function(n, max_time, params) {
   s_i <- sample(c(1:max_time), size=n, replace=T)
   
   # Loop through individuals/time to generate events
-  p <- params
+  p <- par
   vec_T_minus <- vec_T_plus <- vec_case <- vec_s_i <- vec_t_i <- c()
   for (i in c(1:n)) {
     
@@ -130,7 +130,7 @@ generate_data <- function(n, max_time, params) {
   
   attr(dat, "n") <- n
   attr(dat, "max_time") <- max_time
-  attr(dat, "params") <- params
+  attr(dat, "par") <- par
   attr(dat, "T_minus") <- vec_T_minus
   attr(dat, "T_plus") <- vec_T_plus
   attr(dat, "case") <- vec_case

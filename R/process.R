@@ -15,10 +15,10 @@ cfg2 <- list(
 # Construct spline bases
 # This should match the code at the top of transform_dataset()
 b9 <- construct_basis("age (13,20,30,40,60)")
-b10 <- construct_basis("year (10,13,16,19,22)", window_start=cfg2$w_start)
-b12 <- construct_basis("year (17,...,22)", window_start=cfg2$w_start)
+b10 <- construct_basis("year (10,13,16,19,22)")
+b12 <- construct_basis("year (17,...,22)")
 b13 <- construct_basis("age (13,20,30,40,60)", linear=T)
-b14 <- construct_basis("year (10,13,16,19,22)", window_start=cfg2$w_start, linear=T)
+b14 <- construct_basis("year (10,13,16,19,22)", linear=T)
 b15 <- construct_basis("age (13,30,40,60)", linear=T)
 
 # Get current date
@@ -41,14 +41,14 @@ if (cfg2$process_sims) {
                "a_s", "g_s1", "g_s2", "t_s",
                "beta_x",
                "a_y", "g_y1", "g_y2", "t_y")
-  p <- sim$levels$params[[p_set]]
+  p <- sim$levels$par[[p_set]]
   true_vals <- c(p$a_x, p$g_x, p$t_x,
                  p$a_s, p$g_s, p$t_s,
                  p$beta_x,
                  p$a_y, p$g_y, p$t_y)
   names(true_vals) <- p_names
   
-  # prm_sim <- sim$levels$params[[1]]
+  # prm_sim <- sim$levels$par[[1]]
   # true_vals2 <- c(prm_sim$a_x, prm_sim$g_x[1], prm_sim$g_x[2], prm_sim$a_y,
   #                prm_sim$g_y[1], prm_sim$g_y[2], prm_sim$beta_x, prm_sim$beta_z,
   #                # prm_sim$t_x, prm_sim$t_y,
@@ -56,7 +56,7 @@ if (cfg2$process_sims) {
   #                prm_sim$g_s[1], prm_sim$g_s[2])
   
   v <- paste0("lik_M_",p_names,"_est")
-  r <- dplyr::filter(sim$results, params==p_set)
+  r <- dplyr::filter(sim$results, par==p_set)
   x <- unlist(lapply(v, function(col) { r[,col] }))
   df_true <- data.frame(
     which = factor(v, levels=v),
@@ -114,7 +114,7 @@ if (cfg2$process_sims) {
   l_id <- 1
   summ2 <- summ[summ$level_id==l_id]
   df_results <- data.frame(
-    "param" = character(),
+    "par" = character(),
     "truth" = double(),
     "est" = double(),
     "bias" = double(),
@@ -768,24 +768,24 @@ if (cfg2$process_analysis) {
       
       title <- "HR of mortality, HIV+ vs. HIV- individuals"
       if (cfg2$m %in% c(30,34:38)) {
-        params <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4")
+        par <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4")
         A <- function(j, w_1) { t(matrix(c(1, j, w_1, j*w_1))) }
       } else if (cfg2$m==31) {
-        params <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5",
+        par <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5",
                     "beta_x6")
         A <- function(j, w_1) {
           t(matrix(c(1, j, max(w_1-0.2,0), j*max(w_1-0.2,0),
                      min(max(w_1-0.4,0),0.5), j*min(max(w_1-0.4,0),0.5))))
         }
       } else if (cfg2$m==32) {
-        params <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5",
+        par <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5",
                     "beta_x6", "beta_x7", "beta_x8", "beta_x9")
         A <- function(j, w_1) { t(matrix(c(
           1, j, max(j-0.6,0), w_1, w_1*j, w_1*max(j-0.6,0), max(w_1-0.4,0),
           max(w_1-0.4,0)*j, max(w_1-0.4,0)*max(j-0.6,0)
         ))) }
       } else if (cfg2$m==33) {
-        params <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5",
+        par <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5",
                     "beta_x6", "beta_x7", "beta_x8", "beta_x9")
         A <- function(j, w_1) { t(matrix(c(
           1, j, j^2, w_1, w_1*j, w_1*j^2, w_1^2, w_1^2*j, w_1^2*j^2
@@ -796,38 +796,38 @@ if (cfg2$process_analysis) {
       title <- "HR of mortality (age)"
       x_axis <- "age"
       if (cfg2$m %in% c(30:36)) {
-        params <- c("g_y1", "g_y2", "g_y3", "g_y4")
+        par <- c("g_y1", "g_y2", "g_y3", "g_y4")
         A <- A_b9
       } else if (cfg2$m %in% c(37:38)) {
-        params <- c("g_y1", "g_y2", "g_y3", "g_y4")
+        par <- c("g_y1", "g_y2", "g_y3", "g_y4")
         A <- A_b13
       }
     } else if (plot_name=="HR_mort_cal") {
       title <- "HR of mortality (calendar time)"
       x_axis <- "cal time"
       if (cfg2$m %in% c(30:33,36)) {
-        params <- c("t_y1", "t_y2", "t_y3", "t_y4")
+        par <- c("t_y1", "t_y2", "t_y3", "t_y4")
         A <- A_b10
       } else if (cfg2$m==35) {
-        params <- c("t_y1", "t_y2", "t_y3", "t_y4")
+        par <- c("t_y1", "t_y2", "t_y3", "t_y4")
         A <- A_b12
       } else if (cfg2$m %in% c(37:38)) {
-        params <- c("t_y1", "t_y2", "t_y3", "t_y4")
+        par <- c("t_y1", "t_y2", "t_y3", "t_y4")
         A <- A_b14
       }
     } else if (plot_name=="HR_sero_cal") {
       title <- "HR of seroconversion (calendar time)"
       if (cfg2$m %in% c(30:33,36)) {
-        params <- c("t_x1", "t_x2", "t_x3", "t_x4")
+        par <- c("t_x1", "t_x2", "t_x3", "t_x4")
         A <- A_b10
       } else if (cfg2$m==34) {
-        params <- c("t_x1", "t_x2", "t_x3", "t_x4")
+        par <- c("t_x1", "t_x2", "t_x3", "t_x4")
         A <- A_b12
       } else if (cfg2$m==35) {
-        params <- c("t_x1")
+        par <- c("t_x1")
         A <- function(j) { matrix(j) }
       } else if (cfg2$m %in% c(37:38)) {
-        params <- c("t_x1", "t_x2", "t_x3", "t_x4")
+        par <- c("t_x1", "t_x2", "t_x3", "t_x4")
         A <- A_b14
       }
       x_axis <- "cal time"
@@ -835,31 +835,31 @@ if (cfg2$process_analysis) {
       title <- "HR of seroconversion (age)"
       x_axis <- "age"
       if (cfg2$m %in% c(30:36)) {
-        params <- c("g_x1", "g_x2", "g_x3", "g_x4")
+        par <- c("g_x1", "g_x2", "g_x3", "g_x4")
         A <- A_b9
       } else if (cfg2$m==37) {
-        params <- c("g_x1", "g_x2", "g_x3", "g_x4")
+        par <- c("g_x1", "g_x2", "g_x3", "g_x4")
         A <- A_b13
       } else if (cfg2$m==38) {
-        params <- c("g_x1", "g_x2", "g_x3")
+        par <- c("g_x1", "g_x2", "g_x3")
         A <- A_b15
       }
     } else if (plot_name=="HR_init_age") {
       title <- "HR of HIV+ initial status (age)"
       x_axis <- "age"
       if (cfg2$m %in% c(30:36)) {
-        params <- c("g_s1", "g_s2", "g_s3", "g_s4")
+        par <- c("g_s1", "g_s2", "g_s3", "g_s4")
         A <- A_b9
       } else if (cfg2$m %in% c(37:38)) {
-        params <- c("g_s1", "g_s2", "g_s3", "g_s4")
+        par <- c("g_s1", "g_s2", "g_s3", "g_s4")
         A <- A_b13
       }
     }
     
-    indices_M <- which(names(cfg2$ests_M$opt$par) %in% params)
+    indices_M <- which(names(cfg2$ests_M$opt$par) %in% par)
     beta_M <- matrix(cfg2$ests_M$opt$par[indices_M])
     Sigma_M <- cfg2$ests_M$hessian_inv[indices_M,indices_M]
-    indices_F <- which(names(cfg2$ests_F$opt$par) %in% params)
+    indices_F <- which(names(cfg2$ests_F$opt$par) %in% par)
     beta_F <- matrix(cfg2$ests_F$opt$par[indices_F])
     Sigma_F <- cfg2$ests_F$hessian_inv[indices_F,indices_F]
     

@@ -7,17 +7,22 @@ chk(0, "START")
 .t_start <- Sys.time()
 cfg2 <- list(
   process_data = T,
-  save_data = T,
+  save_data = F,
   run_analysis = T,
   parallelize = T,
   use_simulated_dataset = F,
-  samp_size = 20000,
+  # samp_size = 20000,
   samp_size = 0, # Full sample
   window_start = 2010,
   window_end = 2022,
-  age_end = 60,
-  model_sex = Sys.getenv("model_sex") # This is set in the Slurm `sbatch` call
+  age_end = 60
 )
+
+# !!!!! DEBUGGING
+if (T) {
+  cfg2$parallelize <- F
+  cfg2$samp_size <- 20000
+}
 
 # Load packages
 for (pkg in c(cfg$pkgs,cfg$pkgs_nocluster)) {
@@ -32,7 +37,7 @@ print(paste("maxit:", cfg2$opt_maxit))
 print(paste("reltol:", cfg2$opt_reltol))
 print(paste("r:", cfg2$opt_r))
 print(paste("sample size:", cfg2$samp_size))
-print(paste("sex:", cfg2$model_sex))
+print(paste("sex:", cfg$model_sex))
 print("------------")
 
 
@@ -52,7 +57,7 @@ if (cfg2$use_simulated_dataset) {
     g_v=c(1.2,1.1), g_z=c(1.2,1.1), beta_x=1.5, beta_z=0.7, a_s=0.05,
     g_s=c(2,1.5), t_s=1, t_x=1, t_y=1
   ), log)
-  dat <- generate_data(n=n, max_time=70, params=par_true_full)
+  dat <- generate_data(n=n, max_time=70, par=par_true_full)
   print(paste("n:",n))
   print(paste("rows in dataset:", nrow(dat)))
   
@@ -63,7 +68,7 @@ if (cfg2$use_simulated_dataset) {
   attr(dat, "T_minus") <- NULL
   attr(dat, "case") <- NULL
   attr(dat, "max_time") <- NULL
-  attr(dat, "params") <- NULL
+  attr(dat, "par") <- NULL
   
 } else {
   
@@ -131,7 +136,7 @@ if (cfg2$use_simulated_dataset) {
     
     # Filter dataset based on sex
     rows_pre <- nrow(dat_prc)
-    dat_prc %<>% dplyr::filter(sex==cfg2$model_sex)
+    dat_prc %<>% dplyr::filter(sex==cfg$model_sex)
     if (nrow(dat_prc)==0) { stop("`model_sex` incorrectly specified.") }
     log_note("# rows after filtering by sex", rows_pre-nrow(dat_prc))
     
@@ -388,8 +393,8 @@ if (cfg2$use_simulated_dataset) {
     )
     
     if (cfg2$save_data) {
-      saveRDS(dat, paste0("../Data/dat_", cfg2$model_sex, ".rds"))
-      saveRDS(dat_objs, paste0("../Data/dat_objs_", cfg2$model_sex, ".rds"))
+      saveRDS(dat, paste0("../Data/dat_", cfg$model_sex, ".rds"))
+      saveRDS(dat_objs, paste0("../Data/dat_objs_", cfg$model_sex, ".rds"))
     }
     
     # Check estimates for model 10 against Cox model estimates

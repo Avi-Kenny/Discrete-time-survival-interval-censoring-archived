@@ -16,9 +16,11 @@ cfg <- list(
   # sim_n_cores = 300,
   sim_n_cores = as.integer(Sys.getenv("SLURM_CPUS_PER_TASK")), # For parallelizing across multiple CPUs within a single task
   sim_stop_at_error = F,
-  model_version = 38 # For analysis
-  # model_version = 7 # For simulations
+  model_version = 38, # For analysis
+  # model_version = 7, # For simulations
+  model_sex = Sys.getenv("model_sex") # This is set in the Slurm `sbatch` call
 )
+if (T) { cfg$model_sex <- "Female" } # !!!!! DEBUGGING
 
 # Secondary config
 source("R/config.R", local=T)
@@ -34,6 +36,7 @@ source("R/config.R", local=T)
 
 if (cfg$run_analysis) {
 
+  source("R/models.R", local=T)
   source("R/process_data.R", local=T)
   source("R/analysis.R", local=T)
   
