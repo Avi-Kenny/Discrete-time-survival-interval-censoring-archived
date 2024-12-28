@@ -12,7 +12,12 @@ print(paste("sample size:", cfg$samp_size))
 print(paste("sex:", cfg$model_sex))
 print("------------")
 
-# Construct log likelihood function
+
+
+#############################################.
+##### Construct log likelihood function #####
+#############################################.
+
 chk(3, "construct_negloglik: START")
 n <- attr(dat, "n")
 print(paste0("Using ", cfg$sim_n_cores, " cores."))
@@ -27,7 +32,7 @@ dat_objs_wrapper <- lapply(batches, function(i) { dat_objs[i] })
 
 if (cfg$parallelize) {
   cl <- parallel::makeCluster(cfg$sim_n_cores)
-  objs_to_export <- c("f_x", "f_y", "icll", "lik_fn2", "batches", "uncompress")
+  objs_to_export <- c("f_x", "f_y", "icll", "lik_fn", "batches", "uncompress")
   parallel::clusterExport(cl, objs_to_export, envir=.GlobalEnv)
   negloglik <- construct_negloglik(
     parallelize=T, model_version=cfg$model_version, use_counter=T
@@ -39,7 +44,12 @@ if (cfg$parallelize) {
 }
 chk(3, "construct_negloglik: END")
 
-# Run optimizer
+
+
+############################.
+##### Run optimization #####
+############################.
+
 chk(4, "optim: START")
 counter <- 0
 st <- system.time({ nll_init <- negloglik(par_init) })
@@ -61,7 +71,12 @@ if (F) {
 }
 chk(4, "optim: END")
 
-# Compute Hessian
+
+
+###########################.
+##### Compute Hessian #####
+###########################.
+
 chk(5, "hessian: START")
 hessian_est <- numDeriv::hessian(
   func = negloglik,
@@ -88,6 +103,13 @@ tryCatch(
 
 chk(5, "hessian: END")
 parallel::stopCluster(cl)
+
+
+
+##################################.
+##### Save and print results #####
+##################################.
+
 saveRDS(
   list(opt=opt, hessian_inv=hessian_inv),
   paste0("ests_", cfg$model_version,
@@ -95,8 +117,6 @@ saveRDS(
          substr(cfg$model_sex,1,1), "_", format(Sys.time(), "%Y%m%d"),
          ".rds")
 )
-
-# if (cfg$parallelize) { stopCluster(cl) }
 
 # Parse results
 res <- data.frame(
@@ -123,7 +143,6 @@ for (i in c(1:length(par_init))) {
 }
 print(res)
 
-# !!!!! temp
 # saveRDS(
 #   list(
 #     runtime = .t_end - .t_start,

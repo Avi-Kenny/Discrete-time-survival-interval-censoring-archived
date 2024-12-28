@@ -40,58 +40,15 @@ transform_dataset <- function(dat, model_version=0, window_start, window_end) {
     d$dat_i$init_visit <- 0
     d$dat_i$j <- d$dat_i$t_end
     d$dat_i[1,"init_visit"] <- 1
-    # d$dat_i$cal_time_sc <- d$dat_i$t_end / 10
-    
+
     # Apply spline bases to dataframe
-    if (model_version %in% c(29:33,36)) {
-      d$dat_i$b9_1 <- signif(sapply(d$dat_i$w_1, function(w_1) { b9(w_1,1) }),4)
-      d$dat_i$b9_2 <- signif(sapply(d$dat_i$w_1, function(w_1) { b9(w_1,2) }),4)
-      d$dat_i$b9_3 <- signif(sapply(d$dat_i$w_1, function(w_1) { b9(w_1,3) }),4)
-      d$dat_i$b9_4 <- signif(sapply(d$dat_i$w_1, function(w_1) { b9(w_1,4) }),4)
-      d$dat_i$b10_1 <- signif(sapply(d$dat_i$t_end, function(j) { b10(j,1) }),4)
-      d$dat_i$b10_2 <- signif(sapply(d$dat_i$t_end, function(j) { b10(j,2) }),4)
-      d$dat_i$b10_3 <- signif(sapply(d$dat_i$t_end, function(j) { b10(j,3) }),4)
-      d$dat_i$b10_4 <- signif(sapply(d$dat_i$t_end, function(j) { b10(j,4) }),4)
-    } else if (model_version %in% c(34:35)) {
-      d$dat_i$b9_1 <- signif(sapply(d$dat_i$w_1, function(w_1) { b9(w_1,1) }),4)
-      d$dat_i$b9_2 <- signif(sapply(d$dat_i$w_1, function(w_1) { b9(w_1,2) }),4)
-      d$dat_i$b9_3 <- signif(sapply(d$dat_i$w_1, function(w_1) { b9(w_1,3) }),4)
-      d$dat_i$b9_4 <- signif(sapply(d$dat_i$w_1, function(w_1) { b9(w_1,4) }),4)
-      d$dat_i$b12_1 <- signif(sapply(d$dat_i$t_end, function(j) { b12(j,1) }),4)
-      d$dat_i$b12_2 <- signif(sapply(d$dat_i$t_end, function(j) { b12(j,2) }),4)
-      d$dat_i$b12_3 <- signif(sapply(d$dat_i$t_end, function(j) { b12(j,3) }),4)
-      d$dat_i$b12_4 <- signif(sapply(d$dat_i$t_end, function(j) { b12(j,4) }),4)
-    } else if (model_version==37) {
-      d$dat_i$b13_1 <- signif(sapply(d$dat_i$w_1, function(w_1) { b13(w_1,1) }),4)
-      d$dat_i$b13_2 <- signif(sapply(d$dat_i$w_1, function(w_1) { b13(w_1,2) }),4)
-      d$dat_i$b13_3 <- signif(sapply(d$dat_i$w_1, function(w_1) { b13(w_1,3) }),4)
-      d$dat_i$b13_4 <- signif(sapply(d$dat_i$w_1, function(w_1) { b13(w_1,4) }),4)
-      d$dat_i$b14_1 <- signif(sapply(d$dat_i$t_end, function(j) { b14(j,1) }),4)
-      d$dat_i$b14_2 <- signif(sapply(d$dat_i$t_end, function(j) { b14(j,2) }),4)
-      d$dat_i$b14_3 <- signif(sapply(d$dat_i$t_end, function(j) { b14(j,3) }),4)
-      d$dat_i$b14_4 <- signif(sapply(d$dat_i$t_end, function(j) { b14(j,4) }),4)
-    } else if (model_version==38) {
-      
-      for (s in spl) {
-        for (k in c(1:s$df)) {
-          d$dat_i[[paste0(s$name,"_",k)]] <- signif(sapply(
-            d$dat_i[[s$var]],
-            function(x) { do.call(s$name, list(x,k)) }
-          ),4)
-        }
+    for (s in spl) {
+      for (k in c(1:s$df)) {
+        d$dat_i[[paste0(s$name,"_",k)]] <- signif(sapply(
+          d$dat_i[[s$var]],
+          function(x) { do.call(s$name, list(x,k)) }
+        ),4)
       }
-      
-      # d$dat_i$b13_1 <- signif(sapply(d$dat_i$w_1, function(w_1) { b13(w_1,1) }),4)
-      # d$dat_i$b13_2 <- signif(sapply(d$dat_i$w_1, function(w_1) { b13(w_1,2) }),4)
-      # d$dat_i$b13_3 <- signif(sapply(d$dat_i$w_1, function(w_1) { b13(w_1,3) }),4)
-      # d$dat_i$b13_4 <- signif(sapply(d$dat_i$w_1, function(w_1) { b13(w_1,4) }),4)
-      # d$dat_i$b14_1 <- signif(sapply(d$dat_i$t_end, function(j) { b14(j,1) }),4)
-      # d$dat_i$b14_2 <- signif(sapply(d$dat_i$t_end, function(j) { b14(j,2) }),4)
-      # d$dat_i$b14_3 <- signif(sapply(d$dat_i$t_end, function(j) { b14(j,3) }),4)
-      # d$dat_i$b14_4 <- signif(sapply(d$dat_i$t_end, function(j) { b14(j,4) }),4)
-      # d$dat_i$b15_1 <- signif(sapply(d$dat_i$w_1, function(w_1) { b15(w_1,1) }),4)
-      # d$dat_i$b15_2 <- signif(sapply(d$dat_i$w_1, function(w_1) { b15(w_1,2) }),4)
-      # d$dat_i$b15_3 <- signif(sapply(d$dat_i$w_1, function(w_1) { b15(w_1,3) }),4)
     }
     
     # Calculate the set X_i to sum over
@@ -148,7 +105,7 @@ construct_negloglik <- function(
   if (!identical(temp, FALSE)) { dat_objs_wrapper <- temp }
   
   # cl <- parallel::makeCluster(cfg$sim_n_cores)
-  # objs_to_export <- c("f_x", "f_y", "icll", "lik_fn2", "batches", "uncompress")
+  # objs_to_export <- c("f_x", "f_y", "icll", "lik_fn", "batches", "uncompress")
   # parallel::clusterExport(cl, objs_to_export, envir=.GlobalEnv)
   
   negloglik <- function(par) {
@@ -166,7 +123,7 @@ construct_negloglik <- function(
       # Original code
       nll <- -1 * sum(log(unlist(
         parallel::parLapply(cl, dat_objs_wrapper, function(d) {
-          lapply(d, function(d2) { lik_fn2(d2, par) })
+          lapply(d, function(d2) { lik_fn(d2, par) })
         })
       )))
       return(nll)
@@ -175,7 +132,7 @@ construct_negloglik <- function(
       
       nll <- -1 * sum(log(unlist(
         lapply(dat_objs_wrapper, function(d) {
-          lapply(d, function(d2) { lik_fn2(d2, par) })
+          lapply(d, function(d2) { lik_fn(d2, par) })
         })
       )))
       return(nll)
@@ -196,7 +153,7 @@ construct_negloglik <- function(
 #' @param par TO DO
 #' @return Numeric likelihood
 #' @note dat_objs is accessed globally
-lik_fn2 <- function(d, par) {
+lik_fn <- function(d, par) {
   
   {
     
