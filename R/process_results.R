@@ -2,18 +2,9 @@
 ##### Setup #####
 #################.
 
-cfg2 <- list(
-  process_sims = F,
-  process_analysis = T,
-  m = 38,
-  w_start = 2010,
-  w_end = 2022,
-  ests_M = readRDS("objs/ests_38_full_M_20241209b.rds"),
-  ests_F = readRDS("objs/ests_38_full_F_20241209b.rds")
-)
-
 # Construct spline bases
 # This should match the code at the top of transform_dataset()
+# !!!!! Refactor this
 b9 <- construct_basis("age (13,20,30,40,60)")
 b10 <- construct_basis("year (10,13,16,19,22)")
 b12 <- construct_basis("year (17,...,22)")
@@ -30,7 +21,7 @@ cfg2$d <- format(Sys.time(), "%Y-%m-%d")
 ##### VIZ (simulations): all params (one model) #####
 #####################################################.
 
-if (cfg2$process_sims) {
+if (cfg$process_sims) {
   
   sim <- readRDS("SimEngine.out/sim_20240719.rds")
   
@@ -333,7 +324,7 @@ prob <- function(type, m, j, w_1, w_2, w_3, year_start, which="est") {
     
   }
   
-  if (w_3==1) { ests <- cfg2$ests_M } else { ests <- cfg2$ests_F }
+  if (w_3==1) { ests <- cfg$ests_M } else { ests <- cfg$ests_F }
   indices <- as.numeric(sapply(p2, function(p) {
     which(names(ests$opt$par)==p)
   }))
@@ -556,41 +547,41 @@ plot_sero3 <- function(type, m, w_start, y_max=NA, title=T) {
 ##### VIZ: Plotting modeled probabilities #####
 ###############################################.
 
-if (cfg2$process_analysis) {
+if (cfg$process_analysis) {
   
   # y_max <- c(0.06, 0.8, 0.2, 0.05)
   
   # Mortality by calendar time, with CIs
-  plot_05 <- plot_mort3(x_axis="Year", m=cfg2$m, w_start=cfg2$w_start,
-                        w_end=cfg2$w_end, y_max=65, title=F)
+  plot_05 <- plot_mort3(x_axis="Year", m=cfg$model_version, w_start=cfg$w_start,
+                        w_end=cfg$w_end, y_max=65, title=F)
   ggsave(
     filename = paste0("../Figures + Tables/", cfg2$d, " p5 (mort CIs, by year)",
-                      " - model ", cfg2$m, ".pdf"),
+                      " - model ", cfg$model_version, ".pdf"),
     plot = plot_05, device="pdf", width=8, height=5
   )
   
   # Mortality by age, with CIs
-  plot_06 <- plot_mort3(x_axis="Age", m=cfg2$m, w_start=cfg2$w_start,
-                        w_end=cfg2$w_end, y_max=120, title=F)
+  plot_06 <- plot_mort3(x_axis="Age", m=cfg$model_version, w_start=cfg$w_start,
+                        w_end=cfg$w_end, y_max=120, title=F)
   ggsave(
     filename = paste0("../Figures + Tables/", cfg2$d, " p6 (mort CIs, by age) ",
-                      "- model ", cfg2$m, ".pdf"),
+                      "- model ", cfg$model_version, ".pdf"),
     plot = plot_06, device="pdf", width=8, height=5
   )
   
   # Seroconversion by age, with CIs
-  plot_07 <- plot_sero3(type="sero", m=cfg2$m, w_start=cfg2$w_start, y_max=0.05, title=F)
+  plot_07 <- plot_sero3(type="sero", m=cfg$model_version, w_start=cfg$w_start, y_max=0.05, title=F)
   ggsave(
     filename = paste0("../Figures + Tables/", cfg2$d, " p7 (sero CIs, by age) ",
-                      "- model ", cfg2$m, ".pdf"),
+                      "- model ", cfg$model_version, ".pdf"),
     plot = plot_07, device="pdf", width=8, height=5
   )
   
   # Initial status by age, with CIs
-  plot_08 <- plot_sero3(type="init", m=cfg2$m, w_start=cfg2$w_start, y_max=0.75, title=F)
+  plot_08 <- plot_sero3(type="init", m=cfg$model_version, w_start=cfg$w_start, y_max=0.75, title=F)
   ggsave(
     filename = paste0("../Figures + Tables/", cfg2$d, " p8 (init CIs, by age) ",
-                      "- model ", cfg2$m, ".pdf"),
+                      "- model ", cfg$model_version, ".pdf"),
     plot = plot_08, device="pdf", width=8, height=5
   )
   
@@ -604,12 +595,12 @@ if (cfg2$process_analysis) {
 
 # !!!!! Note: deprioritizing for now
 
-# if (cfg2$process_analysis) {
+# if (cfg$process_analysis) {
 #   
-#   if (cfg2$m==29) {
+#   if (cfg$model_version==29) {
 #     dat_M <- readRDS("../Data/dat_29_full_M_20240926.rds")
 #     dat_F <- readRDS("../Data/dat_29_full_F_20240926.rds")
-#   } else if (cfg2$m==30) {
+#   } else if (cfg$model_version==30) {
 #     dat_M <- readRDS("../Data/dat_30_full_M_20240927.rds")
 #     dat_F <- readRDS("../Data/dat_30_full_F_20240927.rds")
 #   } else {
@@ -671,17 +662,17 @@ if (cfg2$process_analysis) {
 #     
 #   }
 #   
-#   grid <- seq(cfg2$w_start,cfg2$w_end,0.01) %>% (function(x) { x-(cfg2$w_start-1) })
-#   breaks_x <- seq(cfg2$w_start,cfg2$w_end, length.out=5)
+#   grid <- seq(cfg$w_start,cfg$w_end,0.01) %>% (function(x) { x-(cfg$w_start-1) })
+#   breaks_x <- seq(cfg$w_start,cfg$w_end, length.out=5)
 #   breaks_y <- seq(0,20,2)
 #   prob2_m <- function(type, which, outer) {
 #     1000 * sapply(grid, function(j) {
-#       prob_m(type=type, m=cfg2$m, j=j, which=which)
+#       prob_m(type=type, m=cfg$model_version, j=j, which=which)
 #     })
 #   }
 #   
 #   plot_data <- data.frame(
-#     x = rep(grid,2) + (cfg2$w_start-1),
+#     x = rep(grid,2) + (cfg$w_start-1),
 #     Rate = c(prob2_m(type="mort (HIV-)", which="est", outer=o),
 #              prob2_m(type="mort (HIV+)", which="est", outer=o)),
 #     ci_lo = c(prob2_m(type="mort (HIV-)", which="ci_lo", outer=o),
@@ -718,7 +709,7 @@ if (cfg2$process_analysis) {
 #   
 #   ggsave(
 #     filename = paste0("../Figures + Tables/", cfg2$d, " p8 (mort CIs, by year,",
-#                       " marginal) - model ", cfg2$m, ".pdf"),
+#                       " marginal) - model ", cfg$model_version, ".pdf"),
 #     plot = plot_08, device="pdf", width=8, height=5
 #   )
 #   
@@ -730,7 +721,7 @@ if (cfg2$process_analysis) {
 ##### VIZ: HRs as functions of age/time #####
 #############################################.
 
-if (cfg2$process_analysis) {
+if (cfg$process_analysis) {
   
   # Functions to return spline basis function as a matrix
   A_b9 <- function(w_1) {
@@ -767,24 +758,24 @@ if (cfg2$process_analysis) {
     if (plot_name=="HR_mort_hiv_cal") {
       
       title <- "HR of mortality, HIV+ vs. HIV- individuals"
-      if (cfg2$m %in% c(30,34:38)) {
+      if (cfg$model_version %in% c(30,34:38)) {
         par <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4")
         A <- function(j, w_1) { t(matrix(c(1, j, w_1, j*w_1))) }
-      } else if (cfg2$m==31) {
+      } else if (cfg$model_version==31) {
         par <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5",
                     "beta_x6")
         A <- function(j, w_1) {
           t(matrix(c(1, j, max(w_1-0.2,0), j*max(w_1-0.2,0),
                      min(max(w_1-0.4,0),0.5), j*min(max(w_1-0.4,0),0.5))))
         }
-      } else if (cfg2$m==32) {
+      } else if (cfg$model_version==32) {
         par <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5",
                     "beta_x6", "beta_x7", "beta_x8", "beta_x9")
         A <- function(j, w_1) { t(matrix(c(
           1, j, max(j-0.6,0), w_1, w_1*j, w_1*max(j-0.6,0), max(w_1-0.4,0),
           max(w_1-0.4,0)*j, max(w_1-0.4,0)*max(j-0.6,0)
         ))) }
-      } else if (cfg2$m==33) {
+      } else if (cfg$model_version==33) {
         par <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5",
                     "beta_x6", "beta_x7", "beta_x8", "beta_x9")
         A <- function(j, w_1) { t(matrix(c(
@@ -795,38 +786,38 @@ if (cfg2$process_analysis) {
     } else if (plot_name=="HR_mort_age") {
       title <- "HR of mortality (age)"
       x_axis <- "age"
-      if (cfg2$m %in% c(30:36)) {
+      if (cfg$model_version %in% c(30:36)) {
         par <- c("g_y1", "g_y2", "g_y3", "g_y4")
         A <- A_b9
-      } else if (cfg2$m %in% c(37:38)) {
+      } else if (cfg$model_version %in% c(37:38)) {
         par <- c("g_y1", "g_y2", "g_y3", "g_y4")
         A <- A_b13
       }
     } else if (plot_name=="HR_mort_cal") {
       title <- "HR of mortality (calendar time)"
       x_axis <- "cal time"
-      if (cfg2$m %in% c(30:33,36)) {
+      if (cfg$model_version %in% c(30:33,36)) {
         par <- c("t_y1", "t_y2", "t_y3", "t_y4")
         A <- A_b10
-      } else if (cfg2$m==35) {
+      } else if (cfg$model_version==35) {
         par <- c("t_y1", "t_y2", "t_y3", "t_y4")
         A <- A_b12
-      } else if (cfg2$m %in% c(37:38)) {
+      } else if (cfg$model_version %in% c(37:38)) {
         par <- c("t_y1", "t_y2", "t_y3", "t_y4")
         A <- A_b14
       }
     } else if (plot_name=="HR_sero_cal") {
       title <- "HR of seroconversion (calendar time)"
-      if (cfg2$m %in% c(30:33,36)) {
+      if (cfg$model_version %in% c(30:33,36)) {
         par <- c("t_x1", "t_x2", "t_x3", "t_x4")
         A <- A_b10
-      } else if (cfg2$m==34) {
+      } else if (cfg$model_version==34) {
         par <- c("t_x1", "t_x2", "t_x3", "t_x4")
         A <- A_b12
-      } else if (cfg2$m==35) {
+      } else if (cfg$model_version==35) {
         par <- c("t_x1")
         A <- function(j) { matrix(j) }
-      } else if (cfg2$m %in% c(37:38)) {
+      } else if (cfg$model_version %in% c(37:38)) {
         par <- c("t_x1", "t_x2", "t_x3", "t_x4")
         A <- A_b14
       }
@@ -834,38 +825,38 @@ if (cfg2$process_analysis) {
     } else if (plot_name=="HR_sero_age") {
       title <- "HR of seroconversion (age)"
       x_axis <- "age"
-      if (cfg2$m %in% c(30:36)) {
+      if (cfg$model_version %in% c(30:36)) {
         par <- c("g_x1", "g_x2", "g_x3", "g_x4")
         A <- A_b9
-      } else if (cfg2$m==37) {
+      } else if (cfg$model_version==37) {
         par <- c("g_x1", "g_x2", "g_x3", "g_x4")
         A <- A_b13
-      } else if (cfg2$m==38) {
+      } else if (cfg$model_version==38) {
         par <- c("g_x1", "g_x2", "g_x3")
         A <- A_b15
       }
     } else if (plot_name=="HR_init_age") {
       title <- "HR of HIV+ initial status (age)"
       x_axis <- "age"
-      if (cfg2$m %in% c(30:36)) {
+      if (cfg$model_version %in% c(30:36)) {
         par <- c("g_s1", "g_s2", "g_s3", "g_s4")
         A <- A_b9
-      } else if (cfg2$m %in% c(37:38)) {
+      } else if (cfg$model_version %in% c(37:38)) {
         par <- c("g_s1", "g_s2", "g_s3", "g_s4")
         A <- A_b13
       }
     }
     
-    indices_M <- which(names(cfg2$ests_M$opt$par) %in% par)
-    beta_M <- matrix(cfg2$ests_M$opt$par[indices_M])
-    Sigma_M <- cfg2$ests_M$hessian_inv[indices_M,indices_M]
-    indices_F <- which(names(cfg2$ests_F$opt$par) %in% par)
-    beta_F <- matrix(cfg2$ests_F$opt$par[indices_F])
-    Sigma_F <- cfg2$ests_F$hessian_inv[indices_F,indices_F]
+    indices_M <- which(names(cfg$ests_M$opt$par) %in% par)
+    beta_M <- matrix(cfg$ests_M$opt$par[indices_M])
+    Sigma_M <- cfg$ests_M$hessian_inv[indices_M,indices_M]
+    indices_F <- which(names(cfg$ests_F$opt$par) %in% par)
+    beta_F <- matrix(cfg$ests_F$opt$par[indices_F])
+    Sigma_F <- cfg$ests_F$hessian_inv[indices_F,indices_F]
     
     hr <- function(x, which, sex, log=F) {
       if (which=="cal time") {
-        x <- scale_time(x, st=cfg2$w_start)
+        x <- scale_time(x, st=cfg$w_start)
       } else if (which=="age") {
         x <- scale_age(x)
       }
@@ -884,7 +875,7 @@ if (cfg2$process_analysis) {
     }
     
     hr2 <- function(j, w_1, sex, log=F) {
-      j <- scale_time(j, st=cfg2$w_start)
+      j <- scale_time(j, st=cfg$w_start)
       w_1 <- scale_age(w_1)
       if (sex=="M") {
         est <- c(A(j, w_1) %*% beta_M)
@@ -905,8 +896,8 @@ if (cfg2$process_analysis) {
       log <- F
       
       # First, make graph with x_axis=="cal time"
-      grid <- seq(cfg2$w_start,cfg2$w_end,0.1)
-      breaks <- seq(cfg2$w_start, cfg2$w_end, length.out=5)
+      grid <- seq(cfg$w_start,cfg$w_end,0.1)
+      breaks <- seq(cfg$w_start, cfg$w_end, length.out=5)
       df_plot <- data.frame(
         x = rep(grid,6),
         y = c(
@@ -950,7 +941,7 @@ if (cfg2$process_analysis) {
         ) +
         scale_x_continuous(
           breaks = breaks,
-          minor_breaks = seq(cfg2$w_start, cfg2$w_end, 1)
+          minor_breaks = seq(cfg$w_start, cfg$w_end, 1)
         ) +
         scale_y_continuous(
           breaks = c(1:10),
@@ -966,13 +957,13 @@ if (cfg2$process_analysis) {
         )
       ggsave(
         filename = paste0("../Figures + Tables/", cfg2$d, " ", plot_name,
-                          " (by year) - model ", cfg2$m, ".pdf"),
+                          " (by year) - model ", cfg$model_version, ".pdf"),
         plot=plot, device="pdf", width=9, height=6
       )
       plot_paper <- plot + labs(title=NULL)
       ggsave(
         filename = paste0("../Figures + Tables/", cfg2$d, " paper_", plot_name,
-                          " - model ", cfg2$m, ".pdf"),
+                          " - model ", cfg$model_version, ".pdf"),
         plot=plot_paper, device="pdf", width=9, height=6
       )
       
@@ -1022,7 +1013,7 @@ if (cfg2$process_analysis) {
         ) +
         scale_x_continuous(
           breaks = breaks,
-          minor_breaks = seq(cfg2$w_start, cfg2$w_end, 1)
+          minor_breaks = seq(cfg$w_start, cfg$w_end, 1)
         ) +
         scale_y_continuous(
           breaks = c(1:10),
@@ -1038,15 +1029,15 @@ if (cfg2$process_analysis) {
         )
       ggsave(
         filename = paste0("../Figures + Tables/", cfg2$d, " ", plot_name,
-                          " (by age) - model ", cfg2$m, ".pdf"),
+                          " (by age) - model ", cfg$model_version, ".pdf"),
         plot=plot, device="pdf", width=9, height=6
       )
       
     } else {
       
       if (x_axis=="cal time") {
-        grid <- seq(cfg2$w_start,cfg2$w_end,0.1)
-        breaks <- seq(cfg2$w_start, cfg2$w_end, length.out=5)
+        grid <- seq(cfg$w_start,cfg$w_end,0.1)
+        breaks <- seq(cfg$w_start, cfg$w_end, length.out=5)
       } else if (x_axis=="age") {
         grid <- seq(13,60,0.1)
         breaks <- seq(20,60, length.out=5)
@@ -1098,7 +1089,7 @@ if (cfg2$process_analysis) {
       # plot <- ggpubr::ggarrange(plot_FALSE, plot_TRUE)
       ggsave(
         filename = paste0("../Figures + Tables/", cfg2$d, " ", plot_name,
-                          " - model ", cfg2$m, ".pdf"),
+                          " - model ", cfg$model_version, ".pdf"),
         plot=plot, device="pdf", width=8, height=4 # 6x4
       )
       
@@ -1126,18 +1117,18 @@ if (F) {
     "ci_up" = double()
   )
   
-  for (year in c(cfg2$w_start:cfg2$w_end)) {
+  for (year in c(cfg$w_start:cfg$w_end)) {
     for (age in seq(15,60,5)) {
     # for (age in c(15:59)) { # !!!!!
       for (sex in c(0,1)) {
         for (status in c("HIV-", "HIV+")) {
           type <- paste0("mort (", status, ")")
-          rate <- 1000 * prob(type=type, m=cfg2$m, j=year, w_1=sex, w_2=0,
-                              w_3=age, year_start=cfg2$w_start, which="est")
-          ci_lo <- 1000 * prob(type=type, m=cfg2$m, j=year, w_1=sex, w_2=0,
-                               w_3=age, year_start=cfg2$w_start, which="ci_lo")
-          ci_up <- 1000 * prob(type=type, m=cfg2$m, j=year, w_1=sex, w_2=0,
-                               w_3=age, year_start=cfg2$w_start, which="ci_up")
+          rate <- 1000 * prob(type=type, m=cfg$model_version, j=year, w_1=sex, w_2=0,
+                              w_3=age, year_start=cfg$w_start, which="est")
+          ci_lo <- 1000 * prob(type=type, m=cfg$model_version, j=year, w_1=sex, w_2=0,
+                               w_3=age, year_start=cfg$w_start, which="ci_lo")
+          ci_up <- 1000 * prob(type=type, m=cfg$model_version, j=year, w_1=sex, w_2=0,
+                               w_3=age, year_start=cfg$w_start, which="ci_up")
           df_tab[nrow(df_tab)+1,] <- list(year,age,sex,rate,status,ci_lo,ci_up)
         }
       }

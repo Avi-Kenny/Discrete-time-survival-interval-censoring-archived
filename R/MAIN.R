@@ -1,29 +1,12 @@
-# Main config
-# Sys.setenv(SLURM_CPUS_PER_TASK=5) # For running locally
-# Sys.setenv(avi_samp_size=20000) # For running locally
-# Sys.setenv(avi_maxit=3000) # For running locally
-# Sys.setenv(avi_r=2) # For running locally
-# Sys.setenv(avi_reltol=1e-5) # For running locally
-cfg <- list(
-  run_sims = F,
-  run_analysis = T,
-  run_process_results = F,
-  run_dqa = F,
-  sim_level_set = "level_set_1",
-  sim_run_or_update = "run",
-  sim_num = 1000,
-  sim_parallel = F,
-  # sim_n_cores = 300,
-  sim_n_cores = as.integer(Sys.getenv("SLURM_CPUS_PER_TASK")), # For parallelizing across multiple CPUs within a single task
-  sim_stop_at_error = F,
-  model_version = 38, # For analysis
-  # model_version = 7, # For simulations; needs to be updated
-  model_sex = Sys.getenv("model_sex") # This is set in the Slurm `sbatch` call
-)
-if (T) { cfg$model_sex <- "Female" } # !!!!! DEBUGGING
-
-# Secondary config
+# Set configuration
 source("R/config.R", local=T)
+
+# !!!!! TEMP DEBUGGING
+if (T) {
+  cfg$parallelize <- F
+  cfg$model_sex <- "Female"
+  cfg$samp_size <- 20000
+}
 
 # Load SimEngine + functions
 {

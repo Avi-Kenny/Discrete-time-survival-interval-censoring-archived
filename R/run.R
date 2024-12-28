@@ -8,7 +8,7 @@ if (cfg$sim_run_or_update=="run") {
       sim <- new_sim()
       sim %<>% set_config(
         num_sim = cfg$sim_num,
-        parallel = cfg$sim_parallel,
+        parallel = cfg$parallelize,
         n_cores = cfg$sim_n_cores,
         stop_at_error = cfg$sim_stop_at_error,
         # batch_levels = c("surv_true"),

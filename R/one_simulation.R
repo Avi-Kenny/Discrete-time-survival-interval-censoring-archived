@@ -33,14 +33,6 @@ one_simulation <- function() {
     window_end = 9999
   )
   dat_i_names <- names(dat_objs[[1]]$dat_i)
-  inds <- list(
-    w = which(dat_i_names %in% c("w_1", "w_2")),
-    spl = which(
-      substr(dat_i_names, 1, 1)=="b" & (
-        substr(dat_i_names, 3, 3)=="_" | substr(dat_i_names, 4, 4)=="_"
-      )
-    )
-  )
   n <- attr(dat, "n")
   n_batches <- 2
   folds <- cut(c(1:n), breaks=n_batches, labels=FALSE)
@@ -78,8 +70,7 @@ one_simulation <- function() {
 
   chk(2, "construct_negloglik: START")
   negloglik <- construct_negloglik(
-    inds=inds, parallelize=F, model_version=L$model_version,
-    temp=dat_objs_wrapper
+    parallelize=F, model_version=L$model_version, temp=dat_objs_wrapper
   )
   chk(2, "construct_negloglik: END")
   chk(2, "optim: START")

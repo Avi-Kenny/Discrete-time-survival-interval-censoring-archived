@@ -1,3 +1,38 @@
+######################################################################.
+##### analysis.R using simulated dataset, archived on 2024-12-28 #####
+######################################################################.
+
+if (F) {
+  
+  if (cfg2$use_simulated_dataset) {
+    
+    # Generate dataset
+    # n <- 4000
+    n <- 1000
+    par_true_full <- lapply(list(
+      a_x=0.005, a_y=0.003, a_v=0.7, a_z=0.01, g_x=c(1.3,1.2), g_y=c(1.2,1.1),
+      g_v=c(1.2,1.1), g_z=c(1.2,1.1), beta_x=1.5, beta_z=0.7, a_s=0.05,
+      g_s=c(2,1.5), t_s=1, t_x=1, t_y=1
+    ), log)
+    dat <- generate_data(n=n, max_time=70, par=par_true_full)
+    print(paste("n:",n))
+    print(paste("rows in dataset:", nrow(dat)))
+    
+    # Manipulate dataset
+    dat %<>% arrange(id, t_end)
+    dat$x <- NULL
+    attr(dat, "T_plus") <- NULL
+    attr(dat, "T_minus") <- NULL
+    attr(dat, "case") <- NULL
+    attr(dat, "max_time") <- NULL
+    attr(dat, "par") <- NULL
+    
+  }
+  
+}
+
+
+
 ############################################.
 ##### plot_mod, archived on 2024-11-27 #####
 ############################################.
@@ -1166,18 +1201,18 @@ if (F) {
   b1 <- construct_basis("age (0-100), 4DF")
   b2 <- construct_basis("age (13,20,30,60,90)")
   b3 <- construct_basis("age (13,30,60,75,90)")
-  b4 <- construct_basis("year (00,05,10,15,20)", window_start=cfg2$w_start)
-  b5 <- construct_basis("year (10,13,17,20,23)", window_start=cfg2$w_start)
+  b4 <- construct_basis("year (00,05,10,15,20)", window_start=cfg$w_start)
+  b5 <- construct_basis("year (10,13,17,20,23)", window_start=cfg$w_start)
   b6 <- construct_basis("age (13,28,44,60,75)")
-  b7 <- construct_basis("year (10,13,17,20,23) +i", window_start=cfg2$w_start)
+  b7 <- construct_basis("year (10,13,17,20,23) +i", window_start=cfg$w_start)
   b8 <- construct_basis("age (13,28,44,60,75) +i")
   b9 <- construct_basis("age (13,20,30,40,60)")
-  b10 <- construct_basis("year (10,13,16,19,22)", window_start=cfg2$w_start,
-                         window_end=cfg2$w_end)
-  b11 <- construct_basis("year (10,13,16,19,22) +i", window_start=cfg2$w_start,
-                         window_end=cfg2$w_end)
-  b12 <- construct_basis("year (17,...,22)", window_start=cfg2$w_start,
-                         window_end=cfg2$w_end)
+  b10 <- construct_basis("year (10,13,16,19,22)", window_start=cfg$w_start,
+                         window_end=cfg$w_end)
+  b11 <- construct_basis("year (10,13,16,19,22) +i", window_start=cfg$w_start,
+                         window_end=cfg$w_end)
+  b12 <- construct_basis("year (17,...,22)", window_start=cfg$w_start,
+                         window_end=cfg$w_end)
   
   # Functions to return spline basis function as a matrix
   A_b5 <- function(j) {

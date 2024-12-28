@@ -142,14 +142,13 @@ transform_dataset <- function(dat, model_version=0, window_start, window_end) {
 #' @return Numeric likelihood
 #' @notes This corresponds to the missing data structure
 construct_negloglik <- function(
-  inds, parallelize=FALSE, model_version=0, use_counter=F, temp=FALSE
+  parallelize=FALSE, model_version=0, use_counter=F, temp=FALSE
 ) {
   
   if (!identical(temp, FALSE)) { dat_objs_wrapper <- temp }
   
   # cl <- parallel::makeCluster(cfg$sim_n_cores)
-  # objs_to_export <- c("f_x", "f_y", "icll", "lik_fn2", "inds", "batches",
-  #                     "uncompress")
+  # objs_to_export <- c("f_x", "f_y", "icll", "lik_fn2", "batches", "uncompress")
   # parallel::clusterExport(cl, objs_to_export, envir=.GlobalEnv)
   
   negloglik <- function(par) {
@@ -167,7 +166,7 @@ construct_negloglik <- function(
       # Original code
       nll <- -1 * sum(log(unlist(
         parallel::parLapply(cl, dat_objs_wrapper, function(d) {
-          lapply(d, function(d2) { lik_fn2(d2, par, inds) })
+          lapply(d, function(d2) { lik_fn2(d2, par) })
         })
       )))
       return(nll)
@@ -176,7 +175,7 @@ construct_negloglik <- function(
       
       nll <- -1 * sum(log(unlist(
         lapply(dat_objs_wrapper, function(d) {
-          lapply(d, function(d2) { lik_fn2(d2, par, inds) })
+          lapply(d, function(d2) { lik_fn2(d2, par) })
         })
       )))
       return(nll)
@@ -195,10 +194,9 @@ construct_negloglik <- function(
 #'
 #' @param d One component of the list dat_objs
 #' @param par TO DO
-#' @param inds TO DO
 #' @return Numeric likelihood
 #' @note dat_objs is accessed globally
-lik_fn2 <- function(d, par, inds) {
+lik_fn2 <- function(d, par) {
   
   {
     

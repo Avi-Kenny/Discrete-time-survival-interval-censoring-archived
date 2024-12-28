@@ -1,12 +1,49 @@
+# Set this configuration manually
+cfg <- list(
+  
+  # Packages to load
+  pkgs = c("dplyr", "survival", "data.table", "tidyr", "memoise", "Rsolnp",
+           "numDeriv", "lubridate", "ggplot2"),
+  
+  # These options are for MAIN.R
+  run_sims = F,
+  run_analysis = T,
+  run_process_results = F,
+  run_dqa = F,
+  
+  # These options are for data analysis
+  model_version = 38, # For analysis
+  w_start = 2010,
+  w_end = 2022,
+  age_end = 60,
+  model_sex = Sys.getenv("model_sex"), # This is set in the Slurm `sbatch` call
+  samp_size = 0, # 0 means the full dataset is used, otherwise a subsample is used
+  
+  # These options are for simulations
+  # model_version = 7,
+  sim_level_set = "level_set_1",
+  sim_run_or_update = "run",
+  sim_num = 1000,
+  # sim_n_cores = 300, # For parallelizing via job arrays
+  sim_n_cores = as.integer(Sys.getenv("SLURM_CPUS_PER_TASK")), # For parallelizing across multiple CPUs within a single task
+  sim_stop_at_error = F,
+  
+  # These options are for both sims and analysis
+  parallelize = T,
+  opt_maxit = 5000,
+  opt_r = 2, # 2 for speed, 4 for accuracy
+  opt_reltol = 1e-5,
+  
+  # These options are for process_data.R
+  process_sims = F,
+  process_analysis = T,
+  ests_M = readRDS("objs/ests_38_full_M_20241209b.rds"),
+  ests_F = readRDS("objs/ests_38_full_F_20241209b.rds")
+  
+)
+
 # Change library path
 .libPaths(c("/home/akenny/R_lib", "/hpc/home/ak811/R_lib", .libPaths()))
-
-# Set packages
-cfg$pkgs <- c(
-  "dplyr", "survival", "data.table", "tidyr", "memoise", "Rsolnp", "numDeriv",
-  "lubridate"
-)
-cfg$pkgs_nocluster <- c("ggplot2")
 
 # Set cluster config
 if (Sys.getenv("HOME")=="/home/akenny") {
@@ -29,7 +66,7 @@ if (Sys.getenv("HOME")=="/home/akenny") {
 
 # Load packages (if running locally or not running sims)
 if (Sys.getenv("RSTUDIO")=="1" || !cfg$run_sims) {
-  for (pkg in c(cfg$pkgs,cfg$pkgs_nocluster)) {
+  for (pkg in cfg$pkgs) {
     suppressMessages({ do.call("library", list(pkg)) })
   }
 }

@@ -15,26 +15,26 @@ log_note <- function(note, num_rows) {
 }
 
 # Config
-if(cfg2$m==26) {
+if(cfg$model_version==26) {
   sources <- c("raw", "Model (HIV-)", "Model (HIV+)")
   status_vec <- c("HIV-", "HIV+")
   colors_1 <- c("cyan3", "cyan4", "brown3")
   colors_2 <- c("cyan3", "cyan4", "brown3", "orange")
-} else if (cfg2$m==27) {
+} else if (cfg$model_version==27) {
   sources <- c("raw", "Model (no HIV)")
   status_vec <- c("no HIV")
   colors_1 <- c("cyan4", "brown3")
   colors_2 <- c("cyan4", "brown3", "orange")
-} else if (cfg2$m %in% c(29:38)) {
+} else if (cfg$model_version %in% c(29:38)) {
   sources <- c("raw", "Model (HIV-)", "Model (HIV+)")
   status_vec <- c("HIV-", "HIV+")
   colors_1 <- c("cyan3", "cyan4", "brown3")
   colors_2 <- c("cyan3", "cyan4", "brown3", "orange")
 }
-if (cfg2$w_start==2010) {
+if (cfg$w_start==2010) {
   breaks_year <- c(2010,2015,2020)
   years_plot <- c(2010,2013,2016,2019,2022)
-} else if (cfg2$w_start==2017) {
+} else if (cfg$w_start==2017) {
   breaks_year <- c(2017,2022)
   years_plot <- c(2017,2018,2020,2021,2022)
 }
@@ -53,7 +53,7 @@ if (cfg2$w_start==2010) {
 
 # # dat_prc: Rescale and rename variables
 # dat_prc %<>% dplyr::mutate(
-#   t_end = (t_end-1)+cfg2$w_start,
+#   t_end = (t_end-1)+cfg$w_start,
 #   age = round(w_1*100),
 #   sex = w_2
 # )
@@ -93,7 +93,7 @@ df_summ <- data.frame(
 )
 
 # Populate df_summ
-for (year_ in c(cfg2$w_start:cfg2$w_end)) {
+for (year_ in c(cfg$w_start:cfg$w_end)) {
   
   yr_s <- as.Date(x=paste0(year_,"-01-01"))
   yr_e <- as.Date(x=paste0(year_,"-12-31"))
@@ -169,8 +169,8 @@ for (year_ in c(cfg2$w_start:cfg2$w_end)) {
         age_ <- mean(age_bin)
         type <- paste0("mort (", status, ")")
         rate <- round(1000 * prob(
-          type=type, m=cfg2$m, j=year_, w_1=age_, w_2=0,
-          w_3=as.integer(sex_=="Male"), year_start=cfg2$w_start, which="est"
+          type=type, m=cfg$model_version, j=year_, w_1=age_, w_2=0,
+          w_3=as.integer(sex_=="Male"), year_start=cfg$w_start, which="est"
         ), 1)
         df_summ[nrow(df_summ)+1,] <- list(
           year_, sex_, paste0(age_bin, collapse="-"), NA, NA,
@@ -195,7 +195,7 @@ plot <- ggplot(
   labs(color="Source", y="Deaths per 1,000 person-years")
 ggsave(
   filename = paste0("../Figures + Tables/", cfg2$d, " death_rates_by_year - ",
-                    "model ", cfg2$m, ".pdf"),
+                    "model ", cfg$model_version, ".pdf"),
   plot = plot, device="pdf", width=10, height=5
 )
 
@@ -249,7 +249,7 @@ df_summ2 <- data.frame(
 )
 
 # Populate df_summ2
-for (year_ in c(cfg2$w_start:cfg2$w_end)) {
+for (year_ in c(cfg$w_start:cfg$w_end)) {
   
   yr_s <- as.Date(x=paste0(year_,"-01-01"))
   yr_e <- as.Date(x=paste0(year_,"-12-31"))
@@ -321,8 +321,8 @@ for (year_ in c(cfg2$w_start:cfg2$w_end)) {
       for (status in status_vec) {
         type <- paste0("mort (", status, ")")
         rate <- round(1000 * prob(
-          type=type, m=cfg2$m, j=year_, w_1=age_, w_2=0,
-          w_3=as.integer(sex_=="Male"), year_start=cfg2$w_start, which="est"
+          type=type, m=cfg$model_version, j=year_, w_1=age_, w_2=0,
+          w_3=as.integer(sex_=="Male"), year_start=cfg$w_start, which="est"
         ), 1)
         df_summ2[nrow(df_summ2)+1,] <- list(
           year_, sex_, age_, NA, NA,
@@ -336,7 +336,7 @@ for (year_ in c(cfg2$w_start:cfg2$w_end)) {
 
 # Calculate smoothed rates
 for (sex_ in c("Male", "Female")) {
-  for (year_ in c(cfg2$w_start:cfg2$w_end)) {
+  for (year_ in c(cfg$w_start:cfg$w_end)) {
 
     source_ <- "raw"
     df_filt <- dplyr::filter(
@@ -370,7 +370,7 @@ plot <- ggplot(
   labs(color="Source", y="Deaths per 1,000 person-years")
 ggsave(
   filename = paste0("../Figures + Tables/", cfg2$d, " death_rates_by_age - ",
-                    "model ", cfg2$m, ".pdf"),
+                    "model ", cfg$model_version, ".pdf"),
   plot = plot, device="pdf", width=10, height=5
 )
 
@@ -383,7 +383,7 @@ df_45q15 <- data.frame(
 )
 
 for (sex_ in c("Male", "Female")) {
-  for (year_ in c(cfg2$w_start:cfg2$w_end)) {
+  for (year_ in c(cfg$w_start:cfg$w_end)) {
     for (source_ in sources) {
       rate_vec <- dplyr::filter(
         df_summ2,
@@ -440,6 +440,6 @@ if (add_thembisa) {
 
 ggsave(
   filename = paste0("../Figures + Tables/", cfg2$d, " 45q15 - ",
-                    "model ", cfg2$m, ".pdf"),
+                    "model ", cfg$model_version, ".pdf"),
   plot = plot, device="pdf", width=6, height=4
 )
