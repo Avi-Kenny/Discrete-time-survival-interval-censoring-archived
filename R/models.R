@@ -50,39 +50,65 @@ if (cfg$model_version==7) {
 }
 par_names <- names(par_init)
 
-
-
-
-# Model terms
+# Outcome model
 if (cfg$model_version==7) {
-  #
+  par_y <- c("a_y", "t_y", "g_y1", "g_y2", "beta_x")
+  terms_y <- function(r, x) { c(1, r[["j"]], r[["w_1"]], r[["w_2"]], x) }
 } else if (cfg$model_version==29) {
-  #
-} else if (cfg$model_version==30) {
-  #
+  par_y <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "beta_x6", "a_y", "g_y1", "g_y2", "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
+  terms_y <- function(r, x) { c(x, x*r[["j"]], x*max(r[["w_1"]]-0.3,0), x*max(r[["w_1"]]-0.3,0)*r[["j"]], x*max(r[["w_1"]]-0.45,0), x*max(r[["w_1"]]-0.45,0)*r[["j"]], 1, r[["b9_1"]], r[["b9_2"]], r[["b9_3"]], r[["b9_4"]], r[["b10_1"]], r[["b10_2"]], r[["b10_3"]], r[["b10_4"]]) }
+} else if (cfg$model_version %in% c(30,36)) {
+  par_y <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2", "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
+  terms_y <- function(r, x) { c(x, x*r[["j"]], x*r[["w_1"]], x*r[["j"]]*r[["w_1"]], 1, r[["b9_1"]], r[["b9_2"]], r[["b9_3"]], r[["b9_4"]], r[["b10_1"]], r[["b10_2"]], r[["b10_3"]], r[["b10_4"]]) }
 } else if (cfg$model_version==31) {
-  #
+  par_y <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "beta_x6", "a_y", "g_y1", "g_y2", "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
+  terms_y <- function(r, x) { c(x, x*r[["j"]], x*max(r[["w_1"]]-0.2,0), x*max(r[["w_1"]]-0.2,0)*r[["j"]], x*min(max(r[["w_1"]]-0.4,0), 0.5), x*min(max(r[["w_1"]]-0.4,0), 0.5)*r[["j"]], 1, r[["b9_1"]], r[["b9_2"]], r[["b9_3"]], r[["b9_4"]], r[["b10_1"]], r[["b10_2"]], r[["b10_3"]], r[["b10_4"]]) }
 } else if (cfg$model_version==32) {
-  #
+  par_y <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "beta_x6", "beta_x7", "beta_x8", "beta_x9", "a_y", "g_y1", "g_y2", "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
+  terms_y <- function(r, x) { c(x, x*r[["j"]], x*max(r[["j"]]-0.6,0), x*r[["w_1"]], x*r[["w_1"]]*r[["j"]], x*r[["w_1"]]*max(r[["j"]]-0.6,0), x*max(r[["w_1"]]-0.4,0), x*max(r[["w_1"]]-0.4,0)*r[["j"]], x*max(r[["w_1"]]-0.4,0)*max(r[["j"]]-0.6,0), 1, r[["b9_1"]], r[["b9_2"]], r[["b9_3"]], r[["b9_4"]], r[["b10_1"]], r[["b10_2"]], r[["b10_3"]], r[["b10_4"]]) }
 } else if (cfg$model_version==33) {
-  #
+  par_y <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "beta_x6", "beta_x7", "beta_x8", "beta_x9", "a_y", "g_y1", "g_y2", "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
+  terms_y <- function(r, x) { c(x, x*r[["j"]], x*r[["j"]]^2, x*r[["w_1"]], x*r[["w_1"]]*r[["j"]], x*r[["w_1"]]*r[["j"]]^2, x*r[["w_1"]]^2, x*r[["w_1"]]^2*r[["j"]], x*r[["w_1"]]^2*r[["j"]]^2, 1, r[["b9_1"]], r[["b9_2"]], r[["b9_3"]], r[["b9_4"]], r[["b10_1"]], r[["b10_2"]], r[["b10_3"]], r[["b10_4"]]) }
+} else if (cfg$model_version %in% c(34:35)) {
+  par_y <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2", "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
+  terms_y <- function(r, x) { c(x, x*r[["j"]], x*r[["w_1"]], x*r[["j"]]*r[["w_1"]], 1, r[["b9_1"]], r[["b9_2"]], r[["b9_3"]], r[["b9_4"]], r[["b12_1"]], r[["b12_2"]], r[["b12_3"]], r[["b12_4"]]) }
+} else if (cfg$model_version %in% c(37:38)) {
+  par_y <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2", "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
+  terms_y <- function(r, x) { c(x, x*r[["j"]], x*r[["w_1"]], x*r[["j"]]*r[["w_1"]], 1, r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]], r[["b14_1"]], r[["b14_2"]], r[["b14_3"]], r[["b14_4"]]) }
+}
+
+# Seroconversion model
+if (cfg$model_version==7) {
+  par_x <- c("a_x", "t_x1", "g_x1", "g_x2")
+  terms_x <- function(r) { c(1, r[["j"]], r[["w_1"]], r[["w_2"]]) }
+} else if (cfg$model_version %in% c(29:33,36)) {
+  par_x <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3", "g_x4")
+  terms_x <- function(r) { c(1, r[["b10_1"]], r[["b10_2"]], r[["b10_3"]], r[["b10_4"]], r[["b9_1"]], r[["b9_2"]], r[["b9_3"]], r[["b9_4"]]) }
 } else if (cfg$model_version==34) {
-  #
+  par_x <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3", "g_x4")
+  terms_x <- function(r) { c(1, r[["b12_1"]], r[["b12_2"]], r[["b12_3"]], r[["b12_4"]], r[["b9_1"]], r[["b9_2"]], r[["b9_3"]], r[["b9_4"]]) }
 } else if (cfg$model_version==35) {
-  #
-} else if (cfg$model_version==36) {
-  #
+  par_x <- c("a_x", "t_x1", "g_x1", "g_x2", "g_x3", "g_x4")
+  terms_x <- function(r) { c(1, r[["j"]], r[["b9_1"]], r[["b9_2"]], r[["b9_3"]], r[["b9_4"]]) }
 } else if (cfg$model_version==37) {
-  #
+  par_x <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3", "g_x4")
+  terms_x <- function(r) { c(1, r[["b14_1"]], r[["b14_2"]], r[["b14_3"]], r[["b14_4"]], r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]]) }
 } else if (cfg$model_version==38) {
   par_x <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3")
   terms_x <- function(r) { c(1, r[["b14_1"]], r[["b14_2"]], r[["b14_3"]], r[["b14_4"]], r[["b15_1"]], r[["b15_2"]], r[["b15_3"]]) }
-  par_s <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4")
-  terms_s <- function(r) { c(1, r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]]) }
-  par_y <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2", "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
-  terms_y <- function(r, x) { c(x*c(1, r[["j"]], r[["w_1"]], r[["j"]]*r[["w_1"]]), 1, r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]], r[["b14_1"]], r[["b14_2"]], r[["b14_3"]], r[["b14_4"]]) }
 }
 
+# Initial status model
+if (cfg$model_version==7) {
+  par_s <- c("a_s", "t_s1", "g_s1", "g_s2")
+  terms_s <- function(r) { c(1, r[["j"]], r[["w_1"]], r[["w_2"]]) }
+} else if (cfg$model_version %in% c(29:36)) {
+  par_s <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4")
+  terms_s <- function(r) { c(1, r[["b9_1"]], r[["b9_2"]], r[["b9_3"]], r[["b9_4"]]) }
+} else if (cfg$model_version %in% c(37:38)) {
+  par_s <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4")
+  terms_s <- function(r) { c(1, r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]]) }
+}
 
 
 
