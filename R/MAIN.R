@@ -6,9 +6,9 @@
 # Sys.setenv(avi_reltol=1e-5) # For running locally
 cfg <- list(
   run_sims = F,
-  run_analysis = F,
-  run_process = T,
-  run_dqa = T,
+  run_analysis = T,
+  run_process = F,
+  run_dqa = F,
   sim_level_set = "level_set_1",
   sim_run_or_update = "run",
   sim_num = 1000,
@@ -33,7 +33,8 @@ source("R/config.R", local=T)
 }
 
 if (cfg$run_analysis) {
-  
+
+  source("R/process_data.R", local=T)
   source("R/analysis.R", local=T)
   
 } else if (cfg$run_sims) {
