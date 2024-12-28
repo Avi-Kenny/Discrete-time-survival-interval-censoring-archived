@@ -7,7 +7,7 @@
 cfg <- list(
   run_sims = F,
   run_analysis = T,
-  run_process = F,
+  run_process_results = F,
   run_dqa = F,
   sim_level_set = "level_set_1",
   sim_run_or_update = "run",
@@ -50,10 +50,10 @@ if (cfg$run_analysis) {
   
 }
 
-if (cfg$run_process) {
+if (cfg$run_process_results) {
   
   # Tables and figures
-  source("R/process.R", local=T)
+  source("R/process_results.R", local=T)
   
 }
 
