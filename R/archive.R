@@ -65,12 +65,12 @@ if (F) {
       plot_data <- data.frame(
         x = rep(grid,6),
         Probability = c(
-          sapply(grid, function(w_1) { prob(type, m, j=j_vals[1], w_1, w_2=0, w_3=0, year_start=w_start) }),
-          sapply(grid, function(w_1) { prob(type, m, j=j_vals[1], w_1, w_2=0, w_3=1, year_start=w_start) }),
-          sapply(grid, function(w_1) { prob(type, m, j=j_vals[2], w_1, w_2=0, w_3=0, year_start=w_start) }),
-          sapply(grid, function(w_1) { prob(type, m, j=j_vals[2], w_1, w_2=0, w_3=1, year_start=w_start) }),
-          sapply(grid, function(w_1) { prob(type, m, j=j_vals[3], w_1, w_2=0, w_3=0, year_start=w_start) }),
-          sapply(grid, function(w_1) { prob(type, m, j=j_vals[3], w_1, w_2=0, w_3=1, year_start=w_start) })
+          sapply(grid, function(w_1) { prob(type, j=j_vals[1], w_1, w_2=0, w_3=0, year_start=w_start) }),
+          sapply(grid, function(w_1) { prob(type, j=j_vals[1], w_1, w_2=0, w_3=1, year_start=w_start) }),
+          sapply(grid, function(w_1) { prob(type, j=j_vals[2], w_1, w_2=0, w_3=0, year_start=w_start) }),
+          sapply(grid, function(w_1) { prob(type, j=j_vals[2], w_1, w_2=0, w_3=1, year_start=w_start) }),
+          sapply(grid, function(w_1) { prob(type, j=j_vals[3], w_1, w_2=0, w_3=0, year_start=w_start) }),
+          sapply(grid, function(w_1) { prob(type, j=j_vals[3], w_1, w_2=0, w_3=1, year_start=w_start) })
         ),
         Sex = rep(rep(c("Female", "Male"),3), each=length(grid)),
         color = factor(rep(j_vals, each=2*length(grid)))
@@ -81,12 +81,12 @@ if (F) {
       plot_data <- data.frame(
         x = rep(grid,6),
         Probability = c(
-          sapply(grid, function(j) { prob(type, m, j, w_1=20, w_2=0, w_3=0, year_start=w_start) }),
-          sapply(grid, function(j) { prob(type, m, j, w_1=20, w_2=0, w_3=1, year_start=w_start) }),
-          sapply(grid, function(j) { prob(type, m, j, w_1=35, w_2=0, w_3=0, year_start=w_start) }),
-          sapply(grid, function(j) { prob(type, m, j, w_1=35, w_2=0, w_3=1, year_start=w_start) }),
-          sapply(grid, function(j) { prob(type, m, j, w_1=50, w_2=0, w_3=0, year_start=w_start) }),
-          sapply(grid, function(j) { prob(type, m, j, w_1=50, w_2=0, w_3=1, year_start=w_start) })
+          sapply(grid, function(j) { prob(type, j, w_1=20, w_2=0, w_3=0, year_start=w_start) }),
+          sapply(grid, function(j) { prob(type, j, w_1=20, w_2=0, w_3=1, year_start=w_start) }),
+          sapply(grid, function(j) { prob(type, j, w_1=35, w_2=0, w_3=0, year_start=w_start) }),
+          sapply(grid, function(j) { prob(type, j, w_1=35, w_2=0, w_3=1, year_start=w_start) }),
+          sapply(grid, function(j) { prob(type, j, w_1=50, w_2=0, w_3=0, year_start=w_start) }),
+          sapply(grid, function(j) { prob(type, j, w_1=50, w_2=0, w_3=1, year_start=w_start) })
         ),
         Sex = rep(rep(c("Female", "Male"),3), each=length(grid)),
         color = rep(c("20","35","50"), each=2*length(grid))
@@ -1379,16 +1379,16 @@ if (F) {
     plot_data <- data.frame(
       x = rep(grid,2) + (w_start-1),
       Probability = 1000 * c(
-        sapply(grid, function(j) { prob(type="mort (HIV-)", m=m, j=j, w_1=sex, w_2=age, which="est") }),
-        sapply(grid, function(j) { prob(type="mort (HIV+)", m=m, j=j, w_1=sex, w_2=age, which="est") })
+        sapply(grid, function(j) { prob(type="mort (HIV-)", j=j, w_1=sex, w_2=age, which="est") }),
+        sapply(grid, function(j) { prob(type="mort (HIV+)", j=j, w_1=sex, w_2=age, which="est") })
       ),
       ci_lo = 1000 * c(
-        sapply(grid, function(j) { prob(type="mort (HIV-)", m=m, j=j, w_1=sex, w_2=age, which="ci_lo") }),
-        sapply(grid, function(j) { prob(type="mort (HIV+)", m=m, j=j, w_1=sex, w_2=age, which="ci_lo") })
+        sapply(grid, function(j) { prob(type="mort (HIV-)", j=j, w_1=sex, w_2=age, which="ci_lo") }),
+        sapply(grid, function(j) { prob(type="mort (HIV+)", j=j, w_1=sex, w_2=age, which="ci_lo") })
       ),
       ci_up = 1000 * c(
-        sapply(grid, function(j) { prob(type="mort (HIV-)", m=m, j=j, w_1=sex, w_2=age, which="ci_up") }),
-        sapply(grid, function(j) { prob(type="mort (HIV+)", m=m, j=j, w_1=sex, w_2=age, which="ci_up") })
+        sapply(grid, function(j) { prob(type="mort (HIV-)", j=j, w_1=sex, w_2=age, which="ci_up") }),
+        sapply(grid, function(j) { prob(type="mort (HIV+)", j=j, w_1=sex, w_2=age, which="ci_up") })
       ),
       color = rep(c("HIV-","HIV+"), each=length(grid))
     )

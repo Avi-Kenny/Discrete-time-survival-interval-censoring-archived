@@ -2,12 +2,6 @@
 ##### Setup and data processing #####
 #####################################.
 
-# Load packages
-library(readstata13)
-library(dplyr)
-library(magrittr)
-library(ggplot2)
-
 # Set up data frame for tracking
 dat_log <- data.frame("note"=character(), "num_rows"=integer())
 log_note <- function(note, num_rows) {
@@ -15,22 +9,10 @@ log_note <- function(note, num_rows) {
 }
 
 # Config
-if(cfg$model_version==26) {
-  sources <- c("raw", "Model (HIV-)", "Model (HIV+)")
-  status_vec <- c("HIV-", "HIV+")
-  colors_1 <- c("cyan3", "cyan4", "brown3")
-  colors_2 <- c("cyan3", "cyan4", "brown3", "orange")
-} else if (cfg$model_version==27) {
-  sources <- c("raw", "Model (no HIV)")
-  status_vec <- c("no HIV")
-  colors_1 <- c("cyan4", "brown3")
-  colors_2 <- c("cyan4", "brown3", "orange")
-} else if (cfg$model_version %in% c(29:38)) {
-  sources <- c("raw", "Model (HIV-)", "Model (HIV+)")
-  status_vec <- c("HIV-", "HIV+")
-  colors_1 <- c("cyan3", "cyan4", "brown3")
-  colors_2 <- c("cyan3", "cyan4", "brown3", "orange")
-}
+sources <- c("raw", "Model (HIV-)", "Model (HIV+)")
+status_vec <- c("HIV-", "HIV+")
+colors_1 <- c("cyan3", "cyan4", "brown3")
+colors_2 <- c("cyan3", "cyan4", "brown3", "orange")
 if (cfg$w_start==2010) {
   breaks_year <- c(2010,2015,2020)
   years_plot <- c(2010,2013,2016,2019,2022)
@@ -169,8 +151,8 @@ for (year_ in c(cfg$w_start:cfg$w_end)) {
         age_ <- mean(age_bin)
         type <- paste0("mort (", status, ")")
         rate <- round(1000 * prob(
-          type=type, m=cfg$model_version, j=year_, w_1=age_, w_2=0,
-          w_3=as.integer(sex_=="Male"), year_start=cfg$w_start, which="est"
+          type=type, j=year_, w_1=age_, w_2=0, w_3=as.integer(sex_=="Male"),
+          year_start=cfg$w_start, which="est"
         ), 1)
         df_summ[nrow(df_summ)+1,] <- list(
           year_, sex_, paste0(age_bin, collapse="-"), NA, NA,
@@ -321,8 +303,8 @@ for (year_ in c(cfg$w_start:cfg$w_end)) {
       for (status in status_vec) {
         type <- paste0("mort (", status, ")")
         rate <- round(1000 * prob(
-          type=type, m=cfg$model_version, j=year_, w_1=age_, w_2=0,
-          w_3=as.integer(sex_=="Male"), year_start=cfg$w_start, which="est"
+          type=type, j=year_, w_1=age_, w_2=0, w_3=as.integer(sex_=="Male"),
+          year_start=cfg$w_start, which="est"
         ), 1)
         df_summ2[nrow(df_summ2)+1,] <- list(
           year_, sex_, age_, NA, NA,

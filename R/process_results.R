@@ -2,16 +2,6 @@
 ##### Setup #####
 #################.
 
-# Construct spline bases
-# This should match the code at the top of transform_dataset()
-# !!!!! Refactor this
-b9 <- construct_basis("age (13,20,30,40,60)")
-b10 <- construct_basis("year (10,13,16,19,22)")
-b12 <- construct_basis("year (17,...,22)")
-b13 <- construct_basis("age (13,20,30,40,60)", linear=T)
-b14 <- construct_basis("year (10,13,16,19,22)", linear=T)
-b15 <- construct_basis("age (13,30,40,60)", linear=T)
-
 # Get current date
 cfg2$d <- format(Sys.time(), "%Y-%m-%d")
 
@@ -149,179 +139,22 @@ if (cfg$process_sims) {
 #' @param m An integer representing the model version number
 #' @param which One of c("est", "ci_lo", "ci_up")
 #' @return Numeric probability
-prob <- function(type, m, j, w_1, w_2, w_3, year_start, which="est") {
+prob <- function(type, j, w_1, w_2, w_3, year_start, which="est") {
   
   j <- scale_time(j, st=year_start, unit="year")
   w_1 <- scale_age(w_1)
   
   if (type=="sero") {
-    
-    if (m %in% c(29:33)) {
-      
-      A <- t(matrix(c(
-        1, b10(j,1), b10(j,2), b10(j,3), b10(j,4), b9(w_1,1), b9(w_1,2),
-        b9(w_1,3), b9(w_1,4)
-      )))
-      p2 <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3",
-              "g_x4")
-      
-    } else if (m==34) {
-      
-      A <- t(matrix(c(
-        1, b12(j,1), b12(j,2), b12(j,3), b12(j,4), b9(w_1,1), b9(w_1,2),
-        b9(w_1,3), b9(w_1,4)
-      )))
-      p2 <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3",
-              "g_x4")
-      
-    } else if (m==35) {
-      
-      A <- t(matrix(c(
-        1, j, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4)
-      )))
-      p2 <- c("a_x", "t_x1", "g_x1", "g_x2", "g_x3", "g_x4")
-      
-    } else if (m==36) {
-      
-      A <- t(matrix(c(
-        1, b10(j,1), b10(j,2), b10(j,3), b10(j,4), b9(w_1,1), b9(w_1,2),
-        b9(w_1,3), b9(w_1,4)
-      )))
-      p2 <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3",
-              "g_x4")
-      
-    } else if (m==37) {
-      
-      A <- t(matrix(c(
-        1, b14(j,1), b14(j,2), b14(j,3), b14(j,4), b13(w_1,1), b13(w_1,2),
-        b13(w_1,3), b13(w_1,4)
-      )))
-      p2 <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3",
-              "g_x4")
-      
-    } else if (m==38) {
-      
-      A <- t(matrix(c(
-        1, b14(j,1), b14(j,2), b14(j,3), b14(j,4), b15(w_1,1), b15(w_1,2),
-        b15(w_1,3)
-      )))
-      p2 <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3")
-      
-    }
-    
+    p2 <- par_x
+    A <- t(matrix(terms_x2(j, w_1)))
   } else if (type=="init") {
-    
-    if (m %in% c(29:35)) {
-      
-      A <- t(matrix(c(
-        1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4)
-      )))
-      p2 <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4")
-      
-    } else if (m==36) {
-      
-      A <- t(matrix(c(
-        1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4)
-      )))
-      p2 <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4")
-      
-    } else if (m %in% c(37:38)) {
-      
-      A <- t(matrix(c(
-        1, b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4)
-      )))
-      p2 <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4")
-      
-    }
-    
+    p2 <- par_s
+    A <- t(matrix(terms_s2(w_1)))
   } else {
-    
     if (type=="mort (HIV-)") { x <- 0 }
     if (type=="mort (HIV+)") { x <- 1 }
-
-    if (m==29) {
-      
-      A <- t(matrix(c(
-        x, x*j, x*max(w_1-0.3,0), x*j*max(w_1-0.3,0), x*max(w_1-0.45,0),
-        x*j*max(w_1-0.45,0), 1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4),
-        b10(j,1), b10(j,2), b10(j,3), b10(j,4)
-      )))
-      p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "beta_x6",
-              "a_y", "g_y1", "g_y2", "g_y3", "g_y4", "t_y1", "t_y2", "t_y3",
-              "t_y4")
-      
-    } else if (m==30) {
-      
-      A <- t(matrix(c(
-        x, x*j, x*w_1, x*j*w_1, 1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4),
-        b10(j,1), b10(j,2), b10(j,3), b10(j,4)
-      )))
-      p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2",
-              "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
-      
-    } else if (m==31) {
-      
-      A <- t(matrix(c(
-        x, x*j, x*max(w_1-0.2,0), x*j*max(w_1-0.2,0), x*min(max(w_1-0.4,0),0.5),
-        x*j*min(max(w_1-0.4,0),0.5), 1, b9(w_1,1), b9(w_1,2), b9(w_1,3),
-        b9(w_1,4), b10(j,1), b10(j,2), b10(j,3), b10(j,4)
-      )))
-      p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "beta_x6",
-              "a_y", "g_y1", "g_y2", "g_y3", "g_y4", "t_y1", "t_y2", "t_y3",
-              "t_y4")
-      
-    } else if (m==32) {
-      
-      A <- t(matrix(c(
-        x*1, x*j, x*max(j-0.6,0), x*w_1, x*w_1*j, x*w_1*max(j-0.6,0),
-        x*max(w_1-0.4,0), x*max(w_1-0.4,0)*j, x*max(w_1-0.4,0)*max(j-0.6,0),
-        1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4), b10(j,1), b10(j,2),
-        b10(j,3), b10(j,4)
-      )))
-      p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "beta_x6",
-              "beta_x7", "beta_x8", "beta_x9", "a_y", "g_y1", "g_y2", "g_y3",
-              "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
-      
-    } else if (m==33) {
-      
-      A <- t(matrix(c(
-        x*1, x*j, x*j^2, x*w_1, x*w_1*j, x*w_1*j^2, x*w_1^2, x*w_1^2*j,
-        x*w_1^2*j^2, 1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4), b10(j,1),
-        b10(j,2), b10(j,3), b10(j,4)
-      )))
-      p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "beta_x6",
-              "beta_x7", "beta_x8", "beta_x9", "a_y", "g_y1", "g_y2", "g_y3",
-              "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
-      
-    } else if (m %in% c(34:35)) {
-      
-      A <- t(matrix(c(
-        x, x*j, x*w_1, x*j*w_1, 1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4),
-        b12(j,1), b12(j,2), b12(j,3), b12(j,4)
-      )))
-      p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2",
-              "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
-      
-    } else if (m==36) {
-      
-      A <- t(matrix(c(
-        x, x*j, x*w_1, x*j*w_1, 1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4),
-        b10(j,1), b10(j,2), b10(j,3), b10(j,4)
-      )))
-      p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2",
-              "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
-      
-    } else if (m %in% c(37:38)) {
-      
-      A <- t(matrix(c(
-        x, x*j, x*w_1, x*j*w_1, 1, b13(w_1,1), b13(w_1,2), b13(w_1,3),
-        b13(w_1,4), b14(j,1), b14(j,2), b14(j,3), b14(j,4)
-      )))
-      p2 <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2",
-              "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
-      
-    }
-    
+    p2 <- par_y
+    A <- t(matrix(terms_y2(x, j, w_1)))
   }
   
   if (w_3==1) { ests <- cfg$ests_M } else { ests <- cfg$ests_F }
@@ -355,7 +188,7 @@ prob <- function(type, m, j, w_1, w_2, w_3, year_start, which="est") {
 #' @param y_max Maximum Y value for the plot
 #' @param title Boolean; if F, title is suppressed
 #' @return ggplot2 object
-plot_mort3 <- function(x_axis, m, w_start, w_end, y_max=NA, title=T) {
+plot_mort3 <- function(x_axis, w_start, w_end, y_max=NA, title=T) {
   
   if (x_axis=="Age") {
     
@@ -371,7 +204,7 @@ plot_mort3 <- function(x_axis, m, w_start, w_end, y_max=NA, title=T) {
     }
     prob2 <- function(type, which, outer) {
       1000 * sapply(grid, function(inner) {
-        prob(type=type, m=m, j=outer, w_1=inner, w_2=0, w_3=sex,
+        prob(type=type, j=outer, w_1=inner, w_2=0, w_3=sex,
              year_start=w_start, which=which)
       })
     }
@@ -384,7 +217,7 @@ plot_mort3 <- function(x_axis, m, w_start, w_end, y_max=NA, title=T) {
     outer <- c(20,35,50)
     prob2 <- function(type, which, outer) {
       1000 * sapply(grid, function(inner) {
-        prob(type=type, m=m, j=inner, w_1=outer, w_2=0, w_3=sex,
+        prob(type=type, j=inner, w_1=outer, w_2=0, w_3=sex,
              year_start=w_start, which=which)
       })
     }
@@ -465,7 +298,7 @@ plot_mort3 <- function(x_axis, m, w_start, w_end, y_max=NA, title=T) {
 #' @param y_max Maximum Y value for the plot
 #' @param title Boolean; if F, title is suppressed
 #' @return ggplot2 object
-plot_sero3 <- function(type, m, w_start, y_max=NA, title=T) {
+plot_sero3 <- function(type, w_start, y_max=NA, title=T) {
   
   grid <- seq(13,60,0.1)
   breaks <- seq(20,60, length.out=5)
@@ -479,7 +312,7 @@ plot_sero3 <- function(type, m, w_start, y_max=NA, title=T) {
   }
   prob2 <- function(which, outer) {
     sapply(grid, function(inner) {
-      prob(type=type, m=m, j=outer, w_1=inner, w_2=0, w_3=sex,
+      prob(type=type, j=outer, w_1=inner, w_2=0, w_3=sex,
            year_start=w_start, which=which)
     })
   }
@@ -552,8 +385,8 @@ if (cfg$process_analysis) {
   # y_max <- c(0.06, 0.8, 0.2, 0.05)
   
   # Mortality by calendar time, with CIs
-  plot_05 <- plot_mort3(x_axis="Year", m=cfg$model_version, w_start=cfg$w_start,
-                        w_end=cfg$w_end, y_max=65, title=F)
+  plot_05 <- plot_mort3(x_axis="Year", w_start=cfg$w_start, w_end=cfg$w_end,
+                        y_max=65, title=F)
   ggsave(
     filename = paste0("../Figures + Tables/", cfg2$d, " p5 (mort CIs, by year)",
                       " - model ", cfg$model_version, ".pdf"),
@@ -561,8 +394,8 @@ if (cfg$process_analysis) {
   )
   
   # Mortality by age, with CIs
-  plot_06 <- plot_mort3(x_axis="Age", m=cfg$model_version, w_start=cfg$w_start,
-                        w_end=cfg$w_end, y_max=120, title=F)
+  plot_06 <- plot_mort3(x_axis="Age", w_start=cfg$w_start, w_end=cfg$w_end,
+                        y_max=120, title=F)
   ggsave(
     filename = paste0("../Figures + Tables/", cfg2$d, " p6 (mort CIs, by age) ",
                       "- model ", cfg$model_version, ".pdf"),
@@ -570,7 +403,7 @@ if (cfg$process_analysis) {
   )
   
   # Seroconversion by age, with CIs
-  plot_07 <- plot_sero3(type="sero", m=cfg$model_version, w_start=cfg$w_start, y_max=0.05, title=F)
+  plot_07 <- plot_sero3(type="sero", w_start=cfg$w_start, y_max=0.05, title=F)
   ggsave(
     filename = paste0("../Figures + Tables/", cfg2$d, " p7 (sero CIs, by age) ",
                       "- model ", cfg$model_version, ".pdf"),
@@ -578,7 +411,7 @@ if (cfg$process_analysis) {
   )
   
   # Initial status by age, with CIs
-  plot_08 <- plot_sero3(type="init", m=cfg$model_version, w_start=cfg$w_start, y_max=0.75, title=F)
+  plot_08 <- plot_sero3(type="init", w_start=cfg$w_start, y_max=0.75, title=F)
   ggsave(
     filename = paste0("../Figures + Tables/", cfg2$d, " p8 (init CIs, by age) ",
                       "- model ", cfg$model_version, ".pdf"),
@@ -1123,12 +956,12 @@ if (F) {
       for (sex in c(0,1)) {
         for (status in c("HIV-", "HIV+")) {
           type <- paste0("mort (", status, ")")
-          rate <- 1000 * prob(type=type, m=cfg$model_version, j=year, w_1=sex, w_2=0,
-                              w_3=age, year_start=cfg$w_start, which="est")
-          ci_lo <- 1000 * prob(type=type, m=cfg$model_version, j=year, w_1=sex, w_2=0,
-                               w_3=age, year_start=cfg$w_start, which="ci_lo")
-          ci_up <- 1000 * prob(type=type, m=cfg$model_version, j=year, w_1=sex, w_2=0,
-                               w_3=age, year_start=cfg$w_start, which="ci_up")
+          rate <- 1000 * prob(type=type, j=year, w_1=sex, w_2=0, w_3=age,
+                              year_start=cfg$w_start, which="est")
+          ci_lo <- 1000 * prob(type=type, j=year, w_1=sex, w_2=0, w_3=age,
+                               year_start=cfg$w_start, which="ci_lo")
+          ci_up <- 1000 * prob(type=type, j=year, w_1=sex, w_2=0, w_3=age,
+                               year_start=cfg$w_start, which="ci_up")
           df_tab[nrow(df_tab)+1,] <- list(year,age,sex,rate,status,ci_lo,ci_up)
         }
       }
