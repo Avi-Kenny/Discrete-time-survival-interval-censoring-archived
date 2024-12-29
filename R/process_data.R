@@ -220,7 +220,7 @@ dat_grp %<>% dplyr::mutate(
 )
 
 # # !!!!! TEMPORARY
-# if (cfg2$temp) {
+# if (cfg$temp) {
 #   case1_ids <- dplyr::filter(dat_grp, case==1)$id
 #   dat_grp %<>% dplyr::filter(case!=1)
 #   dat_prc %<>% dplyr::filter(!(id %in% case1_ids))

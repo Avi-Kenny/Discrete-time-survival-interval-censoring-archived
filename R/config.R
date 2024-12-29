@@ -7,8 +7,8 @@ cfg <- list(
   
   # These options are for MAIN.R
   run_sims = F,
-  run_analysis = T,
-  run_process_results = F,
+  run_analysis = F,
+  run_process_results = T,
   run_dqa = F,
   
   # These options are for data analysis

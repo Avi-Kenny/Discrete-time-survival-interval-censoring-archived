@@ -9,6 +9,7 @@ log_note <- function(note, num_rows) {
 }
 
 # Config
+c_date <- format(Sys.time(), "%Y-%m-%d")
 sources <- c("raw", "Model (HIV-)", "Model (HIV+)")
 status_vec <- c("HIV-", "HIV+")
 colors_1 <- c("cyan3", "cyan4", "brown3")
@@ -176,7 +177,7 @@ plot <- ggplot(
   scale_color_manual(values=colors_1) +
   labs(color="Source", y="Deaths per 1,000 person-years")
 ggsave(
-  filename = paste0("../Figures + Tables/", cfg2$d, " death_rates_by_year - ",
+  filename = paste0("../Figures + Tables/", c_date, " death_rates_by_year - ",
                     "model ", cfg$model_version, ".pdf"),
   plot = plot, device="pdf", width=10, height=5
 )
@@ -351,7 +352,7 @@ plot <- ggplot(
   scale_color_manual(values=colors_2) +
   labs(color="Source", y="Deaths per 1,000 person-years")
 ggsave(
-  filename = paste0("../Figures + Tables/", cfg2$d, " death_rates_by_age - ",
+  filename = paste0("../Figures + Tables/", c_date, " death_rates_by_age - ",
                     "model ", cfg$model_version, ".pdf"),
   plot = plot, device="pdf", width=10, height=5
 )
@@ -421,7 +422,7 @@ if (add_thembisa) {
 }
 
 ggsave(
-  filename = paste0("../Figures + Tables/", cfg2$d, " 45q15 - ",
+  filename = paste0("../Figures + Tables/", c_date, " 45q15 - ",
                     "model ", cfg$model_version, ".pdf"),
   plot = plot, device="pdf", width=6, height=4
 )

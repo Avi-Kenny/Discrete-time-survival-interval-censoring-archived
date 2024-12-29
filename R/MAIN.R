@@ -17,9 +17,10 @@ if (T) {
   source("R/likelihood.R", local=T)
 }
 
+source("R/models.R", local=T)
+
 if (cfg$run_analysis) {
 
-  source("R/models.R", local=T)
   source("R/process_data.R", local=T)
   source("R/analysis.R", local=T)
   
@@ -37,7 +38,7 @@ if (cfg$run_process_results) {
   
   # Tables and figures
   source("R/process_results.R", local=T)
-  source("R/process_results2.R", local=T)
+  # source("R/process_results2.R", local=T) # !!!!!
   
 }
 

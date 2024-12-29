@@ -3,7 +3,7 @@
 #################.
 
 # Get current date
-cfg2$d <- format(Sys.time(), "%Y-%m-%d")
+c_date <- format(Sys.time(), "%Y-%m-%d")
 
 
 
@@ -63,7 +63,7 @@ if (cfg$process_sims) {
           legend.position="none")
   
   ggsave(
-    filename=paste0("../Figures + Tables/", cfg2$d, " sim_est_scatterplot.pdf"),
+    filename=paste0("../Figures + Tables/", c_date, " sim_est_scatterplot.pdf"),
     plot=plot, device="pdf", width=8, height=5
   )
   
@@ -116,7 +116,7 @@ if (cfg$process_sims) {
   }
   utils::write.table(
     x = df_results,
-    file = paste0("../Figures + Tables/", cfg2$d, " sims_sd_and_coverage.csv"),
+    file = paste0("../Figures + Tables/", c_date, " sims_sd_and_coverage.csv"),
     sep = ",",
     row.names = FALSE
   )
@@ -388,7 +388,7 @@ if (cfg$process_analysis) {
   plot_05 <- plot_mort3(x_axis="Year", w_start=cfg$w_start, w_end=cfg$w_end,
                         y_max=65, title=F)
   ggsave(
-    filename = paste0("../Figures + Tables/", cfg2$d, " p5 (mort CIs, by year)",
+    filename = paste0("../Figures + Tables/", c_date, " p5 (mort CIs, by year)",
                       " - model ", cfg$model_version, ".pdf"),
     plot = plot_05, device="pdf", width=8, height=5
   )
@@ -397,7 +397,7 @@ if (cfg$process_analysis) {
   plot_06 <- plot_mort3(x_axis="Age", w_start=cfg$w_start, w_end=cfg$w_end,
                         y_max=120, title=F)
   ggsave(
-    filename = paste0("../Figures + Tables/", cfg2$d, " p6 (mort CIs, by age) ",
+    filename = paste0("../Figures + Tables/", c_date, " p6 (mort CIs, by age) ",
                       "- model ", cfg$model_version, ".pdf"),
     plot = plot_06, device="pdf", width=8, height=5
   )
@@ -405,7 +405,7 @@ if (cfg$process_analysis) {
   # Seroconversion by age, with CIs
   plot_07 <- plot_sero3(type="sero", w_start=cfg$w_start, y_max=0.05, title=F)
   ggsave(
-    filename = paste0("../Figures + Tables/", cfg2$d, " p7 (sero CIs, by age) ",
+    filename = paste0("../Figures + Tables/", c_date, " p7 (sero CIs, by age) ",
                       "- model ", cfg$model_version, ".pdf"),
     plot = plot_07, device="pdf", width=8, height=5
   )
@@ -413,7 +413,7 @@ if (cfg$process_analysis) {
   # Initial status by age, with CIs
   plot_08 <- plot_sero3(type="init", w_start=cfg$w_start, y_max=0.75, title=F)
   ggsave(
-    filename = paste0("../Figures + Tables/", cfg2$d, " p8 (init CIs, by age) ",
+    filename = paste0("../Figures + Tables/", c_date, " p8 (init CIs, by age) ",
                       "- model ", cfg$model_version, ".pdf"),
     plot = plot_08, device="pdf", width=8, height=5
   )
@@ -476,10 +476,10 @@ if (cfg$process_analysis) {
 #     }
 #     
 #     indices <- as.numeric(sapply(p2, function(p) {
-#       which(names(cfg2$ests$opt$par)==p)
+#       which(names(cfg$ests$opt$par)==p)
 #     }))
-#     beta <- matrix(cfg2$ests$opt$par[indices])
-#     Sigma <- cfg2$ests$hessian_inv[indices,indices]
+#     beta <- matrix(cfg$ests$opt$par[indices])
+#     Sigma <- cfg$ests$hessian_inv[indices,indices]
 #     if (which=="est") {
 #       fac <- 0
 #     } else if (which=="ci_lo") {
@@ -541,7 +541,7 @@ if (cfg$process_analysis) {
 #     scale_fill_manual(values=c("forestgreen", "#56B4E9"))
 #   
 #   ggsave(
-#     filename = paste0("../Figures + Tables/", cfg2$d, " p8 (mort CIs, by year,",
+#     filename = paste0("../Figures + Tables/", c_date, " p8 (mort CIs, by year,",
 #                       " marginal) - model ", cfg$model_version, ".pdf"),
 #     plot = plot_08, device="pdf", width=8, height=5
 #   )
@@ -789,13 +789,13 @@ if (cfg$process_analysis) {
           title = title
         )
       ggsave(
-        filename = paste0("../Figures + Tables/", cfg2$d, " ", plot_name,
+        filename = paste0("../Figures + Tables/", c_date, " ", plot_name,
                           " (by year) - model ", cfg$model_version, ".pdf"),
         plot=plot, device="pdf", width=9, height=6
       )
       plot_paper <- plot + labs(title=NULL)
       ggsave(
-        filename = paste0("../Figures + Tables/", cfg2$d, " paper_", plot_name,
+        filename = paste0("../Figures + Tables/", c_date, " paper_", plot_name,
                           " - model ", cfg$model_version, ".pdf"),
         plot=plot_paper, device="pdf", width=9, height=6
       )
@@ -861,7 +861,7 @@ if (cfg$process_analysis) {
           title = title
         )
       ggsave(
-        filename = paste0("../Figures + Tables/", cfg2$d, " ", plot_name,
+        filename = paste0("../Figures + Tables/", c_date, " ", plot_name,
                           " (by age) - model ", cfg$model_version, ".pdf"),
         plot=plot, device="pdf", width=9, height=6
       )
@@ -921,7 +921,7 @@ if (cfg$process_analysis) {
       
       # plot <- ggpubr::ggarrange(plot_FALSE, plot_TRUE)
       ggsave(
-        filename = paste0("../Figures + Tables/", cfg2$d, " ", plot_name,
+        filename = paste0("../Figures + Tables/", c_date, " ", plot_name,
                           " - model ", cfg$model_version, ".pdf"),
         plot=plot, device="pdf", width=8, height=4 # 6x4
       )
@@ -970,7 +970,7 @@ if (F) {
   
   utils::write.table(
     x = df_tab,
-    file = paste0("../Figures + Tables/", cfg2$d, " temp_table_of_vals.csv"),
+    file = paste0("../Figures + Tables/", c_date, " temp_table_of_vals.csv"),
     sep = ",",
     row.names = FALSE
   )

@@ -9,14 +9,6 @@ one_simulation <- function() {
     stop("cfg$model_version must equal L$model_version.")
   }
   
-  # Set this flag to TRUE to speed up code (but with worse optim performance)
-  speedy <- F
-  if (speedy) {
-    cfg2 <- list(opt_maxit=400, opt_reltol=1e-5, opt_r=2)
-  } else {
-    cfg2 <- list(opt_maxit=5000, opt_reltol=1e-5, opt_r=4)
-  }
-  
   chk(0, "START")
   
   # Generate and transform dataset
@@ -78,7 +70,7 @@ one_simulation <- function() {
     par = par_init,
     fn = negloglik,
     method = "Nelder-Mead",
-    control = list(maxit=cfg2$opt_maxit, reltol=cfg2$opt_reltol)
+    control = list(maxit=cfg$opt_maxit, reltol=cfg$opt_reltol)
   )
   chk(2, "optim: END")
   chk(2, "hessian: START")
@@ -90,7 +82,7 @@ one_simulation <- function() {
       eps = 0.0001,
       d = 0.0001,
       zero.tol = sqrt(.Machine$double.eps/7e-7),
-      r = cfg2$opt_r,
+      r = cfg$opt_r,
       v = 2
     )
   )
