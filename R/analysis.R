@@ -14,6 +14,22 @@ print("------------")
 
 
 
+######################################################.
+##### Create global model objects (sex-specific) #####
+######################################################.
+
+if (cfg$model_sex=="Female") {
+  par_y <- par_y_f; terms_y <- terms_y_f; terms_y2 <- terms_y2_f;
+  par_x <- par_x_f; terms_x <- terms_x_f; terms_x2 <- terms_x2_f;
+  par_s <- par_s_f; terms_s <- terms_s_f; terms_s2 <- terms_s2_f;
+} else {
+  par_y <- par_y_m; terms_y <- terms_y_m; terms_y2 <- terms_y2_m;
+  par_x <- par_x_m; terms_x <- terms_x_m; terms_x2 <- terms_x2_m;
+  par_s <- par_s_m; terms_s <- terms_s_m; terms_s2 <- terms_s2_m;
+}
+
+
+
 #############################################.
 ##### Construct log likelihood function #####
 #############################################.

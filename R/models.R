@@ -2,10 +2,9 @@
 #     spl: a list governing which spline bases to apply to the dataset
 #     b9, b10, etc: spline bases
 #     par_init: initial parameter values (for optimization)
-#     par_names: equal to names(par_init); the order matters
-#     par_y: a character vector naming the parameters corresponding to the outcome model
-#     terms_y: data values corresponding to par_y
-#     terms_y2: a function that generates the "data values" (for predicted probabilities)
+#     par_y: a character vector naming the parameters corresponding to the outcome model; used by f_y() and prob()
+#     terms_y: data values corresponding to par_y; used by f_y()
+#     terms_y2: a function that generates the "data values" (for predicted probabilities); used by prob()
 #     par_x, terms_x, etc.: analogous but for the seroconversion discrete hazard model
 #     par_s, terms_s, etc.: analogous but for the initial status model
 
@@ -23,7 +22,7 @@ if (cfg$model_version==7) {
 } else if (cfg$model_version==37) {
   b13 <- construct_basis("age (13,20,30,40,60)", linear=T)
   b14 <- construct_basis("year (10,13,16,19,22)", linear=T)
-} else if (cfg$model_version==38) {
+} else if (cfg$model_version %in% c(38:39)) {
   spl <- list(list(name="b13", var="w_1", df=4),
               list(name="b14", var="t_end", df=4),
               list(name="b15", var="w_1", df=3))
@@ -32,7 +31,7 @@ if (cfg$model_version==7) {
   b15 <- construct_basis("age (13,30,40,60)", linear=T)
 }
 
-# Set parameter vector (and initial values)
+# Set parameter initial values
 if (cfg$model_version==7) {
   par_init <- c(a_x=-6.2967, g_x1=-0.1535, g_x2=0.9796, t_x=0.5343, a_s=-2.3111, g_s1=-0.5649, g_s2=0.6198, t_s=0.4245, beta_x=1.401, a_y=-5.5786, g_y1=0.3278, g_y2=4.2046, t_y=-0.7198)
 } else if (cfg$model_version==29) {
@@ -58,8 +57,10 @@ if (cfg$model_version==7) {
 } else if (cfg$model_version==38) {
   if (cfg$model_sex=="Female") { par_init <- c(a_x=-5.47, g_x1=10.01, g_x2=-27.66, g_x3=13.78, t_x1=0.01, t_x2=0.2, t_x3=-0.81, t_x4=0.7, a_s=-3.17, g_s1=30.03, g_s2=-16.89, g_s3=-17.81, g_s4=0.04, beta_x1=2.1, beta_x2=-0.03, beta_x3=-0.4, beta_x4=-0.15, a_y=-8.03, g_y1=19.99, g_y2=-12.99, g_y3=-4.94, g_y4=4.24, t_y1=-0.07, t_y2=0.08, t_y3=-0.02, t_y4=0.03) }
   if (cfg$model_sex=="Male") { par_init <- c(a_x=-6.59, g_x1=11.58, g_x2=-30.05, g_x3=13.13, t_x1=0.2, t_x2=-0.4, t_x3=-0.5, t_x4=1.32, a_s=-3.75, g_s1=14.95, g_s2=9.95, g_s3=-24.96, g_s4=-3.94, beta_x1=2.22, beta_x2=-0.03, beta_x3=-1.18, beta_x4=-0.18, a_y=-7.18, g_y1=15, g_y2=-7.04, g_y3=-4.05, g_y4=1.23, t_y1=-0.04, t_y2=0.01, t_y3=0.07, t_y4=-0.01) }
+} else if (cfg$model_version==39) {
+  if (cfg$model_sex=="Female") { par_init <- c(a_x=-5.47, g_x1=25, g_x2=-32, g_x3=-5, g_x4=7, t_x1=0.01, t_x2=0.2, t_x3=-0.81, t_x4=0.7, a_s=-3.17, g_s1=30.03, g_s2=-16.89, g_s3=-17.81, g_s4=0.04, beta_x1=2.1, beta_x2=-0.03, beta_x3=-0.4, beta_x4=-0.15, a_y=-8.03, g_y1=19.99, g_y2=-12.99, g_y3=-4.94, g_y4=4.24, t_y1=-0.07, t_y2=0.08, t_y3=-0.02, t_y4=0.03) }
+  if (cfg$model_sex=="Male") { par_init <- c(a_x=-6.59, g_x1=11.58, g_x2=-30.05, g_x3=13.13, t_x1=0.2, t_x2=-0.4, t_x3=-0.5, t_x4=1.32, a_s=-3.75, g_s1=14.95, g_s2=9.95, g_s3=-24.96, g_s4=-3.94, beta_x1=2.22, beta_x2=-0.03, beta_x3=-1.18, beta_x4=-0.18, a_y=-7.18, g_y1=15, g_y2=-7.04, g_y3=-4.05, g_y4=1.23, t_y1=-0.04, t_y2=0.01, t_y3=0.07, t_y4=-0.01) }
 }
-par_names <- names(par_init)
 
 # Outcome model
 if (cfg$model_version==7) {
@@ -90,10 +91,11 @@ if (cfg$model_version==7) {
   par_y <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2", "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
   terms_y <- function(r, x) { c(x, x*r[["j"]], x*r[["w_1"]], x*r[["j"]]*r[["w_1"]], 1, r[["b9_1"]], r[["b9_2"]], r[["b9_3"]], r[["b9_4"]], r[["b12_1"]], r[["b12_2"]], r[["b12_3"]], r[["b12_4"]]) }
   terms_y2 <- function(x, j, w_1) { c(x, x*j, x*w_1, x*j*w_1, 1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4), b12(j,1), b12(j,2), b12(j,3), b12(j,4)) }
-} else if (cfg$model_version %in% c(37:38)) {
-  par_y <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2", "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
-  terms_y <- function(r, x) { c(x, x*r[["j"]], x*r[["w_1"]], x*r[["j"]]*r[["w_1"]], 1, r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]], r[["b14_1"]], r[["b14_2"]], r[["b14_3"]], r[["b14_4"]]) }
-  terms_y2 <- function(x, j, w_1) { c(x, x*j, x*w_1, x*j*w_1, 1, b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4), b14(j,1), b14(j,2), b14(j,3), b14(j,4)) }
+} else if (cfg$model_version %in% c(37:39)) {
+  par_y_f <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2", "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
+  terms_y_f <- function(r, x) { c(x, x*r[["j"]], x*r[["w_1"]], x*r[["j"]]*r[["w_1"]], 1, r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]], r[["b14_1"]], r[["b14_2"]], r[["b14_3"]], r[["b14_4"]]) }
+  terms_y2_f <- function(x, j, w_1) { c(x, x*j, x*w_1, x*j*w_1, 1, b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4), b14(j,1), b14(j,2), b14(j,3), b14(j,4)) }
+  par_y_m <- par_y_f; terms_y_m <- terms_y_f; terms_y2_m <- terms_y2_f;
 }
 
 # Seroconversion model
@@ -121,6 +123,13 @@ if (cfg$model_version==7) {
   par_x <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3")
   terms_x <- function(r) { c(1, r[["b14_1"]], r[["b14_2"]], r[["b14_3"]], r[["b14_4"]], r[["b15_1"]], r[["b15_2"]], r[["b15_3"]]) }
   terms_x2 <- function(j, w_1) { c(1, b14(j,1), b14(j,2), b14(j,3), b14(j,4), b15(w_1,1), b15(w_1,2), b15(w_1,3)) }
+} else if (cfg$model_version==39) {
+  par_x_f <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3", "g_x4")
+  terms_x_f <- function(r) { c(1, r[["b14_1"]], r[["b14_2"]], r[["b14_3"]], r[["b14_4"]], r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]]) }
+  terms_x2_f <- function(j, w_1) { c(1, b14(j,1), b14(j,2), b14(j,3), b14(j,4), b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4)) }
+  par_x_m <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3")
+  terms_x_m <- function(r) { c(1, r[["b14_1"]], r[["b14_2"]], r[["b14_3"]], r[["b14_4"]], r[["b15_1"]], r[["b15_2"]], r[["b15_3"]]) }
+  terms_x2_m <- function(j, w_1) { c(1, b14(j,1), b14(j,2), b14(j,3), b14(j,4), b15(w_1,1), b15(w_1,2), b15(w_1,3)) }
 }
 
 # Initial status model
@@ -132,13 +141,12 @@ if (cfg$model_version==7) {
   par_s <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4")
   terms_s <- function(r) { c(1, r[["b9_1"]], r[["b9_2"]], r[["b9_3"]], r[["b9_4"]]) }
   terms_s2 <- function(w_1) { c(1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4)) }
-} else if (cfg$model_version %in% c(37:38)) {
-  par_s <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4")
-  terms_s <- function(r) { c(1, r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]]) }
-  terms_s2 <- function(w_1) { c(1, b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4)) }
+} else if (cfg$model_version %in% c(37:39)) {
+  par_s_f <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4")
+  terms_s_f <- function(r) { c(1, r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]]) }
+  terms_s2_f <- function(w_1) { c(1, b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4)) }
+  par_s_m <- par_s_f; terms_s_m <- terms_s_f; terms_s2_m <- terms_s2_f;
 }
-
-
 
 # Helper code to construct par_init(...) statement
 # Construct param init vector

@@ -1,12 +1,10 @@
 # Set configuration
 source("R/config.R", local=T)
 
-# !!!!! TEMP DEBUGGING
-if (T) {
-  cfg$parallelize <- F
-  cfg$model_sex <- "Female"
-  cfg$samp_size <- 20000
-}
+# # !!!!! TEMP DEBUGGING
+# cfg$parallelize <- F
+# cfg$model_sex <- "Female"
+# cfg$samp_size <- 20000
 
 # Load SimEngine + functions
 {
