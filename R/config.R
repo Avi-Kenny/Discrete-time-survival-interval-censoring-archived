@@ -37,8 +37,8 @@ cfg <- list(
   # These options are for process_data.R
   process_sims = F,
   process_analysis = T,
-  ests_M = "objs/ests_39_partial_M_20241229.rds",
-  ests_F = "objs/ests_39_partial_F_20241229.rds"
+  ests_M = "objs/ests_39_full_M_20241230.rds",
+  ests_F = "objs/ests_39_full_F_20241230.rds"
 
 )
 

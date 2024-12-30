@@ -600,7 +600,7 @@ if (cfg$process_analysis) {
     t(matrix(c(b14(j,1), b14(j,2), b14(j,3), b14(j,4))))
   }
   A_b15 <- function(w_1) {
-    t(matrix(c(b13(w_1,1), b13(w_1,2), b13(w_1,3))))
+    t(matrix(c(b15(w_1,1), b15(w_1,2), b15(w_1,3))))
   }
   
   # Extract estimates and SEs
