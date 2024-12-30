@@ -145,23 +145,46 @@ if (cfg$process_sims) {
 #' @return Numeric probability
 prob <- function(type, j, w_1, w_2, w_3, year_start, which="est") {
   
+  # Scale time and age
   j <- scale_time(j, st=year_start, unit="year")
   w_1 <- scale_age(w_1)
   
+  # Set ests objcet (sex-specific)
+  if (w_3==1) {
+    ests <- cfg$ests_M
+  } else {
+    ests <- cfg$ests_F
+  }
+  
+  # Set params and terms (sex-specific)
   if (type=="sero") {
-    p2 <- par_x
-    A <- t(matrix(terms_x2(j, w_1)))
+    if (w_3==1) {
+      p2 <- par_x_M
+      A <- t(matrix(terms_x2_M(j, w_1)))
+    } else {
+      p2 <- par_x_F
+      A <- t(matrix(terms_x2_F(j, w_1)))
+    }
   } else if (type=="init") {
-    p2 <- par_s
-    A <- t(matrix(terms_s2(w_1)))
+    if (w_3==1) {
+      p2 <- par_s_M
+      A <- t(matrix(terms_s2_M(w_1)))
+    } else {
+      p2 <- par_s_F
+      A <- t(matrix(terms_s2_F(w_1)))
+    }
   } else {
     if (type=="mort (HIV-)") { x <- 0 }
     if (type=="mort (HIV+)") { x <- 1 }
-    p2 <- par_y
-    A <- t(matrix(terms_y2(x, j, w_1)))
+    if (w_3==1) {
+      p2 <- par_y_M
+      A <- t(matrix(terms_y2_M(x, j, w_1)))
+    } else {
+      p2 <- par_y_F
+      A <- t(matrix(terms_y2_F(x, j, w_1)))
+    }
   }
   
-  if (w_3==1) { ests <- cfg$ests_M } else { ests <- cfg$ests_F }
   indices <- as.numeric(sapply(p2, function(p) {
     which(names(ests$opt$par)==p)
   }))
@@ -560,7 +583,7 @@ if (cfg$process_analysis) {
 
 if (cfg$process_analysis) {
   
-  # Functions to return spline basis function as a matrix
+  # Functions to return spline basis as matrix
   A_b9 <- function(w_1) {
     t(matrix(c(b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4))))
   }
@@ -595,9 +618,10 @@ if (cfg$process_analysis) {
     if (plot_name=="HR_mort_hiv_cal") {
       
       title <- "HR of mortality, HIV+ vs. HIV- individuals"
-      if (cfg$model_version %in% c(30,34:38)) {
+      if (cfg$model_version %in% c(30,34:39)) {
         par <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4")
         A <- function(j, w_1) { t(matrix(c(1, j, w_1, j*w_1))) }
+        par_F <- par_M <- par; A_M <- A_F <- A;
       } else if (cfg$model_version==31) {
         par <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5",
                     "beta_x6")
@@ -605,6 +629,7 @@ if (cfg$process_analysis) {
           t(matrix(c(1, j, max(w_1-0.2,0), j*max(w_1-0.2,0),
                      min(max(w_1-0.4,0),0.5), j*min(max(w_1-0.4,0),0.5))))
         }
+        par_F <- par_M <- par; A_M <- A_F <- A;
       } else if (cfg$model_version==32) {
         par <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5",
                     "beta_x6", "beta_x7", "beta_x8", "beta_x9")
@@ -612,82 +637,113 @@ if (cfg$process_analysis) {
           1, j, max(j-0.6,0), w_1, w_1*j, w_1*max(j-0.6,0), max(w_1-0.4,0),
           max(w_1-0.4,0)*j, max(w_1-0.4,0)*max(j-0.6,0)
         ))) }
+        par_F <- par_M <- par; A_M <- A_F <- A;
       } else if (cfg$model_version==33) {
         par <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5",
                     "beta_x6", "beta_x7", "beta_x8", "beta_x9")
         A <- function(j, w_1) { t(matrix(c(
           1, j, j^2, w_1, w_1*j, w_1*j^2, w_1^2, w_1^2*j, w_1^2*j^2
         ))) }
+        par_F <- par_M <- par; A_M <- A_F <- A;
       }
       
     } else if (plot_name=="HR_mort_age") {
+      
       title <- "HR of mortality (age)"
       x_axis <- "age"
       if (cfg$model_version %in% c(30:36)) {
         par <- c("g_y1", "g_y2", "g_y3", "g_y4")
         A <- A_b9
-      } else if (cfg$model_version %in% c(37:38)) {
+        par_F <- par_M <- par; A_M <- A_F <- A;
+      } else if (cfg$model_version %in% c(37:39)) {
         par <- c("g_y1", "g_y2", "g_y3", "g_y4")
         A <- A_b13
+        par_F <- par_M <- par; A_M <- A_F <- A;
       }
+      
     } else if (plot_name=="HR_mort_cal") {
+      
       title <- "HR of mortality (calendar time)"
       x_axis <- "cal time"
       if (cfg$model_version %in% c(30:33,36)) {
         par <- c("t_y1", "t_y2", "t_y3", "t_y4")
         A <- A_b10
+        par_F <- par_M <- par; A_M <- A_F <- A;
       } else if (cfg$model_version==35) {
         par <- c("t_y1", "t_y2", "t_y3", "t_y4")
         A <- A_b12
-      } else if (cfg$model_version %in% c(37:38)) {
+        par_F <- par_M <- par; A_M <- A_F <- A;
+      } else if (cfg$model_version %in% c(37:39)) {
         par <- c("t_y1", "t_y2", "t_y3", "t_y4")
         A <- A_b14
+        par_F <- par_M <- par; A_M <- A_F <- A;
       }
+      
     } else if (plot_name=="HR_sero_cal") {
+      
       title <- "HR of seroconversion (calendar time)"
       if (cfg$model_version %in% c(30:33,36)) {
         par <- c("t_x1", "t_x2", "t_x3", "t_x4")
         A <- A_b10
+        par_F <- par_M <- par; A_M <- A_F <- A;
       } else if (cfg$model_version==34) {
         par <- c("t_x1", "t_x2", "t_x3", "t_x4")
         A <- A_b12
+        par_F <- par_M <- par; A_M <- A_F <- A;
       } else if (cfg$model_version==35) {
         par <- c("t_x1")
         A <- function(j) { matrix(j) }
-      } else if (cfg$model_version %in% c(37:38)) {
+        par_F <- par_M <- par; A_M <- A_F <- A;
+      } else if (cfg$model_version %in% c(37:39)) {
         par <- c("t_x1", "t_x2", "t_x3", "t_x4")
         A <- A_b14
+        par_F <- par_M <- par; A_M <- A_F <- A;
       }
       x_axis <- "cal time"
+      
     } else if (plot_name=="HR_sero_age") {
+      
       title <- "HR of seroconversion (age)"
       x_axis <- "age"
       if (cfg$model_version %in% c(30:36)) {
         par <- c("g_x1", "g_x2", "g_x3", "g_x4")
         A <- A_b9
+        par_F <- par_M <- par; A_M <- A_F <- A;
       } else if (cfg$model_version==37) {
         par <- c("g_x1", "g_x2", "g_x3", "g_x4")
         A <- A_b13
+        par_F <- par_M <- par; A_M <- A_F <- A;
       } else if (cfg$model_version==38) {
         par <- c("g_x1", "g_x2", "g_x3")
         A <- A_b15
+        par_F <- par_M <- par; A_M <- A_F <- A;
+      } else if (cfg$model_version==39) {
+        par_F <- c("g_x1", "g_x2", "g_x3", "g_x4")
+        A_F <- A_b13
+        par_M <- c("g_x1", "g_x2", "g_x3")
+        A_M <- A_b15
       }
+      
     } else if (plot_name=="HR_init_age") {
+      
       title <- "HR of HIV+ initial status (age)"
       x_axis <- "age"
       if (cfg$model_version %in% c(30:36)) {
         par <- c("g_s1", "g_s2", "g_s3", "g_s4")
         A <- A_b9
-      } else if (cfg$model_version %in% c(37:38)) {
+        par_F <- par_M <- par; A_M <- A_F <- A;
+      } else if (cfg$model_version %in% c(37:39)) {
         par <- c("g_s1", "g_s2", "g_s3", "g_s4")
         A <- A_b13
+        par_F <- par_M <- par; A_M <- A_F <- A;
       }
+      
     }
     
-    indices_M <- which(names(cfg$ests_M$opt$par) %in% par)
+    indices_M <- which(names(cfg$ests_M$opt$par) %in% par_M)
     beta_M <- matrix(cfg$ests_M$opt$par[indices_M])
     Sigma_M <- cfg$ests_M$hessian_inv[indices_M,indices_M]
-    indices_F <- which(names(cfg$ests_F$opt$par) %in% par)
+    indices_F <- which(names(cfg$ests_F$opt$par) %in% par_F)
     beta_F <- matrix(cfg$ests_F$opt$par[indices_F])
     Sigma_F <- cfg$ests_F$hessian_inv[indices_F,indices_F]
     
@@ -698,11 +754,11 @@ if (cfg$process_analysis) {
         x <- scale_age(x)
       }
       if (sex=="M") {
-        est <- c(A(x) %*% beta_M)
-        se <- c(sqrt(A(x) %*% Sigma_M %*% t(A(x))))
+        est <- c(A_M(x) %*% beta_M)
+        se <- c(sqrt(A_M(x) %*% Sigma_M %*% t(A_M(x))))
       } else if (sex=="F") {
-        est <- c(A(x) %*% beta_F)
-        se <- c(sqrt(A(x) %*% Sigma_F %*% t(A(x))))
+        est <- c(A_F(x) %*% beta_F)
+        se <- c(sqrt(A_F(x) %*% Sigma_F %*% t(A_F(x))))
       }
       if (log) {
         return(est + c(0,-1.96,1.96)*se)
@@ -715,11 +771,11 @@ if (cfg$process_analysis) {
       j <- scale_time(j, st=cfg$w_start)
       w_1 <- scale_age(w_1)
       if (sex=="M") {
-        est <- c(A(j, w_1) %*% beta_M)
-        se <- c(sqrt(A(j, w_1) %*% Sigma_M %*% t(A(j, w_1))))
+        est <- c(A_M(j, w_1) %*% beta_M)
+        se <- c(sqrt(A_M(j, w_1) %*% Sigma_M %*% t(A_M(j, w_1))))
       } else if (sex=="F") {
-        est <- c(A(j, w_1) %*% beta_F)
-        se <- c(sqrt(A(j, w_1) %*% Sigma_F %*% t(A(j, w_1))))
+        est <- c(A_F(j, w_1) %*% beta_F)
+        se <- c(sqrt(A_F(j, w_1) %*% Sigma_F %*% t(A_F(j, w_1))))
       }
       if (log) {
         return(est + c(0,-1.96,1.96)*se)

@@ -19,13 +19,13 @@ print("------------")
 ######################################################.
 
 if (cfg$model_sex=="Female") {
-  par_y <- par_y_f; terms_y <- terms_y_f; terms_y2 <- terms_y2_f;
-  par_x <- par_x_f; terms_x <- terms_x_f; terms_x2 <- terms_x2_f;
-  par_s <- par_s_f; terms_s <- terms_s_f; terms_s2 <- terms_s2_f;
+  par_y <- par_y_F; terms_y <- terms_y_F; terms_y2 <- terms_y2_F;
+  par_x <- par_x_F; terms_x <- terms_x_F; terms_x2 <- terms_x2_F;
+  par_s <- par_s_F; terms_s <- terms_s_F; terms_s2 <- terms_s2_F;
 } else {
-  par_y <- par_y_m; terms_y <- terms_y_m; terms_y2 <- terms_y2_m;
-  par_x <- par_x_m; terms_x <- terms_x_m; terms_x2 <- terms_x2_m;
-  par_s <- par_s_m; terms_s <- terms_s_m; terms_s2 <- terms_s2_m;
+  par_y <- par_y_M; terms_y <- terms_y_M; terms_y2 <- terms_y2_M;
+  par_x <- par_x_M; terms_x <- terms_x_M; terms_x2 <- terms_x2_M;
+  par_s <- par_s_M; terms_s <- terms_s_M; terms_s2 <- terms_s2_M;
 }
 
 
