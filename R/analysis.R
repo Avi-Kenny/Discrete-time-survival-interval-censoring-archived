@@ -48,7 +48,11 @@ dat_objs_wrapper <- lapply(batches, function(i) { dat_objs[i] })
 
 if (cfg$parallelize) {
   cl <- parallel::makeCluster(cfg$sim_n_cores)
-  objs_to_export <- c("f_x", "f_y", "icll", "lik_fn", "batches", "uncompress")
+  objs_to_export <- c(
+    "f_x", "f_y", "icll", "lik_fn", "batches", "uncompress", "par_init",
+    "par_y", "terms_y", "terms_y2", "par_x", "terms_x", "terms_x2", "par_s",
+    "terms_s", "terms_s2"
+  )
   parallel::clusterExport(cl, objs_to_export, envir=.GlobalEnv)
   negloglik <- construct_negloglik(
     parallelize=T, model_version=cfg$model_version, use_counter=T
@@ -94,6 +98,7 @@ chk(4, "optim: END")
 ###########################.
 
 chk(5, "hessian: START")
+parallel::clusterExport(cl, "opt", envir=.GlobalEnv)
 hessian_est <- numDeriv::hessian(
   func = negloglik,
   x = opt$par,

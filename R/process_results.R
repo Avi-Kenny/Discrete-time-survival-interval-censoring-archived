@@ -5,6 +5,10 @@
 # Get current date
 c_date <- format(Sys.time(), "%Y-%m-%d")
 
+# Read in result objects
+cfg$ests_M <- readRDS(cfg$ests_M)
+cfg$ests_F <- readRDS(cfg$ests_F)
+
 
 
 #####################################################.

@@ -17,7 +17,7 @@ cfg <- list(
   w_end = 2022,
   age_end = 60,
   model_sex = Sys.getenv("model_sex"), # This is set in the Slurm `sbatch` call
-  samp_size = 0, # 0 means the full dataset is used, otherwise a subsample is used
+  samp_size = 20000, # 0 means the full dataset is used, otherwise a subsample is used
   
   # These options are for simulations
   # model_version = 7,
@@ -37,8 +37,8 @@ cfg <- list(
   # These options are for process_data.R
   process_sims = F,
   process_analysis = T,
-  ests_M = readRDS("objs/ests_38_full_M_20241209b.rds"),
-  ests_F = readRDS("objs/ests_38_full_F_20241209b.rds")
+  ests_M = "objs/ests_38_full_M_20241209b.rds",
+  ests_F = "objs/ests_38_full_F_20241209b.rds"
   
 )
 
