@@ -71,8 +71,8 @@ if (cfg$model_version==7) {
 # Outcome model
 if (cfg$model_version==7) {
   par_y_F <- c("a_y", "t_y", "g_y1", "g_y2", "beta_x")
-  terms_y_F <- function(r, x) { c(1, r[["j"]], r[["w_1"]], r[["w_2"]], x) }
-  terms_y2_F <- function(x, j, w_1) { c(1, j, w_1, w_2, x) }
+  terms_y_F <- function(r, x) { c(1, r[["j"]], r[["w_1"]], r[["w_3"]], x) }
+  terms_y2_F <- function(x, j, w_1) { c(1, j, w_1, w_3, x) }
   par_y_M <- par_y_F; terms_y_M <- terms_y_F; terms_y2_M <- terms_y2_F;
 } else if (cfg$model_version==29) {
   par_y_F <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "beta_x6", "a_y", "g_y1", "g_y2", "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
@@ -119,8 +119,8 @@ if (cfg$model_version==7) {
 # Seroconversion model
 if (cfg$model_version==7) {
   par_x_F <- c("a_x", "t_x1", "g_x1", "g_x2")
-  terms_x_F <- function(r) { c(1, r[["j"]], r[["w_1"]], r[["w_2"]]) }
-  terms_x2_F <- function(j, w_1, w_2) { c(1, j, w_1, w_2) }
+  terms_x_F <- function(r) { c(1, r[["j"]], r[["w_1"]], r[["w_3"]]) }
+  terms_x2_F <- function(j, w_1, w_2) { c(1, j, w_1, w_3) }
   par_x_M <- par_x_F; terms_x_M <- terms_x_F; terms_x2_M <- terms_x2_F;
 } else if (cfg$model_version %in% c(29:33,36)) {
   par_x_F <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3", "g_x4")
@@ -159,8 +159,8 @@ if (cfg$model_version==7) {
 # Initial status model
 if (cfg$model_version==7) {
   par_s_F <- c("a_s", "t_s1", "g_s1", "g_s2")
-  terms_s_F <- function(r) { c(1, r[["j"]], r[["w_1"]], r[["w_2"]]) }
-  terms_s2_F <- function(j, w_1) { c(1, j, w_1, w_2) }
+  terms_s_F <- function(r) { c(1, r[["j"]], r[["w_1"]], r[["w_3"]]) }
+  terms_s2_F <- function(j, w_1) { c(1, j, w_1, w_3) }
   par_s_M <- par_s_F; terms_s_M <- terms_s_F; terms_s2_M <- terms_s2_F;
 } else if (cfg$model_version %in% c(29:36)) {
   par_s_F <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4")

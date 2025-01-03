@@ -38,7 +38,7 @@ if (cfg$w_start==2010) {
 # dat_prc %<>% dplyr::mutate(
 #   t_end = (t_end-1)+cfg$w_start,
 #   age = round(w_1*100),
-#   sex = w_2
+#   sex = w_3
 # )
 
 # dat_raw: Generate age-at-death variable

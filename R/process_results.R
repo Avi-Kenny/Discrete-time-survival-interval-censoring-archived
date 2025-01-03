@@ -1023,11 +1023,11 @@ if (F) {
       for (sex in c(0,1)) {
         for (status in c("HIV-", "HIV+")) {
           type <- paste0("mort (", status, ")")
-          rate <- 1000 * prob(type=type, j=year, w_1=sex, w_2=0, w_3=age,
+          rate <- 1000 * prob(type=type, j=year, w_1=age, w_2=0, w_3=sex,
                               year_start=cfg$w_start, which="est")
-          ci_lo <- 1000 * prob(type=type, j=year, w_1=sex, w_2=0, w_3=age,
+          ci_lo <- 1000 * prob(type=type, j=year, w_1=age, w_2=0, w_3=sex,
                                year_start=cfg$w_start, which="ci_lo")
-          ci_up <- 1000 * prob(type=type, j=year, w_1=sex, w_2=0, w_3=age,
+          ci_up <- 1000 * prob(type=type, j=year, w_1=age, w_2=0, w_3=sex,
                                year_start=cfg$w_start, which="ci_up")
           df_tab[nrow(df_tab)+1,] <- list(year,age,sex,rate,status,ci_lo,ci_up)
         }
