@@ -16,8 +16,8 @@ log_note <- function(note, num_rows) {
 }
 
 # Read in data
-dat_prc <- read.csv("../Data/pip_combined_hiv_2025-01-01.csv") # !!!!! Testing with fixed dataset
-# dat_prc <- readRDS("../Data/pip_combined_hiv_2025-01-01.rds") # !!!!! Testing with fixed dataset v2
+dat_prc <- readRDS("../Data/pip_combined_hiv_2025-01-01.rds") # !!!!! Testing with fixed dataset v2
+dat_prc %<>% dplyr::ungroup()
 
 log_note("# rows, original", nrow(dat_prc))
 log_note("# individuals, original", length(unique(dat_prc$IIntId)))
@@ -94,7 +94,7 @@ log_note("# rows dropped, age>=cfg$age_end", rows_pre-nrow(dat_prc))
 
 # Remove tests with an "S" result
 rows_with_s <- which(dat_prc$HIVResult=="S")
-dat_prc[rows_with_s, "ResultDate"] <- ""
+dat_prc[rows_with_s, "ResultDate"] <- NA
 dat_prc[rows_with_s, "HIVResult"] <- ""
 
 # Create flag for individuals whose status is positive/known at window_start
