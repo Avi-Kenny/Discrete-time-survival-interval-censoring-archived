@@ -22,7 +22,7 @@ if (cfg$model_version==7) {
 } else if (cfg$model_version==37) {
   b13 <- construct_basis("age (13,20,30,40,60)", linear=T)
   b14 <- construct_basis("year (10,13,16,19,22)", linear=T)
-} else if (cfg$model_version %in% c(38:39)) {
+} else if (cfg$model_version %in% c(38:41)) {
   spl <- list(list(name="b13", var="w_1", df=4),
               list(name="b14", var="t_end", df=4),
               list(name="b15", var="w_1", df=3))
@@ -60,6 +60,12 @@ if (cfg$model_version==7) {
 } else if (cfg$model_version==39) {
   if (cfg$model_sex=="Female") { par_init <- c(a_x=-5.47, g_x1=25, g_x2=-32, g_x3=-5, g_x4=7, t_x1=0.01, t_x2=0.2, t_x3=-0.81, t_x4=0.7, a_s=-3.17, g_s1=30.03, g_s2=-16.89, g_s3=-17.81, g_s4=0.04, beta_x1=2.1, beta_x2=-0.03, beta_x3=-0.4, beta_x4=-0.15, a_y=-8.03, g_y1=19.99, g_y2=-12.99, g_y3=-4.94, g_y4=4.24, t_y1=-0.07, t_y2=0.08, t_y3=-0.02, t_y4=0.03) }
   if (cfg$model_sex=="Male") { par_init <- c(a_x=-6.59, g_x1=11.58, g_x2=-30.05, g_x3=13.13, t_x1=0.2, t_x2=-0.4, t_x3=-0.5, t_x4=1.32, a_s=-3.75, g_s1=14.95, g_s2=9.95, g_s3=-24.96, g_s4=-3.94, beta_x1=2.22, beta_x2=-0.03, beta_x3=-1.18, beta_x4=-0.18, a_y=-7.18, g_y1=15, g_y2=-7.04, g_y3=-4.05, g_y4=1.23, t_y1=-0.04, t_y2=0.01, t_y3=0.07, t_y4=-0.01) }
+} else if (cfg$model_version==40) {
+  if (cfg$model_sex=="Female") { par_init <- c(a_x=-5.29, g_x1=26.2, g_x2=-32.84, g_x3=-10.42, g_x4=14.75, t_x1=-0.12, t_x2=0.27, t_x3=-0.61, t_x4=0.27, a_s=-3.21, g_s1=30.25, g_s2=-16.79, g_s3=-17.27, g_s4=-1.94, t_s1=0, beta_x1=2.17, beta_x2=-0.02, beta_x3=-0.88, beta_x4=-0.14, a_y=-7.98, g_y1=20.33, g_y2=-13.34, g_y3=-5.15, g_y4=4.74, t_y1=-0.13, t_y2=0.2, t_y3=-0.14, t_y4=0.11) }
+  if (cfg$model_sex=="Male") { par_init <- c(a_x=-6.55, g_x1=12, g_x2=-32.08, g_x3=13.73, t_x1=0.19, t_x2=-0.4, t_x3=-0.5, t_x4=1.29, a_s=-3.75, g_s1=14.87, g_s2=9.92, g_s3=-24.81, g_s4=-3.88, t_s1=0, beta_x1=2.23, beta_x2=-0.03, beta_x3=-1.21, beta_x4=-0.17, a_y=-7.16, g_y1=14.95, g_y2=-7.09, g_y3=-4.13, g_y4=1.51, t_y1=-0.05, t_y2=0.01, t_y3=0.07, t_y4=-0.02) }
+} else if (cfg$model_version==41) {
+  if (cfg$model_sex=="Female") { par_init <- c(a_x=-5.29, g_x1=26.2, g_x2=-32.84, g_x3=-10.42, g_x4=14.75, t_x1=-0.12, t_x2=0.27, t_x3=-0.61, t_x4=0.27, a_s=-3.21, g_s1=30.25, g_s2=-16.79, g_s3=-17.27, g_s4=-1.94, t_s1=0, beta_x1=2.17, beta_x2=-0.02, beta_x3=0, beta_x4=-0.88, beta_x5=-0.14, beta_x6=0, beta_x7=0, beta_x8=0, beta_x9=0, a_y=-7.98, g_y1=20.33, g_y2=-13.34, g_y3=-5.15, g_y4=4.74, t_y1=-0.13, t_y2=0.2, t_y3=-0.14, t_y4=0.11) }
+  if (cfg$model_sex=="Male") { par_init <- c(a_x=-6.55, g_x1=12, g_x2=-32.08, g_x3=13.73, t_x1=0.19, t_x2=-0.4, t_x3=-0.5, t_x4=1.29, a_s=-3.75, g_s1=14.87, g_s2=9.92, g_s3=-24.81, g_s4=-3.88, t_s1=0, beta_x1=2.23, beta_x2=-0.03, beta_x3=0, beta_x4=-1.21, beta_x5=-0.17, beta_x6=0, beta_x7=0, beta_x8=0, beta_x9=0, a_y=-7.16, g_y1=14.95, g_y2=-7.09, g_y3=-4.13, g_y4=1.51, t_y1=-0.05, t_y2=0.01, t_y3=0.07, t_y4=-0.02) }
 }
 
 # Outcome model
@@ -98,10 +104,15 @@ if (cfg$model_version==7) {
   terms_y_F <- function(r, x) { c(x, x*r[["j"]], x*r[["w_1"]], x*r[["j"]]*r[["w_1"]], 1, r[["b9_1"]], r[["b9_2"]], r[["b9_3"]], r[["b9_4"]], r[["b12_1"]], r[["b12_2"]], r[["b12_3"]], r[["b12_4"]]) }
   terms_y2_F <- function(x, j, w_1) { c(x, x*j, x*w_1, x*j*w_1, 1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4), b12(j,1), b12(j,2), b12(j,3), b12(j,4)) }
   par_y_M <- par_y_F; terms_y_M <- terms_y_F; terms_y2_M <- terms_y2_F;
-} else if (cfg$model_version %in% c(37:39)) {
+} else if (cfg$model_version %in% c(37:40)) {
   par_y_F <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "a_y", "g_y1", "g_y2", "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
   terms_y_F <- function(r, x) { c(x, x*r[["j"]], x*r[["w_1"]], x*r[["j"]]*r[["w_1"]], 1, r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]], r[["b14_1"]], r[["b14_2"]], r[["b14_3"]], r[["b14_4"]]) }
   terms_y2_F <- function(x, j, w_1) { c(x, x*j, x*w_1, x*j*w_1, 1, b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4), b14(j,1), b14(j,2), b14(j,3), b14(j,4)) }
+  par_y_M <- par_y_F; terms_y_M <- terms_y_F; terms_y2_M <- terms_y2_F;
+} else if (cfg$model_version==41) {
+  par_y_F <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "beta_x6", "beta_x7", "beta_x8", "beta_x9", "a_y", "g_y1", "g_y2", "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
+  terms_y_F <- function(r, x) { c(x, x*r[["j"]], x*r[["j"]]^2, x*r[["w_1"]], x*r[["j"]]*r[["w_1"]], x*r[["j"]]^2*r[["w_1"]], x*r[["w_1"]]^2, x*r[["j"]]*r[["w_1"]]^2, x*r[["j"]]^2*r[["w_1"]]^2, 1, r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]], r[["b14_1"]], r[["b14_2"]], r[["b14_3"]], r[["b14_4"]]) }
+  terms_y2_F <- function(x, j, w_1) { c(x, x*j, x*j^2, x*w_1, x*j*w_1, x*j^2*w_1, x*w_1^2, x*j*w_1^2, x*j^2*w_1^2, 1, b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4), b14(j,1), b14(j,2), b14(j,3), b14(j,4)) }
   par_y_M <- par_y_F; terms_y_M <- terms_y_F; terms_y2_M <- terms_y2_F;
 }
 
@@ -136,7 +147,7 @@ if (cfg$model_version==7) {
   terms_x_F <- function(r) { c(1, r[["b14_1"]], r[["b14_2"]], r[["b14_3"]], r[["b14_4"]], r[["b15_1"]], r[["b15_2"]], r[["b15_3"]]) }
   terms_x2_F <- function(j, w_1) { c(1, b14(j,1), b14(j,2), b14(j,3), b14(j,4), b15(w_1,1), b15(w_1,2), b15(w_1,3)) }
   par_x_M <- par_x_F; terms_x_M <- terms_x_F; terms_x2_M <- terms_x2_F;
-} else if (cfg$model_version==39) {
+} else if (cfg$model_version %in% c(39:41)) {
   par_x_F <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3", "g_x4")
   terms_x_F <- function(r) { c(1, r[["b14_1"]], r[["b14_2"]], r[["b14_3"]], r[["b14_4"]], r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]]) }
   terms_x2_F <- function(j, w_1) { c(1, b14(j,1), b14(j,2), b14(j,3), b14(j,4), b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4)) }
@@ -154,19 +165,24 @@ if (cfg$model_version==7) {
 } else if (cfg$model_version %in% c(29:36)) {
   par_s_F <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4")
   terms_s_F <- function(r) { c(1, r[["b9_1"]], r[["b9_2"]], r[["b9_3"]], r[["b9_4"]]) }
-  terms_s2_F <- function(w_1) { c(1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4)) }
+  terms_s2_F <- function(j, w_1) { c(1, b9(w_1,1), b9(w_1,2), b9(w_1,3), b9(w_1,4)) }
   par_s_M <- par_s_F; terms_s_M <- terms_s_F; terms_s2_M <- terms_s2_F;
 } else if (cfg$model_version %in% c(37:39)) {
   par_s_F <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4")
   terms_s_F <- function(r) { c(1, r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]]) }
-  terms_s2_F <- function(w_1) { c(1, b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4)) }
+  terms_s2_F <- function(j, w_1) { c(1, b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4)) }
+  par_s_M <- par_s_F; terms_s_M <- terms_s_F; terms_s2_M <- terms_s2_F;
+} else if (cfg$model_version %in% c(40:41)) {
+  par_s_F <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4", "t_s1")
+  terms_s_F <- function(r) { c(1, r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]], r[["j"]]) }
+  terms_s2_F <- function(j, w_1) { c(1, b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4), j) }
   par_s_M <- par_s_F; terms_s_M <- terms_s_F; terms_s2_M <- terms_s2_F;
 }
 
 # Helper code to construct par_init(...) statement
 # Construct param init vector
 if (F) {
-  ests <- readRDS("objs/ests_38_full_F_20241209.rds")
+  ests <- readRDS("objs/ests_39_full_M_20241230.rds")
   str <- "par_init <- c("
   for (par in names(ests$opt$par)) {
     str <- paste0(str, par, "=", round(ests$opt$par[[par]], 2), ", ")

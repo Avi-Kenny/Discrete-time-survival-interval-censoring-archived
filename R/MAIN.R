@@ -4,7 +4,7 @@ source("R/config.R", local=T)
 # # !!!!! TEMP DEBUGGING
 # cfg$parallelize <- F
 # cfg$model_sex <- "Female"
-# cfg$samp_size <- 20000
+# cfg$samp_size <- 0
 
 # Load SimEngine + functions
 {
@@ -36,7 +36,7 @@ if (cfg$run_process_results) {
   
   # Tables and figures
   source("R/process_results.R", local=T)
-  # source("R/process_results2.R", local=T) # !!!!!
+  source("R/process_results2.R", local=T) # !!!!!
   
 }
 

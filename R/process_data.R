@@ -16,17 +16,20 @@ log_note <- function(note, num_rows) {
 }
 
 # Read in data
-dat_prc <- read.csv("../Data/data_raw_full_v2.csv") # !!!!! Temporarily reverting to this version until Stephen adds 2023 back in
-dat_prc$PIPSA <- 1 # !!!!!! TEMP
-dat_prc$LocationId <- 1 # !!!!!! TEMP
-dat_prc$HIV_update <- 1 # !!!!!! TEMP
-dat_prc$age_start <- 1 # !!!!! TEMP
-dat_prc$age_end <- 1 # !!!!! TEMP
-dat_prc$first_hiv_pos <- 1 # !!!!! TEMP
-dat_prc$last_hiv_neg <- 1 # !!!!! TEMP
-dat_prc$HIV_status <- NULL # !!!!! TEMP
-dat_prc$dod <- NULL # !!!!! TEMP
-dat_prc %<>% dplyr::rename("ART_update"=ART_status) # !!!!! TEMP
+# dat_prc <- read.csv("../Data/data_raw_full_v2.csv") # !!!!! Temporarily reverting to this version until Stephen adds 2023 back in
+dat_prc <- read.csv("../Data/pip_combined_hiv_2025-01-01.csv") # !!!!! Testing with fixed dataset
+# dat_prc <- readRDS("../Data/pip_combined_hiv_2025-01-01.rds") # !!!!! Testing with fixed dataset v2
+
+# dat_prc$PIPSA <- 1 # !!!!!! TEMP
+# dat_prc$LocationId <- 1 # !!!!!! TEMP
+# dat_prc$HIV_update <- 1 # !!!!!! TEMP
+# dat_prc$age_start <- 1 # !!!!! TEMP
+# dat_prc$age_end <- 1 # !!!!! TEMP
+# dat_prc$first_hiv_pos <- 1 # !!!!! TEMP
+# dat_prc$last_hiv_neg <- 1 # !!!!! TEMP
+# dat_prc$HIV_status <- NULL # !!!!! TEMP
+# dat_prc$dod <- NULL # !!!!! TEMP
+# dat_prc %<>% dplyr::rename("ART_update"=ART_status) # !!!!! TEMP
 
 # dat_prc <- read.csv("../Data/pip_hiv_missingness_Avi_2024-11-21_mod.csv")
 log_note("# rows, original", nrow(dat_prc))
@@ -47,7 +50,9 @@ dat_prc %<>% dplyr::rename(
 )
 
 # Drop unnecessary columns
-dat_prc %<>% subset(select=-c(X, LocationId, EarliestARTInitDate, HIV_update, age_start,
+# dat_prc %<>% subset(select=-c(X, LocationId, EarliestARTInitDate, HIV_update, age_start,
+#                               age_end, first_hiv_pos, last_hiv_neg))
+dat_prc %<>% subset(select=-c(LocationId, EarliestARTInitDate, HIV_update, age_start,
                               age_end, first_hiv_pos, last_hiv_neg))
 
 # Function to convert dates
@@ -175,6 +180,9 @@ dat_prc %<>% dplyr::filter(
 )
 log_note("# rows dropped, NEG test after POS test", rows_pre-nrow(dat_prc))
 
+# Sort dataframe
+dat_prc %<>% dplyr::arrange(id,year)
+
 # Drop rows with duplicate person-time
 rows_pre <- nrow(dat_prc)
 dupe_time_rows <- which(
@@ -189,9 +197,6 @@ log_note("# deaths, final", sum(dat_prc$died))
 
 # Print data log
 print(dat_log)
-
-# Sort dataframe
-dat_prc %<>% dplyr::arrange(id,year)
 
 # Rename columns
 dat_prc %<>% dplyr::rename(
