@@ -12,7 +12,7 @@ cfg <- list(
   run_dqa = F,
   
   # These options are for data analysis
-  model_version = 40, # For analysis
+  model_version = 42, # For analysis
   w_start = 2010,
   w_end = 2022,
   age_end = 60,
@@ -37,8 +37,8 @@ cfg <- list(
   # These options are for process_data.R
   process_sims = F,
   process_analysis = T,
-  ests_M = "objs/ests_40_full_M_20250102.rds",
-  ests_F = "objs/ests_40_full_F_20250102.rds"
+  ests_M = "objs/ests_42_full_M_20250103.rds",
+  ests_F = "objs/ests_42_full_F_20250103.rds"
 
 )
 

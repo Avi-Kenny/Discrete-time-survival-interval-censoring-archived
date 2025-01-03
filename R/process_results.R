@@ -618,7 +618,7 @@ if (cfg$process_analysis) {
     if (plot_name=="HR_mort_hiv_cal") {
       
       title <- "HR of mortality, HIV+ vs. HIV- individuals"
-      if (cfg$model_version %in% c(30,34:40)) {
+      if (cfg$model_version %in% c(30,34:40,42)) {
         par <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4")
         A <- function(j, w_1) { t(matrix(c(1, j, w_1, j*w_1))) }
         par_F <- par_M <- par; A_M <- A_F <- A;
@@ -662,7 +662,7 @@ if (cfg$process_analysis) {
         par <- c("g_y1", "g_y2", "g_y3", "g_y4")
         A <- A_b9
         par_F <- par_M <- par; A_M <- A_F <- A;
-      } else if (cfg$model_version %in% c(37:41)) {
+      } else if (cfg$model_version %in% c(37:42)) {
         par <- c("g_y1", "g_y2", "g_y3", "g_y4")
         A <- A_b13
         par_F <- par_M <- par; A_M <- A_F <- A;
@@ -680,7 +680,7 @@ if (cfg$process_analysis) {
         par <- c("t_y1", "t_y2", "t_y3", "t_y4")
         A <- A_b12
         par_F <- par_M <- par; A_M <- A_F <- A;
-      } else if (cfg$model_version %in% c(37:41)) {
+      } else if (cfg$model_version %in% c(37:42)) {
         par <- c("t_y1", "t_y2", "t_y3", "t_y4")
         A <- A_b14
         par_F <- par_M <- par; A_M <- A_F <- A;
@@ -701,7 +701,7 @@ if (cfg$process_analysis) {
         par <- c("t_x1")
         A <- function(j) { matrix(j) }
         par_F <- par_M <- par; A_M <- A_F <- A;
-      } else if (cfg$model_version %in% c(37:41)) {
+      } else if (cfg$model_version %in% c(37:42)) {
         par <- c("t_x1", "t_x2", "t_x3", "t_x4")
         A <- A_b14
         par_F <- par_M <- par; A_M <- A_F <- A;
@@ -724,7 +724,7 @@ if (cfg$process_analysis) {
         par <- c("g_x1", "g_x2", "g_x3")
         A <- A_b15
         par_F <- par_M <- par; A_M <- A_F <- A;
-      } else if (cfg$model_version %in% c(39:41)) {
+      } else if (cfg$model_version %in% c(39:42)) {
         par_F <- c("g_x1", "g_x2", "g_x3", "g_x4")
         A_F <- A_b13
         par_M <- c("g_x1", "g_x2", "g_x3")
@@ -739,7 +739,7 @@ if (cfg$process_analysis) {
         par <- c("g_s1", "g_s2", "g_s3", "g_s4")
         A <- A_b9
         par_F <- par_M <- par; A_M <- A_F <- A;
-      } else if (cfg$model_version %in% c(37:41)) {
+      } else if (cfg$model_version %in% c(37:42)) {
         par <- c("g_s1", "g_s2", "g_s3", "g_s4")
         A <- A_b13
         par_F <- par_M <- par; A_M <- A_F <- A;

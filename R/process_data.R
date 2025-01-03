@@ -16,7 +16,7 @@ log_note <- function(note, num_rows) {
 }
 
 # Read in data
-dat_prc <- readRDS("../Data/pip_combined_hiv_2025-01-01.rds") # !!!!! Testing with fixed dataset v2
+dat_prc <- readRDS("../Data/pip_combined_hiv_2025-01-01.rds")
 dat_prc %<>% dplyr::ungroup()
 
 log_note("# rows, original", nrow(dat_prc))
