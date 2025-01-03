@@ -16,22 +16,9 @@ log_note <- function(note, num_rows) {
 }
 
 # Read in data
-# dat_prc <- read.csv("../Data/data_raw_full_v2.csv") # !!!!! Temporarily reverting to this version until Stephen adds 2023 back in
 dat_prc <- read.csv("../Data/pip_combined_hiv_2025-01-01.csv") # !!!!! Testing with fixed dataset
 # dat_prc <- readRDS("../Data/pip_combined_hiv_2025-01-01.rds") # !!!!! Testing with fixed dataset v2
 
-# dat_prc$PIPSA <- 1 # !!!!!! TEMP
-# dat_prc$LocationId <- 1 # !!!!!! TEMP
-# dat_prc$HIV_update <- 1 # !!!!!! TEMP
-# dat_prc$age_start <- 1 # !!!!! TEMP
-# dat_prc$age_end <- 1 # !!!!! TEMP
-# dat_prc$first_hiv_pos <- 1 # !!!!! TEMP
-# dat_prc$last_hiv_neg <- 1 # !!!!! TEMP
-# dat_prc$HIV_status <- NULL # !!!!! TEMP
-# dat_prc$dod <- NULL # !!!!! TEMP
-# dat_prc %<>% dplyr::rename("ART_update"=ART_status) # !!!!! TEMP
-
-# dat_prc <- read.csv("../Data/pip_hiv_missingness_Avi_2024-11-21_mod.csv")
 log_note("# rows, original", nrow(dat_prc))
 log_note("# individuals, original", length(unique(dat_prc$IIntId)))
 
