@@ -160,28 +160,28 @@ prob <- function(type, j, w_1, w_2, w_3, year_start, which="est") {
   if (type=="sero") {
     if (w_3==1) {
       p2 <- par_x_M
-      A <- t(matrix(terms_x2_M(j, w_1)))
+      A <- t(matrix(terms_x2_M(j, w_1, w_2)))
     } else {
       p2 <- par_x_F
-      A <- t(matrix(terms_x2_F(j, w_1)))
+      A <- t(matrix(terms_x2_F(j, w_1, w_2)))
     }
   } else if (type=="init") {
     if (w_3==1) {
       p2 <- par_s_M
-      A <- t(matrix(terms_s2_M(j, w_1)))
+      A <- t(matrix(terms_s2_M(j, w_1, w_2)))
     } else {
       p2 <- par_s_F
-      A <- t(matrix(terms_s2_F(j, w_1)))
+      A <- t(matrix(terms_s2_F(j, w_1, w_2)))
     }
   } else {
     if (type=="mort (HIV-)") { x <- 0 }
     if (type=="mort (HIV+)") { x <- 1 }
     if (w_3==1) {
       p2 <- par_y_M
-      A <- t(matrix(terms_y2_M(x, j, w_1)))
+      A <- t(matrix(terms_y2_M(x, j, w_1, w_2)))
     } else {
       p2 <- par_y_F
-      A <- t(matrix(terms_y2_F(x, j, w_1)))
+      A <- t(matrix(terms_y2_F(x, j, w_1, w_2)))
     }
   }
   
