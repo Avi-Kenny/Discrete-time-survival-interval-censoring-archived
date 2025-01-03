@@ -37,8 +37,6 @@ dat_prc %<>% dplyr::rename(
 )
 
 # Drop unnecessary columns
-# dat_prc %<>% subset(select=-c(X, LocationId, EarliestARTInitDate, HIV_update, age_start,
-#                               age_end, first_hiv_pos, last_hiv_neg))
 dat_prc %<>% subset(select=-c(LocationId, EarliestARTInitDate, HIV_update, age_start,
                               age_end, first_hiv_pos, last_hiv_neg))
 
