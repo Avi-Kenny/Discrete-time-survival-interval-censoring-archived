@@ -27,9 +27,6 @@ if (cfg$w_start==2010) {
   # dat_raw is raw/original dataset
   dat_raw <- readstata13::read.dta13("../Data/SurveillanceEpisodesHIV.dta")
   
-  # # dat_so is the dataset processed by Stephen
-  # dat_so <- read.csv("../Data/data_raw_full_v2.csv")
-  
   # # dat_prc is dat_so processed via analysis.R
   # dat_prc <- read.csv("../Data/dat_processed.csv")
 }
@@ -44,15 +41,10 @@ if (cfg$w_start==2010) {
 # dat_raw: Generate age-at-death variable
 dat_raw$AoD <- round((dat_raw$DoD-dat_raw$DoB)/365.25)
 
-# # dat_so: Generate age variable
-# dat_so %<>% dplyr::mutate(age=Year-as.numeric(substr(dob,1,4)))
-
 # Summary stats
 log_note("rows, dat_raw", nrow(dat_raw))
-# log_note("rows, dat_so", nrow(dat_so))
 # log_note("rows, dat_prc", nrow(dat_prc))
 log_note("# people, dat_raw", length(unique(dat_raw$IIntId)))
-# log_note("# people, dat_so", length(unique(dat_so$IIntId)))
 # log_note("# people, dat_prc", length(unique(dat_prc$id)))
 
 
@@ -110,14 +102,6 @@ for (year_ in c(cfg$w_start:cfg$w_end)) {
         na.rm=T
       )
       
-      # # Summary stats from SO dataset
-      # dat_so_filt <- dplyr::filter(
-      #   dat_so,
-      #   Year==year_ & sex==sex_ & age >= age_bin[1] & age <= age_bin[2]
-      # )
-      # n_deaths_so <- sum(dat_so_filt$died, na.rm=T)
-      # n_py_so <- nrow(dat_so_filt)
-      
       # # Summary stats from processed dataset
       # dat_prc_filt <- dplyr::filter(
       #   dat_prc,
@@ -132,12 +116,6 @@ for (year_ in c(cfg$w_start:cfg$w_end)) {
         year_, sex_, paste0(age_bin, collapse="-"), n_deaths_raw, n_py_raw,
         round(1000*(n_deaths_raw/n_py_raw), 1), "raw"
       )
-      
-      # # Summary from SO dataset
-      # df_summ[nrow(df_summ)+1,] <- list(
-      #   year_, sex_, paste0(age_bin, collapse="-"), n_deaths_so, n_py_so,
-      #   round(1000*(n_deaths_so/n_py_so), 1), "SO"
-      # )
       
       # # Summary from PRC dataset
       # df_summ[nrow(df_summ)+1,] <- list(
@@ -207,12 +185,10 @@ log_note("Person-time, based on dat_raw$Days", sum(dat_raw$Days)/365)
 log_note("Person-time, based on dat_raw$EndDate and dat_raw$StartDate",
          sum(as.numeric(dat_raw$EndDate-dat_raw$StartDate)/365.25))
 log_note("Person-time, based on df_summ$n_py", sum(df_summ$n_py))
-# log_note("Person-time, based on nrow(dat_so)", nrow(dat_so))
 # log_note("Person-time, based on nrow(dat_prc)", nrow(dat_prc))
 
 # Summary stats, deaths
 log_note("Deaths, based on dat_raw$Died", sum(dat_raw$Died=="Yes"))
-# log_note("Deaths, based on dat_so$died", sum(dat_so$died, na.rm=T))
 # log_note("Deaths, based on dat_prc$y", sum(dat_prc$y))
 
 
@@ -264,14 +240,6 @@ for (year_ in c(cfg$w_start:cfg$w_end)) {
         na.rm=T
       )
       
-      # # Summary stats from SO dataset
-      # dat_so_filt <- dplyr::filter(
-      #   dat_so,
-      #   Year==year_ & sex==sex_ & age == age_
-      # )
-      # n_deaths_so <- sum(dat_so_filt$died, na.rm=T)
-      # n_py_so <- nrow(dat_so_filt)
-      
       # # Summary stats from processed dataset
       # dat_prc_filt <- dplyr::filter(
       #   dat_prc,
@@ -285,12 +253,6 @@ for (year_ in c(cfg$w_start:cfg$w_end)) {
         year_, sex_, age_, n_deaths_raw, n_py_raw,
         round(1000*(n_deaths_raw/n_py_raw), 1), "raw"
       )
-      
-      # # Summary from SO dataset
-      # df_summ2[nrow(df_summ2)+1,] <- list(
-      #   year_, sex_, age_, n_deaths_so, n_py_so,
-      #   round(1000*(n_deaths_so/n_py_so), 1), "SO"
-      # )
       
       # # Summary from PRC dataset
       # df_summ2[nrow(df_summ2)+1,] <- list(
@@ -327,9 +289,7 @@ for (sex_ in c("Male", "Female")) {
       year==year_ & sex==sex_ & source==source_
     )
     spl <- smooth.spline(x=df_filt$age, y=df_filt$rate, df=8)
-    # print(paste0("Sex: ", sex_, "; Year: ", year_))
-    # print(spl)
-    
+
     for (i in c(1:length(spl$x))) {
       age_ <- spl$x[i]
       df_summ2[nrow(df_summ2)+1,] <- list(
