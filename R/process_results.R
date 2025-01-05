@@ -231,7 +231,7 @@ plot_mort3 <- function(x_axis, w_start, w_end, y_max=NA, title=T) {
     }
     prob2 <- function(type, which, outer) {
       1000 * sapply(grid, function(inner) {
-        prob(type=type, j=outer, w_1=inner, w_2=0, w_3=sex,
+        prob(type=type, j=outer, w_1=inner, w_2=cfg$w_2, w_3=sex,
              year_start=w_start, which=which)
       })
     }
@@ -244,7 +244,7 @@ plot_mort3 <- function(x_axis, w_start, w_end, y_max=NA, title=T) {
     outer <- c(20,35,50)
     prob2 <- function(type, which, outer) {
       1000 * sapply(grid, function(inner) {
-        prob(type=type, j=inner, w_1=outer, w_2=0, w_3=sex,
+        prob(type=type, j=inner, w_1=outer, w_2=cfg$w_2, w_3=sex,
              year_start=w_start, which=which)
       })
     }
@@ -339,7 +339,7 @@ plot_sero3 <- function(type, w_start, y_max=NA, title=T) {
   }
   prob2 <- function(which, outer) {
     sapply(grid, function(inner) {
-      prob(type=type, j=outer, w_1=inner, w_2=0, w_3=sex,
+      prob(type=type, j=outer, w_1=inner, w_2=cfg$w_2, w_3=sex,
            year_start=w_start, which=which)
     })
   }
@@ -1023,11 +1023,11 @@ if (F) {
       for (sex in c(0,1)) {
         for (status in c("HIV-", "HIV+")) {
           type <- paste0("mort (", status, ")")
-          rate <- 1000 * prob(type=type, j=year, w_1=age, w_2=0, w_3=sex,
+          rate <- 1000 * prob(type=type, j=year, w_1=age, w_2=cfg$w_2, w_3=sex,
                               year_start=cfg$w_start, which="est")
-          ci_lo <- 1000 * prob(type=type, j=year, w_1=age, w_2=0, w_3=sex,
+          ci_lo <- 1000 * prob(type=type, j=year, w_1=age, w_2=cfg$w_2, w_3=sex,
                                year_start=cfg$w_start, which="ci_lo")
-          ci_up <- 1000 * prob(type=type, j=year, w_1=age, w_2=0, w_3=sex,
+          ci_up <- 1000 * prob(type=type, j=year, w_1=age, w_2=cfg$w_2, w_3=sex,
                                year_start=cfg$w_start, which="ci_up")
           df_tab[nrow(df_tab)+1,] <- list(year,age,sex,rate,status,ci_lo,ci_up)
         }

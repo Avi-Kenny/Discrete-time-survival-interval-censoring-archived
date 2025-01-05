@@ -36,7 +36,7 @@ if (cfg$run_process_results) {
   
   # Tables and figures
   source("R/process_results.R", local=T)
-  # source("R/process_results2.R", local=T) # !!!!!
+  source("R/process_results2.R", local=T) # !!!!!
   
 }
 

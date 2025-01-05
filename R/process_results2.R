@@ -152,7 +152,7 @@ for (year_ in c(cfg$w_start:cfg$w_end)) {
         age_ <- mean(age_bin)
         type <- paste0("mort (", status, ")")
         rate <- round(1000 * prob(
-          type=type, j=year_, w_1=age_, w_2=0, w_3=as.integer(sex_=="Male"),
+          type=type, j=year_, w_1=age_, w_2=cfg$w_2, w_3=as.integer(sex_=="Male"),
           year_start=cfg$w_start, which="est"
         ), 1)
         df_summ[nrow(df_summ)+1,] <- list(
@@ -304,7 +304,7 @@ for (year_ in c(cfg$w_start:cfg$w_end)) {
       for (status in status_vec) {
         type <- paste0("mort (", status, ")")
         rate <- round(1000 * prob(
-          type=type, j=year_, w_1=age_, w_2=0, w_3=as.integer(sex_=="Male"),
+          type=type, j=year_, w_1=age_, w_2=cfg$w_2, w_3=as.integer(sex_=="Male"),
           year_start=cfg$w_start, which="est"
         ), 1)
         df_summ2[nrow(df_summ2)+1,] <- list(
@@ -379,8 +379,7 @@ for (sex_ in c("Male", "Female")) {
 }
 
 # Add Thembisa lines
-add_thembisa <- F
-if (add_thembisa) {
+if (cfg$add_thembisa) {
   
   df_45q15_thembisa <- data.frame(
     year = rep(c(2010:2022), 4),
