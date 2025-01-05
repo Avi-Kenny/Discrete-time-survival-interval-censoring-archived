@@ -291,10 +291,7 @@ if (F) {
   
 }
 
-dat <- dat_prc
-
 # # Save datasets for validation
-# write.table(dat, file="dat.csv", sep=",", row.names=FALSE)
 # write.table(dat_prc, file="dat_prc.csv", sep=",", row.names=FALSE)
 
 cols_to_drop <- c(
@@ -303,32 +300,30 @@ cols_to_drop <- c(
   "first_hiv_pos_dt", "last_hiv_neg_dt", "ART_update", "first_art_pos_dt",
   "sex", "id_orig", "PIPSA", "year_begin", "year_end"
 )
-for (col in cols_to_drop) { dat[[col]] <- NULL }
-
-rm(dat_prc)
+for (col in cols_to_drop) { dat_prc[[col]] <- NULL }
 
 # Create transformed dataset object
 dat_objs <- transform_dataset(
-  dat = dat,
+  dat = dat_prc,
   model_version = cfg$model_version,
   window_start = cfg$w_start,
   window_end = cfg$w_end
 )
 
-# saveRDS(dat, paste0("../Data/dat_", cfg$model_sex, ".rds"))
+# saveRDS(dat_prc, paste0("../Data/dat_prc_", cfg$model_sex, ".rds"))
 # saveRDS(dat_objs, paste0("../Data/dat_objs_", cfg$model_sex, ".rds"))
 
 # Check estimates for model 10 against Cox model estimates
 # !!!!! Move this code elsewhere
 if (F) {
   
-  dat$j <- dat$t_end/10 # Create calendar time variable
-  dat$w_2b <- dat$w_2+0.01 # Create time variable
+  dat_prc$j <- dat_prc$t_end/10 # Create calendar time variable
+  dat_prc$w_2b <- dat_prc$w_2+0.01 # Create time variable
   
   library(survival)
   model <- coxph(
     formula = Surv(w_2, w_2b, y)~z+j+w_1,
-    data = dat
+    data = dat_prc
   )
   summary(model)
   
@@ -355,12 +350,12 @@ if (F) {
   ggplot(bh, aes(x=time, y=hazard)) + geom_line()
   
   # Death rates by age
-  dat2 <- dat %>% dplyr::group_by(w_2) %>% dplyr::summarize(
+  dat_prc2 <- dat_prc %>% dplyr::group_by(w_2) %>% dplyr::summarize(
     num_persontime = n(),
     num_deaths = sum(y),
     death_rate = round(mean(y),3)
   )
-  ggplot(dat2, aes(x=w_2, y=death_rate)) + geom_point()
+  ggplot(dat_prc2, aes(x=w_2, y=death_rate)) + geom_point()
   
 }
 

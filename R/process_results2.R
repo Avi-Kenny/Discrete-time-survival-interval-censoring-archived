@@ -10,10 +10,16 @@ log_note <- function(note, num_rows) {
 
 # Config
 c_date <- format(Sys.time(), "%Y-%m-%d")
-sources <- c("raw", "Model (HIV-)", "Model (HIV+)")
 status_vec <- c("HIV-", "HIV+")
-colors_1 <- c("cyan3", "cyan4", "brown3")
-colors_2 <- c("cyan3", "cyan4", "brown3", "orange")
+if (cfg$add_prc) {
+  sources <- c("raw", "Model (HIV-)", "Model (HIV+)")
+  colors_1 <- c("cyan3", "cyan4", "brown3", "brown4")
+  colors_2 <- c("cyan3", "cyan4", "brown3", "brown4", "orange")
+} else {
+  sources <- c("raw", "processed", "Model (HIV-)", "Model (HIV+)")
+  colors_1 <- c("cyan3", "cyan4", "brown3", "brown4")
+  colors_2 <- c("cyan3", "cyan4", "brown3", "brown4", "orange")
+}
 if (cfg$w_start==2010) {
   breaks_year <- c(2010,2015,2020)
   years_plot <- c(2010,2013,2016,2019,2022)
@@ -25,27 +31,36 @@ if (cfg$w_start==2010) {
 # Load datasets
 {
   # dat_raw is raw/original dataset
-  dat_raw <- readstata13::read.dta13("../Data/SurveillanceEpisodesHIV.dta")
+  dat_raw <- readstata13::read.dta13("../Data/Raw data/SurveillanceEpisodesHIV.dta")
   
-  # # dat_prc is dat_so processed via analysis.R
-  # dat_prc <- read.csv("../Data/dat_processed.csv")
+  # dat_prc is the processed dataset via process_data.R
+  if (cfg$add_prc) {
+    dat_prc_M <- readRDS("../Data/dat_prc_Male_2025-01-05.rds")
+    dat_prc_F <- readRDS("../Data/dat_prc_Female_2025-01-05.rds")
+    dat_prc_M$sex <- 1
+    dat_prc_F$sex <- 0
+    dat_prc <- rbind(dat_prc_M, dat_prc_F)
+  }
 }
 
-# # dat_prc: Rescale and rename variables
-# dat_prc %<>% dplyr::mutate(
-#   t_end = (t_end-1)+cfg$w_start,
-#   age = round(w_1*100),
-#   sex = w_3
-# )
+# dat_prc: Rescale and rename variables
+if (cfg$add_prc) {
+  dat_prc %<>% dplyr::mutate(
+    t_end = unscale_time(t_end, st=cfg$w_start),
+    age = unscale_age(w_1)
+  )
+}
 
 # dat_raw: Generate age-at-death variable
 dat_raw$AoD <- round((dat_raw$DoD-dat_raw$DoB)/365.25)
 
 # Summary stats
 log_note("rows, dat_raw", nrow(dat_raw))
-# log_note("rows, dat_prc", nrow(dat_prc))
 log_note("# people, dat_raw", length(unique(dat_raw$IIntId)))
-# log_note("# people, dat_prc", length(unique(dat_prc$id)))
+if (cfg$add_prc) {
+  log_note("rows, dat_prc", nrow(dat_prc))
+  log_note("# people, dat_prc", length(unique(dat_prc$id)))
+}
 
 
 
@@ -102,14 +117,16 @@ for (year_ in c(cfg$w_start:cfg$w_end)) {
         na.rm=T
       )
       
-      # # Summary stats from processed dataset
-      # dat_prc_filt <- dplyr::filter(
-      #   dat_prc,
-      #   t_end==year_ & sex==as.integer(sex_=="Male") &
-      #     age >= age_bin[1] & age <= age_bin[2]
-      # )
-      # n_deaths_prc <- sum(dat_prc_filt$y)
-      # n_py_prc <- nrow(dat_prc_filt)
+      # Summary stats from processed dataset
+      if (cfg$add_prc) {
+        dat_prc_filt <- dplyr::filter(
+          dat_prc,
+          t_end==year_ & sex==as.integer(sex_=="Male") &
+            age >= age_bin[1] & age <= age_bin[2]
+        )
+        n_deaths_prc <- sum(dat_prc_filt$y)
+        n_py_prc <- nrow(dat_prc_filt)
+      }
       
       # Summary from raw dataset
       df_summ[nrow(df_summ)+1,] <- list(
@@ -117,11 +134,13 @@ for (year_ in c(cfg$w_start:cfg$w_end)) {
         round(1000*(n_deaths_raw/n_py_raw), 1), "raw"
       )
       
-      # # Summary from PRC dataset
-      # df_summ[nrow(df_summ)+1,] <- list(
-      #   year_, sex_, paste0(age_bin, collapse="-"), n_deaths_prc, n_py_prc,
-      #   round(1000*(n_deaths_prc/n_py_prc), 1), "PRC"
-      # )
+      # Summary from PRC dataset
+      if (cfg$add_prc) {
+        df_summ[nrow(df_summ)+1,] <- list(
+          year_, sex_, paste0(age_bin, collapse="-"), n_deaths_prc, n_py_prc,
+          round(1000*(n_deaths_prc/n_py_prc), 1), "PRC"
+        )
+      }
       
       # Summary from model (age midpoint)
       # Note: if this code is uncommented, the code in sections 1 and 3 of
@@ -185,11 +204,15 @@ log_note("Person-time, based on dat_raw$Days", sum(dat_raw$Days)/365)
 log_note("Person-time, based on dat_raw$EndDate and dat_raw$StartDate",
          sum(as.numeric(dat_raw$EndDate-dat_raw$StartDate)/365.25))
 log_note("Person-time, based on df_summ$n_py", sum(df_summ$n_py))
-# log_note("Person-time, based on nrow(dat_prc)", nrow(dat_prc))
+if (cfg$add_prc) {
+  log_note("Person-time, based on nrow(dat_prc)", nrow(dat_prc))
+}
+
 
 # Summary stats, deaths
 log_note("Deaths, based on dat_raw$Died", sum(dat_raw$Died=="Yes"))
-# log_note("Deaths, based on dat_prc$y", sum(dat_prc$y))
+if (cfg$add_prc) { log_note("Deaths, based on dat_prc$y", sum(dat_prc$y)) }
+
 
 
 ################################.
@@ -240,13 +263,15 @@ for (year_ in c(cfg$w_start:cfg$w_end)) {
         na.rm=T
       )
       
-      # # Summary stats from processed dataset
-      # dat_prc_filt <- dplyr::filter(
-      #   dat_prc,
-      #   t_end==year_ & sex==as.integer(sex_=="Male") & age == age_
-      # )
-      # n_deaths_prc <- sum(dat_prc_filt$y)
-      # n_py_prc <- nrow(dat_prc_filt)
+      # Summary stats from processed dataset
+      if (cfg$add_prc) {
+        dat_prc_filt <- dplyr::filter(
+          dat_prc,
+          t_end==year_ & sex==as.integer(sex_=="Male") & age == age_
+        )
+        n_deaths_prc <- sum(dat_prc_filt$y)
+        n_py_prc <- nrow(dat_prc_filt)
+      }
       
       # Summary from raw dataset
       df_summ2[nrow(df_summ2)+1,] <- list(
@@ -254,11 +279,13 @@ for (year_ in c(cfg$w_start:cfg$w_end)) {
         round(1000*(n_deaths_raw/n_py_raw), 1), "raw"
       )
       
-      # # Summary from PRC dataset
-      # df_summ2[nrow(df_summ2)+1,] <- list(
-      #   year_, sex_, age_, n_deaths_prc, n_py_prc,
-      #   round(1000*(n_deaths_prc/n_py_prc), 1), "PRC"
-      # )
+      # Summary from PRC dataset
+      if (cfg$add_prc) {
+        df_summ2[nrow(df_summ2)+1,] <- list(
+          year_, sex_, age_, n_deaths_prc, n_py_prc,
+          round(1000*(n_deaths_prc/n_py_prc), 1), "PRC"
+        )
+      }
       
       # Summary from model (age midpoint)
       # Note: if this code is uncommented, the code in sections 1 and 3 of

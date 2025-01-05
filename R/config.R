@@ -37,8 +37,9 @@ cfg <- list(
   # These options are for process_results.R and process_results2.R
   process_sims = F,
   process_analysis = T,
-  w_2 = 1,
+  w_2 = 0,
   add_thembisa = T,
+  add_prc = T,
   ests_M = "objs/ests_42_full_M_20250103.rds",
   ests_F = "objs/ests_42_full_F_20250103.rds"
 

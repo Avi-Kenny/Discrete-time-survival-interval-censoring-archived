@@ -35,7 +35,7 @@ if (cfg$model_sex=="Female") {
 #############################################.
 
 chk(3, "construct_negloglik: START")
-n <- attr(dat, "n")
+n <- attr(dat_prc, "n")
 print(paste0("Using ", cfg$sim_n_cores, " cores."))
 if (cfg$parallelize) {
   n_batches <- cfg$sim_n_cores
