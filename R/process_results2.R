@@ -12,13 +12,13 @@ log_note <- function(note, num_rows) {
 c_date <- format(Sys.time(), "%Y-%m-%d")
 status_vec <- c("HIV-", "HIV+")
 if (cfg$add_prc) {
-  sources <- c("raw", "Model (HIV-)", "Model (HIV+)")
-  colors_1 <- c("cyan3", "cyan4", "brown3", "brown4")
-  colors_2 <- c("cyan3", "cyan4", "brown3", "brown4", "orange")
-} else {
   sources <- c("raw", "processed", "Model (HIV-)", "Model (HIV+)")
   colors_1 <- c("cyan3", "cyan4", "brown3", "brown4")
   colors_2 <- c("cyan3", "cyan4", "brown3", "brown4", "orange")
+} else {
+  sources <- c("raw", "Model (HIV-)", "Model (HIV+)")
+  colors_1 <- c("cyan3", "cyan4", "brown3")
+  colors_2 <- c("cyan3", "cyan4", "brown3", "orange")
 }
 if (cfg$w_start==2010) {
   breaks_year <- c(2010,2015,2020)
@@ -138,7 +138,7 @@ for (year_ in c(cfg$w_start:cfg$w_end)) {
       if (cfg$add_prc) {
         df_summ[nrow(df_summ)+1,] <- list(
           year_, sex_, paste0(age_bin, collapse="-"), n_deaths_prc, n_py_prc,
-          round(1000*(n_deaths_prc/n_py_prc), 1), "PRC"
+          round(1000*(n_deaths_prc/n_py_prc), 1), "processed"
         )
       }
       
@@ -215,9 +215,9 @@ if (cfg$add_prc) { log_note("Deaths, based on dat_prc$y", sum(dat_prc$y)) }
 
 
 
-################################.
-##### Generate 45q15 rates #####
-################################.
+#######################################################.
+##### Generate death rates by age and 45q15 plots #####
+#######################################################.
 
 # Prep work
 df_summ2 <- data.frame(
@@ -283,7 +283,7 @@ for (year_ in c(cfg$w_start:cfg$w_end)) {
       if (cfg$add_prc) {
         df_summ2[nrow(df_summ2)+1,] <- list(
           year_, sex_, age_, n_deaths_prc, n_py_prc,
-          round(1000*(n_deaths_prc/n_py_prc), 1), "PRC"
+          round(1000*(n_deaths_prc/n_py_prc), 1), "processed"
         )
       }
       
@@ -388,7 +388,7 @@ if (cfg$add_thembisa) {
     facet_grid(cols=dplyr::vars(sex)) +
     scale_x_continuous(breaks=breaks_year) +
     scale_color_manual(values=c(colors_1,colors_1[1:2])) +
-    scale_linetype_manual(values=c(rep("solid",3), rep("dashed",2))) +
+    scale_linetype_manual(values=c(rep("solid",4), rep("dashed",2))) +
     labs(color="Source", linetype="Source",
          y="Probability of death between ages 15-60")
   

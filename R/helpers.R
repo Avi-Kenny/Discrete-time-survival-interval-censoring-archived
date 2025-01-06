@@ -131,7 +131,7 @@ scale_age <- function(age) {
 #'
 #' @param age Age, in completed years
 unscale_age <- function(age) {
-  age * 100
+  round(age * 100)
 }
 
 
@@ -142,7 +142,7 @@ unscale_age <- function(age) {
 #' @param st Start year of model
 #' @param unit One of c("month", "year"); currently, only "year" implemented
 scale_time <- function(year, st, unit="year") {
-  year - st + 1
+  round(year - st + 1)
 }
 
 
