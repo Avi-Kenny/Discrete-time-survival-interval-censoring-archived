@@ -7,12 +7,12 @@ cfg <- list(
   
   # These options are for MAIN.R
   run_sims = F,
-  run_analysis = F,
-  run_process_results = T,
+  run_analysis = T,
+  run_process_results = F,
   run_dqa = F,
   
   # These options are for data analysis
-  model_version = 42, # For analysis
+  model_version = 43, # For analysis
   w_start = 2010,
   w_end = 2022,
   age_end = 60,
