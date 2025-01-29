@@ -7,12 +7,12 @@ cfg <- list(
   
   # These options are for MAIN.R
   run_sims = F,
-  run_analysis = T,
-  run_process_results = F,
+  run_analysis = F,
+  run_process_results = T,
   run_dqa = F,
   
   # These options are for data analysis
-  model_version = 43, # For analysis
+  model_version = 47,
   w_start = 2010,
   w_end = 2022,
   age_end = 60,
@@ -40,8 +40,8 @@ cfg <- list(
   w_2 = 0,
   add_thembisa = T,
   add_prc = T,
-  ests_M = "objs/ests_42_full_M_20250103.rds",
-  ests_F = "objs/ests_42_full_F_20250103.rds"
+  ests_M = "objs/ests_46_full_M_20250128.rds",
+  ests_F = "objs/ests_46_full_F_20250128.rds"
 
 )
 

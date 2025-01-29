@@ -121,18 +121,14 @@ chk <- function(num, msg="") {
 #' Scale age variable (scaled variable goes into the model)
 #' 
 #' @param age Age, in completed years
-scale_age <- function(age) {
-  age / 100
-}
+scale_age <- function(age) { age / 100 }
 
 
 
 #' Unscale age variable (unscaled variable used for display)
 #'
 #' @param age Age, in completed years
-unscale_age <- function(age) {
-  round(age * 100)
-}
+unscale_age <- function(age) { round(age * 100) }
 
 
 
@@ -141,9 +137,7 @@ unscale_age <- function(age) {
 #' @param year Year
 #' @param st Start year of model
 #' @param unit One of c("month", "year"); currently, only "year" implemented
-scale_time <- function(year, st, unit="year") {
-  round(year - st + 1)
-}
+scale_time <- function(year, st, unit="year") { year - st + 1 }
 
 
 
@@ -152,9 +146,7 @@ scale_time <- function(year, st, unit="year") {
 #' @param year Year
 #' @param st Start year of model
 #' @param unit One of c("month", "year"); currently, only "year" implemented
-unscale_time <- function(year, st, unit="year") {
-  year + st - 1
-}
+unscale_time <- function(year, st, unit="year") { year + st - 1 }
 
 
 

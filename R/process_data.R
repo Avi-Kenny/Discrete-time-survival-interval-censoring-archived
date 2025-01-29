@@ -57,6 +57,11 @@ rows_pre <- nrow(dat_prc)
 dat_prc %<>% dplyr::filter(!is.na(PIPSA))
 log_note("# rows dropped, missing `PIPSA`", rows_pre-nrow(dat_prc))
 
+# !!!!! New: Filter out PIPSA North
+rows_pre <- nrow(dat_prc)
+dat_prc %<>% dplyr::filter(PIPSA!="N")
+log_note("# rows dropped, PIPSA='N'", rows_pre-nrow(dat_prc))
+
 # Filter dataset based on sex
 rows_pre <- nrow(dat_prc)
 dat_prc %<>% dplyr::filter(sex==cfg$model_sex)
@@ -273,7 +278,8 @@ attr(dat_prc, "t_i") <- scale_time(attr(dat_prc, "t_i"),
 # Geography covariate: 1="PIPSA North", 0="PIPSA South"
 dat_prc %<>% dplyr::mutate(
   w_1 = scale_age(t_end-dob),
-  w_2 = In(PIPSA=="N")
+  # w_2 = In(PIPSA=="N")
+  w_2 = 0
 )
 
 # DQA

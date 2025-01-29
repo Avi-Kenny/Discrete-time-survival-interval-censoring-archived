@@ -46,7 +46,7 @@ if (cfg$w_start==2010) {
 # dat_prc: Rescale and rename variables
 if (cfg$add_prc) {
   dat_prc %<>% dplyr::mutate(
-    t_end = unscale_time(t_end, st=cfg$w_start),
+    t_end = round(unscale_time(t_end, st=cfg$w_start)),
     age = unscale_age(w_1)
   )
 }
@@ -343,6 +343,49 @@ ggsave(
                     "model ", cfg$model_version, ".pdf"),
   plot = plot, device="pdf", width=10, height=5
 )
+
+# !!!!! New graph; eventually replace the one above with this one
+# Excludes 2010 for conenience to form 3-year age bins
+if (T) {
+  
+  df_summ3 <- df_summ2 %>%
+    dplyr::filter(year!=2010 & source!="raw (sm)") %>%
+    dplyr::mutate(
+      year_bin = dplyr::case_when(
+        year %in% seq(2011,2013) ~ "2011 - 2013",
+        year %in% seq(2014,2016) ~ "2014 - 2016",
+        year %in% seq(2017,2019) ~ "2017 - 2019",
+        year %in% seq(2020,2022) ~ "2020 - 2022",
+        TRUE ~ NA
+      )
+    ) %>%
+    dplyr::group_by(year_bin, sex, age, source) %>%
+    dplyr::summarize(
+      n_deaths = sum(n_deaths),
+      n_py = sum(n_py),
+      rate = mean(rate)
+    ) %>% mutate(
+      rate = ifelse(source %in% c("raw", "processed"),
+                    round(1000*(n_deaths/n_py), 1),
+                    rate)
+    )
+  
+  plot <- ggplot(
+    dplyr::filter(df_summ3),
+    aes(x=age, y=rate, color=factor(source))
+  ) +
+    geom_line() +
+    facet_grid(rows=dplyr::vars(sex), cols=dplyr::vars(year_bin)) +
+    scale_x_continuous(breaks=seq(10,60,10)) +
+    scale_color_manual(values=colors_2) +
+    labs(color="Source", y="Deaths per 1,000 person-years")
+  ggsave(
+    filename = paste0("../Figures + Tables/", c_date, " death_rates_by_age_v2 - ",
+                      "model ", cfg$model_version, ".pdf"),
+    plot = plot, device="pdf", width=10, height=5
+  )
+  
+}
 
 # Calculate
 df_45q15 <- data.frame(
