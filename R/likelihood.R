@@ -1,7 +1,6 @@
 #' Transform dataset
 #' @param dat A dataset returned by generate_dataset()
-#' @param model_version Model version, as specified in MAIN.R
-transform_dataset <- function(dat, model_version=0, window_start, window_end) {
+transform_dataset <- function(dat, window_start, window_end) {
   
   # This procedure assumes the dataset is sorted by id
   row_map <- new.env()
@@ -95,11 +94,10 @@ transform_dataset <- function(dat, model_version=0, window_start, window_end) {
 
 #' Negative log-likelihood across individuals and time
 #' @param parallelize Whether or not to parallelize computation
-#' @param model_version Model version, as specified in MAIN.R
 #' @return Numeric likelihood
 #' @notes This corresponds to the missing data structure
 construct_negloglik <- function(
-  parallelize=FALSE, model_version=0, use_counter=F, temp=FALSE
+  parallelize=FALSE, use_counter=F, temp=FALSE
 ) {
   
   if (!identical(temp, FALSE)) { dat_objs_wrapper <- temp }

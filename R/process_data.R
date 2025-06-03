@@ -314,7 +314,6 @@ for (col in cols_to_drop) { dat_prc[[col]] <- NULL }
 # Create transformed dataset object
 dat_objs <- transform_dataset(
   dat = dat_prc,
-  model_version = cfg$model_version,
   window_start = cfg$w_start,
   window_end = cfg$w_end
 )

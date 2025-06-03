@@ -18,12 +18,7 @@ one_simulation <- function() {
     params = L$par
   )
   
-  dat_objs <- transform_dataset(
-    dat = dat,
-    model_version = L$model_version,
-    window_start = 1,
-    window_end = 9999
-  )
+  dat_objs <- transform_dataset(dat=dat, window_start=1, window_end=9999)
   dat_i_names <- names(dat_objs[[1]]$dat_i)
   n <- attr(dat, "n")
   n_batches <- 2
@@ -61,9 +56,7 @@ one_simulation <- function() {
   }
 
   chk(2, "construct_negloglik: START")
-  negloglik <- construct_negloglik(
-    parallelize=F, model_version=L$model_version, temp=dat_objs_wrapper
-  )
+  negloglik <- construct_negloglik(parallelize=F, temp=dat_objs_wrapper)
   chk(2, "construct_negloglik: END")
   chk(2, "optim: START")
   opt <- stats::optim(

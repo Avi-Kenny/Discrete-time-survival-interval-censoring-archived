@@ -54,13 +54,9 @@ if (cfg$parallelize) {
     "terms_s", "terms_s2"
   )
   parallel::clusterExport(cl, objs_to_export, envir=.GlobalEnv)
-  negloglik <- construct_negloglik(
-    parallelize=T, model_version=cfg$model_version, use_counter=T
-  )
+  negloglik <- construct_negloglik(parallelize=T, use_counter=T)
 } else {
-  negloglik <- construct_negloglik(
-    parallelize=F, model_version=cfg$model_version, use_counter=T
-  )
+  negloglik <- construct_negloglik(parallelize=F, use_counter=T)
 }
 chk(3, "construct_negloglik: END")
 
