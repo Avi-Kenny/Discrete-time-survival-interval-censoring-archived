@@ -134,8 +134,7 @@ if (cfg$process_sims) {
 ########################################################.
 
 #' Return modeled probability
-#' @param type One of c("sero", "init", "mort (HIV-)", "mort (HIV+)",
-#'     "mort (HIV+ART-)", "mort (HIV+ART+)")
+#' @param type One of c("sero", "init", "mort (HIV-neg)", "mort (HIV-pos)")
 #' @param j Calendar time, unscaled (e.g., 2010)
 #' @param w_1 Age, unscaled (in completed years)
 #' @param w_2 Geography (0="PIPSA South", 1="PIPSA North")
@@ -174,8 +173,8 @@ prob <- function(type, j, w_1, w_2, w_3, year_start, which="est") {
       A <- t(matrix(terms_s2_F(j, w_1, w_2)))
     }
   } else {
-    if (type=="mort (HIV-)") { x <- 0 }
-    if (type=="mort (HIV+)") { x <- 1 }
+    if (type=="mort (HIV-neg)") { x <- 0 }
+    if (type=="mort (HIV-pos)") { x <- 1 }
     if (w_3==1) {
       p2 <- par_y_M
       A <- t(matrix(terms_y2_M(x, j, w_1, w_2)))
@@ -207,7 +206,7 @@ prob <- function(type, j, w_1, w_2, w_3, year_start, which="est") {
 
 
 
-#' Return plot of modeled mortality probabilities (HIV- vs. HIV+) with CIs
+#' Return plot of modeled mortality probabilities (HIV-neg vs. HIV-pos) with CIs
 #' @param x_axis One of c("Year", "Age"); the variable to go on the X-axis
 #' @param m An integer representing the model version number
 #' @param w_start An integer representing the window start calendar year
@@ -258,13 +257,13 @@ plot_mort3 <- function(x_axis, w_start, w_end, y_max=NA, title=T) {
       
       plot_data <- data.frame(
         x = rep(grid,2),
-        Rate = c(prob2(type="mort (HIV-)", which="est", outer=o),
-                 prob2(type="mort (HIV+)", which="est", outer=o)),
-        ci_lo = c(prob2(type="mort (HIV-)", which="ci_lo", outer=o),
-                  prob2(type="mort (HIV+)", which="ci_lo", outer=o)),
-        ci_up = c(prob2(type="mort (HIV-)", which="ci_up", outer=o),
-                  prob2(type="mort (HIV+)", which="ci_up", outer=o)),
-        color = rep(c("HIV-","HIV+"), each=length(grid)),
+        Rate = c(prob2(type="mort (HIV-neg)", which="est", outer=o),
+                 prob2(type="mort (HIV-pos)", which="est", outer=o)),
+        ci_lo = c(prob2(type="mort (HIV-neg)", which="ci_lo", outer=o),
+                  prob2(type="mort (HIV-pos)", which="ci_lo", outer=o)),
+        ci_up = c(prob2(type="mort (HIV-neg)", which="ci_up", outer=o),
+                  prob2(type="mort (HIV-pos)", which="ci_up", outer=o)),
+        color = rep(c("HIV-negative","HIV-positive"), each=length(grid)),
         outer = o,
         sex = ifelse(sex, "Male", "Female")
       )
@@ -321,7 +320,7 @@ plot_mort3 <- function(x_axis, w_start, w_end, y_max=NA, title=T) {
 
 
 
-#' Return plot of modeled mortality probabilities (HIV- vs. HIV+) with CIs
+#' Return plot of modeled mortality probabilities (HIV-neg vs. HIV-pos) with CIs
 #' @param m An integer representing the model version number
 #' @param w_start An integer representing the window start calendar year
 #' @param y_max Maximum Y value for the plot
@@ -374,8 +373,8 @@ plot_sero3 <- function(type, w_start, y_max=NA, title=T) {
     plot_title <- "Probability of seroconversion (in one year), by age"
     y <- "Probability of seroconversion (in one year)"
   } else if (type=="init") {
-    plot_title <- "Probability that initial status is HIV+, by age"
-    y <- "Probability that initial status is HIV+"
+    plot_title <- "Probability that initial status is HIV-positive, by age"
+    y <- "Probability that initial status is HIV-positive"
   }
   if (!title) { plot_title <- NULL }
   
@@ -481,8 +480,8 @@ if (cfg$process_analysis) {
 #     
 #     j <- j/10
 #     
-#     if (type=="mort (HIV-)") { x <- 0; z <- NA; }
-#     if (type=="mort (HIV+)") { x <- 1; z <- NA; }
+#     if (type=="mort (HIV-neg)") { x <- 0; z <- NA; }
+#     if (type=="mort (HIV-pos)") { x <- 1; z <- NA; }
 #     
 #     if (m==25) {
 #       A <- function(j) { t(matrix(c(
@@ -535,13 +534,13 @@ if (cfg$process_analysis) {
 #   
 #   plot_data <- data.frame(
 #     x = rep(grid,2) + (cfg$w_start-1),
-#     Rate = c(prob2_m(type="mort (HIV-)", which="est", outer=o),
-#              prob2_m(type="mort (HIV+)", which="est", outer=o)),
-#     ci_lo = c(prob2_m(type="mort (HIV-)", which="ci_lo", outer=o),
-#               prob2_m(type="mort (HIV+)", which="ci_lo", outer=o)),
-#     ci_up = c(prob2_m(type="mort (HIV-)", which="ci_up", outer=o),
-#               prob2_m(type="mort (HIV+)", which="ci_up", outer=o)),
-#     color = rep(c("HIV-","HIV+"), each=length(grid))
+#     Rate = c(prob2_m(type="mort (HIV-neg)", which="est", outer=o),
+#              prob2_m(type="mort (HIV-pos)", which="est", outer=o)),
+#     ci_lo = c(prob2_m(type="mort (HIV-neg)", which="ci_lo", outer=o),
+#               prob2_m(type="mort (HIV-pos)", which="ci_lo", outer=o)),
+#     ci_up = c(prob2_m(type="mort (HIV-neg)", which="ci_up", outer=o),
+#               prob2_m(type="mort (HIV-pos)", which="ci_up", outer=o)),
+#     color = rep(c("HIV-negative","HIV-positive"), each=length(grid))
 #   )
 #   
 #   # y_max <- 25
@@ -622,7 +621,7 @@ if (cfg$process_analysis) {
     # Set graph-specific variables
     if (plot_name=="HR_mort_hiv_cal") {
       
-      title <- "HR of mortality, HIV+ vs. HIV- individuals"
+      title <- "HR of mortality, HIV-positive vs. HIV-negative individuals"
       if (cfg$model_version %in% c(30,34:40,42,44:45)) {
         par <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4")
         A <- function(j, w_1) { t(matrix(c(1, j, w_1, j*w_1))) }
@@ -807,7 +806,7 @@ if (cfg$process_analysis) {
       
     } else if (plot_name=="HR_init_age") {
       
-      title <- "HR of HIV+ initial status (age)"
+      title <- "HR of HIV-positive initial status (age)"
       x_axis <- "age"
       if (cfg$model_version %in% c(30:36)) {
         par <- c("g_s1", "g_s2", "g_s3", "g_s4")
@@ -1101,7 +1100,7 @@ if (F) {
     for (age in seq(15,60,5)) {
     # for (age in c(15:59)) { # !!!!!
       for (sex in c(0,1)) {
-        for (status in c("HIV-", "HIV+")) {
+        for (status in c("HIV-negative", "HIV-positive")) {
           type <- paste0("mort (", status, ")")
           rate <- 1000 * prob(type=type, j=year, w_1=age, w_2=cfg$w_2, w_3=sex,
                               year_start=cfg$w_start, which="est")
