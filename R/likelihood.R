@@ -198,7 +198,7 @@ lik_fn <- function(d, par) {
       
   }
   
-  if (is.na(f2)) { browser() } # !!!!!
+  # if (is.na(f2)) { browser() } # !!!!!
   if (f2<=0) {
     f2 <- 1e-10
     # warning("Likelihood of zero")

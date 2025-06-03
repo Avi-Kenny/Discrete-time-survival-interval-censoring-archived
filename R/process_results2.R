@@ -11,15 +11,10 @@ log_note <- function(note, num_rows) {
 # Config
 c_date <- format(Sys.time(), "%Y-%m-%d")
 status_vec <- c("HIV-", "HIV+")
-if (cfg$add_prc) {
-  sources <- c("raw", "processed", "Model (HIV-)", "Model (HIV+)")
-  colors_1 <- c("cyan3", "cyan4", "brown3", "brown4")
-  colors_2 <- c("cyan3", "cyan4", "brown3", "brown4", "orange")
-} else {
-  sources <- c("raw", "Model (HIV-)", "Model (HIV+)")
-  colors_1 <- c("cyan3", "cyan4", "brown3")
-  colors_2 <- c("cyan3", "cyan4", "brown3", "orange")
-}
+sources <- c("Data (prc)", "Model (HIV-)", "Model (HIV+)")
+colors_1 <- c("brown3", "cyan3", "cyan4")
+# colors_2 <- c("cyan3", "cyan4", "brown3", "orange")
+colors_2 <- colors_1
 if (cfg$w_start==2010) {
   breaks_year <- c(2010,2015,2020)
   years_plot <- c(2010,2013,2016,2019,2022)
@@ -30,37 +25,33 @@ if (cfg$w_start==2010) {
 
 # Load datasets
 {
-  # dat_raw is raw/original dataset
-  dat_raw <- readstata13::read.dta13("../Data/Raw data/SurveillanceEpisodesHIV.dta")
+  # # dat_raw is raw/original dataset
+  # dat_raw <- readstata13::read.dta13("../Data/Raw data/SurveillanceEpisodesHIV.dta")
   
   # dat_prc is the processed dataset via process_data.R
-  if (cfg$add_prc) {
-    dat_prc_M <- readRDS("../Data/dat_prc_Male_2025-01-05.rds")
-    dat_prc_F <- readRDS("../Data/dat_prc_Female_2025-01-05.rds")
-    dat_prc_M$sex <- 1
-    dat_prc_F$sex <- 0
-    dat_prc <- rbind(dat_prc_M, dat_prc_F)
-  }
+  # To save a copy, need to uncomment the line marked "Save datasets for
+  # validation" and run this once for each sex
+  dat_prc_M <- readRDS("../Data/dat_prc_M_20250205.rds")
+  dat_prc_F <- readRDS("../Data/dat_prc_F_20250205.rds")
+  dat_prc_M$sex <- 1
+  dat_prc_F$sex <- 0
+  dat_prc <- rbind(dat_prc_M, dat_prc_F)
 }
 
 # dat_prc: Rescale and rename variables
-if (cfg$add_prc) {
-  dat_prc %<>% dplyr::mutate(
-    t_end = round(unscale_time(t_end, st=cfg$w_start)),
-    age = unscale_age(w_1)
-  )
-}
+dat_prc %<>% dplyr::mutate(
+  t_end = round(unscale_time(t_end, st=cfg$w_start)),
+  age = unscale_age(w_1)
+)
 
-# dat_raw: Generate age-at-death variable
-dat_raw$AoD <- round((dat_raw$DoD-dat_raw$DoB)/365.25)
+# # dat_raw: Generate age-at-death variable
+# dat_raw$AoD <- round((dat_raw$DoD-dat_raw$DoB)/365.25)
 
 # Summary stats
-log_note("rows, dat_raw", nrow(dat_raw))
-log_note("# people, dat_raw", length(unique(dat_raw$IIntId)))
-if (cfg$add_prc) {
-  log_note("rows, dat_prc", nrow(dat_prc))
-  log_note("# people, dat_prc", length(unique(dat_prc$id)))
-}
+# log_note("rows, dat_raw", nrow(dat_raw))
+# log_note("# people, dat_raw", length(unique(dat_raw$IIntId)))
+log_note("rows, dat_prc", nrow(dat_prc))
+log_note("# people, dat_prc", length(unique(dat_prc$id)))
 
 
 
@@ -91,56 +82,52 @@ for (year_ in c(cfg$w_start:cfg$w_end)) {
   for (sex_ in c("Male", "Female")) {
     for (age_bin in age_bins) {
       
-      # Summary stats from raw dataset
-      dat_raw$age_at_start <- (
-        as.Date(x=paste0(year_,"-01-01")) - dat_raw$DoB
-      ) / 365.25
+      # # Summary stats from raw dataset
+      # dat_raw$age_at_start <- (
+      #   as.Date(x=paste0(year_,"-01-01")) - dat_raw$DoB
+      # ) / 365.25
       
-      dat_raw$n_days_exp <- pmax(
-        pmin(dat_raw$EndDate,yr_e) - pmax(dat_raw$StartDate,yr_s) + 1,
-        0
-      )
-      n_deaths_raw <- sum(
-        dat_raw$Died=="Yes" &
-          as.integer(substr(dat_raw$DoD,1,4))==year_ &
-          dat_raw$Sex==sex_ &
-          round(dat_raw$AoD) >= age_bin[1] &
-          round(dat_raw$AoD) <= age_bin[2],
-        na.rm=T
-      )
-      n_py_raw <- sum(
-        as.numeric(dat_raw$n_days_exp/365.25) * (
-          dat_raw$Sex==sex_ &
-            round(dat_raw$age_at_start) >= age_bin[1] &
-            round(dat_raw$age_at_start) <= age_bin[2]
-        ),
-        na.rm=T
-      )
+      # dat_raw$n_days_exp <- pmax(
+      #   pmin(dat_raw$EndDate,yr_e) - pmax(dat_raw$StartDate,yr_s) + 1,
+      #   0
+      # )
+      # n_deaths_raw <- sum(
+      #   dat_raw$Died=="Yes" &
+      #     as.integer(substr(dat_raw$DoD,1,4))==year_ &
+      #     dat_raw$Sex==sex_ &
+      #     round(dat_raw$AoD) >= age_bin[1] &
+      #     round(dat_raw$AoD) <= age_bin[2],
+      #   na.rm=T
+      # )
+      # n_py_raw <- sum(
+      #   as.numeric(dat_raw$n_days_exp/365.25) * (
+      #     dat_raw$Sex==sex_ &
+      #       round(dat_raw$age_at_start) >= age_bin[1] &
+      #       round(dat_raw$age_at_start) <= age_bin[2]
+      #   ),
+      #   na.rm=T
+      # )
       
       # Summary stats from processed dataset
-      if (cfg$add_prc) {
-        dat_prc_filt <- dplyr::filter(
-          dat_prc,
-          t_end==year_ & sex==as.integer(sex_=="Male") &
-            age >= age_bin[1] & age <= age_bin[2]
-        )
-        n_deaths_prc <- sum(dat_prc_filt$y)
-        n_py_prc <- nrow(dat_prc_filt)
-      }
-      
-      # Summary from raw dataset
-      df_summ[nrow(df_summ)+1,] <- list(
-        year_, sex_, paste0(age_bin, collapse="-"), n_deaths_raw, n_py_raw,
-        round(1000*(n_deaths_raw/n_py_raw), 1), "raw"
+      dat_prc_filt <- dplyr::filter(
+        dat_prc,
+        t_end==year_ & sex==as.integer(sex_=="Male") &
+          age >= age_bin[1] & age <= age_bin[2]
       )
+      n_deaths_prc <- sum(dat_prc_filt$y)
+      n_py_prc <- nrow(dat_prc_filt)
+      
+      # # Summary from raw dataset
+      # df_summ[nrow(df_summ)+1,] <- list(
+      #   year_, sex_, paste0(age_bin, collapse="-"), n_deaths_raw, n_py_raw,
+      #   round(1000*(n_deaths_raw/n_py_raw), 1), "raw"
+      # )
       
       # Summary from PRC dataset
-      if (cfg$add_prc) {
-        df_summ[nrow(df_summ)+1,] <- list(
-          year_, sex_, paste0(age_bin, collapse="-"), n_deaths_prc, n_py_prc,
-          round(1000*(n_deaths_prc/n_py_prc), 1), "processed"
-        )
-      }
+      df_summ[nrow(df_summ)+1,] <- list(
+        year_, sex_, paste0(age_bin, collapse="-"), n_deaths_prc, n_py_prc,
+        round(1000*(n_deaths_prc/n_py_prc), 1), "Data (prc)"
+      )
       
       # Summary from model (age midpoint)
       # Note: if this code is uncommented, the code in sections 1 and 3 of
@@ -200,18 +187,16 @@ ggsave(
 #   labs(color="Source", y="# person-years total")
 
 # Summary stats: person-time
-log_note("Person-time, based on dat_raw$Days", sum(dat_raw$Days)/365)
-log_note("Person-time, based on dat_raw$EndDate and dat_raw$StartDate",
-         sum(as.numeric(dat_raw$EndDate-dat_raw$StartDate)/365.25))
+# log_note("Person-time, based on dat_raw$Days", sum(dat_raw$Days)/365)
+# log_note("Person-time, based on dat_raw$EndDate and dat_raw$StartDate",
+#          sum(as.numeric(dat_raw$EndDate-dat_raw$StartDate)/365.25))
 log_note("Person-time, based on df_summ$n_py", sum(df_summ$n_py))
-if (cfg$add_prc) {
-  log_note("Person-time, based on nrow(dat_prc)", nrow(dat_prc))
-}
+log_note("Person-time, based on nrow(dat_prc)", nrow(dat_prc))
 
 
 # Summary stats, deaths
-log_note("Deaths, based on dat_raw$Died", sum(dat_raw$Died=="Yes"))
-if (cfg$add_prc) { log_note("Deaths, based on dat_prc$y", sum(dat_prc$y)) }
+# log_note("Deaths, based on dat_raw$Died", sum(dat_raw$Died=="Yes"))
+log_note("Deaths, based on dat_prc$y", sum(dat_prc$y))
 
 
 
@@ -239,53 +224,49 @@ for (year_ in c(cfg$w_start:cfg$w_end)) {
   for (sex_ in c("Male", "Female")) {
     for (age_ in c(15:59)) {
       
-      # Summary stats from raw dataset
-      dat_raw$age_at_start <- (
-        as.Date(x=paste0(year_,"-01-01")) - dat_raw$DoB
-      ) / 365.25
+      # # Summary stats from raw dataset
+      # dat_raw$age_at_start <- (
+      #   as.Date(x=paste0(year_,"-01-01")) - dat_raw$DoB
+      # ) / 365.25
       
-      dat_raw$n_days_exp <- pmax(
-        pmin(dat_raw$EndDate,yr_e) - pmax(dat_raw$StartDate,yr_s) + 1,
-        0
-      )
-      n_deaths_raw <- sum(
-        dat_raw$Died=="Yes" &
-          as.integer(substr(dat_raw$DoD,1,4))==year_ &
-          dat_raw$Sex==sex_ &
-          round(dat_raw$AoD) == age_,
-        na.rm=T
-      )
-      n_py_raw <- sum(
-        as.numeric(dat_raw$n_days_exp/365.25) * (
-          dat_raw$Sex==sex_ &
-            round(dat_raw$age_at_start) == age_
-        ),
-        na.rm=T
-      )
+      # dat_raw$n_days_exp <- pmax(
+      #   pmin(dat_raw$EndDate,yr_e) - pmax(dat_raw$StartDate,yr_s) + 1,
+      #   0
+      # )
+      # n_deaths_raw <- sum(
+      #   dat_raw$Died=="Yes" &
+      #     as.integer(substr(dat_raw$DoD,1,4))==year_ &
+      #     dat_raw$Sex==sex_ &
+      #     round(dat_raw$AoD) == age_,
+      #   na.rm=T
+      # )
+      # n_py_raw <- sum(
+      #   as.numeric(dat_raw$n_days_exp/365.25) * (
+      #     dat_raw$Sex==sex_ &
+      #       round(dat_raw$age_at_start) == age_
+      #   ),
+      #   na.rm=T
+      # )
       
       # Summary stats from processed dataset
-      if (cfg$add_prc) {
-        dat_prc_filt <- dplyr::filter(
-          dat_prc,
-          t_end==year_ & sex==as.integer(sex_=="Male") & age == age_
-        )
-        n_deaths_prc <- sum(dat_prc_filt$y)
-        n_py_prc <- nrow(dat_prc_filt)
-      }
-      
-      # Summary from raw dataset
-      df_summ2[nrow(df_summ2)+1,] <- list(
-        year_, sex_, age_, n_deaths_raw, n_py_raw,
-        round(1000*(n_deaths_raw/n_py_raw), 1), "raw"
+      dat_prc_filt <- dplyr::filter(
+        dat_prc,
+        t_end==year_ & sex==as.integer(sex_=="Male") & age == age_
       )
+      n_deaths_prc <- sum(dat_prc_filt$y)
+      n_py_prc <- nrow(dat_prc_filt)
+      
+      # # Summary from raw dataset
+      # df_summ2[nrow(df_summ2)+1,] <- list(
+      #   year_, sex_, age_, n_deaths_raw, n_py_raw,
+      #   round(1000*(n_deaths_raw/n_py_raw), 1), "raw"
+      # )
       
       # Summary from PRC dataset
-      if (cfg$add_prc) {
-        df_summ2[nrow(df_summ2)+1,] <- list(
-          year_, sex_, age_, n_deaths_prc, n_py_prc,
-          round(1000*(n_deaths_prc/n_py_prc), 1), "processed"
-        )
-      }
+      df_summ2[nrow(df_summ2)+1,] <- list(
+        year_, sex_, age_, n_deaths_prc, n_py_prc,
+        round(1000*(n_deaths_prc/n_py_prc), 1), "Data (prc)"
+      )
       
       # Summary from model (age midpoint)
       # Note: if this code is uncommented, the code in sections 1 and 3 of
@@ -306,26 +287,26 @@ for (year_ in c(cfg$w_start:cfg$w_end)) {
   }
 }
 
-# Calculate smoothed rates
-for (sex_ in c("Male", "Female")) {
-  for (year_ in c(cfg$w_start:cfg$w_end)) {
-
-    source_ <- "raw"
-    df_filt <- dplyr::filter(
-      df_summ2,
-      year==year_ & sex==sex_ & source==source_
-    )
-    spl <- smooth.spline(x=df_filt$age, y=df_filt$rate, df=8)
-
-    for (i in c(1:length(spl$x))) {
-      age_ <- spl$x[i]
-      df_summ2[nrow(df_summ2)+1,] <- list(
-        year_, sex_, age_, NA, NA, spl$y[i], "raw (sm)"
-      )
-    }
-    
-  }
-}
+# # Calculate smoothed rates
+# for (sex_ in c("Male", "Female")) {
+#   for (year_ in c(cfg$w_start:cfg$w_end)) {
+# 
+#     source_ <- "Data (prc)"
+#     df_filt <- dplyr::filter(
+#       df_summ2,
+#       year==year_ & sex==sex_ & source==source_
+#     )
+#     spl <- smooth.spline(x=df_filt$age, y=df_filt$rate, df=8)
+# 
+#     for (i in c(1:length(spl$x))) {
+#       age_ <- spl$x[i]
+#       df_summ2[nrow(df_summ2)+1,] <- list(
+#         year_, sex_, age_, NA, NA, spl$y[i], "Data (smoothed)"
+#       )
+#     }
+#     
+#   }
+# }
 
 # Plot death rates by age, filtering out highest age bin
 # Export: 10 x 5
@@ -349,13 +330,18 @@ ggsave(
 if (T) {
   
   df_summ3 <- df_summ2 %>%
-    dplyr::filter(year!=2010 & source!="raw (sm)") %>%
+    # dplyr::filter(year!=2010 & source!="Data (smoothed)") %>%
+    dplyr::filter(year!=2022 & source!="Data (smoothed)") %>%
     dplyr::mutate(
       year_bin = dplyr::case_when(
-        year %in% seq(2011,2013) ~ "2011 - 2013",
-        year %in% seq(2014,2016) ~ "2014 - 2016",
-        year %in% seq(2017,2019) ~ "2017 - 2019",
-        year %in% seq(2020,2022) ~ "2020 - 2022",
+        # year %in% seq(2011,2013) ~ "2011 - 2013",
+        # year %in% seq(2014,2016) ~ "2014 - 2016",
+        # year %in% seq(2017,2019) ~ "2017 - 2019",
+        # year %in% seq(2020,2022) ~ "2020 - 2022",
+        year %in% seq(2010,2012) ~ "2010 - 2012",
+        year %in% seq(2013,2015) ~ "2013 - 2015",
+        year %in% seq(2016,2018) ~ "2016 - 2018",
+        year %in% seq(2019,2021) ~ "2019 - 2021",
         TRUE ~ NA
       )
     ) %>%
@@ -365,7 +351,7 @@ if (T) {
       n_py = sum(n_py),
       rate = mean(rate)
     ) %>% mutate(
-      rate = ifelse(source %in% c("raw", "processed"),
+      rate = ifelse(source %in% c("Data"),
                     round(1000*(n_deaths/n_py), 1),
                     rate)
     )
@@ -430,8 +416,10 @@ if (cfg$add_thembisa) {
     geom_line() +
     facet_grid(cols=dplyr::vars(sex)) +
     scale_x_continuous(breaks=breaks_year) +
-    scale_color_manual(values=c(colors_1,colors_1[1:2])) +
-    scale_linetype_manual(values=c(rep("solid",4), rep("dashed",2))) +
+    # scale_color_manual(values=c(colors_1,colors_1[1:2])) +
+    scale_color_manual(values=c(colors_1,colors_1[2:3])) +
+    # scale_linetype_manual(values=c(rep("solid",4), rep("dashed",2))) +
+    scale_linetype_manual(values=c(rep("solid",3), rep("dashed",2))) +
     labs(color="Source", linetype="Source",
          y="Probability of death between ages 15-60")
   

@@ -297,8 +297,11 @@ if (F) {
   
 }
 
-# # Save datasets for validation
-# write.table(dat_prc, file="dat_prc.csv", sep=",", row.names=FALSE)
+# Save datasets for validation
+if (cfg$save_dat) {
+  saveRDS(dat_prc, paste0("../Data/dat_prc_", substr(cfg$model_sex,1,1), "_",
+                          format(Sys.time(), "%Y%m%d"), ".rds"))
+}
 
 cols_to_drop <- c(
   "DoB", "dob", "age", "ResultDate", "HIVResult", "hiv_result_fill",

@@ -3,7 +3,7 @@ source("R/config.R", local=T)
 
 # # !!!!! TEMP DEBUGGING
 # cfg$parallelize <- F
-# cfg$model_sex <- "Female"
+# cfg$model_sex <- "Male"
 # cfg$samp_size <- 10000 # !!!!!
 
 # Load SimEngine + functions

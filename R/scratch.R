@@ -1,4 +1,52 @@
 
+# Messing with splines
+if (F) {
+  
+  par <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5",
+           "beta_x6", "beta_x7", "beta_x8")
+  A <- function(j, w_1) { t(matrix(c(
+    1, b15(w_1,1), b15(w_1,2), b15(w_1,3),
+    j, j*b15(w_1,1), j*b15(w_1,2), j*b15(w_1,3)
+  ))) }
+  par_F <- par_M <- par; A_M <- A_F <- A;
+  
+  indices_M <- which(names(cfg$ests_M$opt$par) %in% par_M)
+  beta_M <- matrix(cfg$ests_M$opt$par[indices_M])
+  Sigma_M <- cfg$ests_M$hessian_inv[indices_M,indices_M]
+  indices_F <- which(names(cfg$ests_F$opt$par) %in% par_F)
+  beta_F <- matrix(cfg$ests_F$opt$par[indices_F])
+  Sigma_F <- cfg$ests_F$hessian_inv[indices_F,indices_F]
+  
+  # j <- scale_time(j, st=cfg$w_start)
+  # w_1 <- scale_age(w_1)
+  # est <- c(A_F(j, w_1) %*% beta_F)
+  # se <- c(sqrt(A_F(j, w_1) %*% Sigma_F %*% t(A_F(j, w_1))))
+  
+  
+  # grid <- c(seq(13,60,3), 60)
+  grid <- seq(13,60,0.1)
+  x_vals <- c()
+  y_vals <- c()
+  c_vals <- c()
+  for (year in seq(2010,2022,2)) {
+    # for (year in c(2011)) {
+    x_vals <- c(x_vals, grid)
+    y_vals <- c(y_vals, sapply(grid, function(w_1) { hr2(j=year, w_1=w_1, sex="M", log=T)[1] }))
+    c_vals <- c(c_vals, rep(year, length(grid)))
+  }
+  
+  df_plot <- data.frame(
+    x = x_vals,
+    y = y_vals,
+    c = c_vals
+  )
+  ggplot(data=df_plot, aes(x=x, y=y)) +
+    geom_line() +
+    # geom_point() +
+    facet_wrap(~c, ncol=4)
+  
+}
+
 # !!!!! TEMP
 if (F) {
   

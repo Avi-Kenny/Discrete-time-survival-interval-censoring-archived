@@ -29,7 +29,23 @@ if (cfg$model_version==7) {
   b13 <- construct_basis("age (13,20,30,40,60)", linear=T)
   b14 <- construct_basis("year (10,13,16,19,22)", linear=T)
   b15 <- construct_basis("age (13,30,40,60)", linear=T)
-} else if (cfg$model_version==49) {
+} else if (cfg$model_version %in% c(49:50)) {
+  spl <- list(list(name="b13", var="w_1", df=4),
+              list(name="b14", var="t_end", df=4),
+              list(name="b15", var="w_1", df=3))
+  b13 <- construct_basis("age (13,20,30,40,60)", linear=F)
+  b14 <- construct_basis("year (10,13,16,19,22)", linear=F)
+  b15 <- construct_basis("age (13,30,40,60)", linear=F)
+} else if (cfg$model_version %in% c(51:53)) {
+  spl <- list(list(name="b13", var="w_1", df=4),
+              list(name="b14", var="t_end", df=4),
+              list(name="b15", var="w_1", df=3),
+              list(name="b16", var="w_1", df=3))
+  b13 <- construct_basis("age (13,20,30,40,60)", linear=F)
+  b14 <- construct_basis("year (10,13,16,19,22)", linear=F)
+  b15 <- construct_basis("age (13,30,40,60)", linear=F)
+  b16 <- construct_basis("age (13,40,50,60)", linear=F)
+} else if (cfg$model_version==54) {
   spl <- list(list(name="b13", var="w_1", df=4),
               list(name="b14", var="t_end", df=4),
               list(name="b15", var="w_1", df=3))
@@ -95,8 +111,23 @@ if (cfg$model_version==7) {
   if (cfg$model_sex=="Female") { par_init <- c(a_x=-5.5, g_x1=32.8, g_x2=-47.76, g_x3=3.53, g_x4=12.04, t_x1=-0.08, a_s=-3.02, g_s1=29.15, g_s2=-15.21, g_s3=-18.72, g_s4=-2.16, t_s1=-0.03, beta_x1=0, beta_x2=13.01, beta_x3=-12.35, beta_x4=-8.97, beta_x5=0, beta_x6=-0.23, beta_x7=0.21, beta_x8=0.11, a_y=-7.18, g_y1=18.02, g_y2=-20.24, g_y3=2.13, g_y4=10.95, t_y1=-0.12, t_y2=0.13, t_y3=-0.09, t_y4=0.1) }
   if (cfg$model_sex=="Male") { par_init <- c(a_x=-6.68, g_x1=13.17, g_x2=-42.66, g_x3=37.04, t_x1=-0.07, a_s=-3.49, g_s1=14.54, g_s2=9.81, g_s3=-24.68, g_s4=-5.1, t_s1=-0.06, beta_x1=0, beta_x2=8.83, beta_x3=-7.1, beta_x4=-3.96, beta_x5=0, beta_x6=-0.04, beta_x7=-0.22, beta_x8=-0.06, a_y=-6.59, g_y1=10.93, g_y2=-2.19, g_y3=-9.87, g_y4=8.46, t_y1=-0.1, t_y2=0.03, t_y3=0.09, t_y4=-0.01) }
 } else if (cfg$model_version==49) {
-  if (cfg$model_sex=="Female") { par_init <- c(a_x=-2.9, g_x1=-2.5, g_x2=-3.5, g_x3=2.0, g_x4=0.74, t_x1=-0.37, a_s=-2.4, g_s1=3.2, g_s2=1.2, g_s3=3.1, g_s4=0.71, t_s1=-0.057, beta_x1=4.9, beta_x2=-1.2, beta_x3=-3.7, beta_x4=2.2, beta_x5=-1.0, beta_x6=-0.008, beta_x7=2.2, beta_x8=0.30, a_y=-5.8, g_y1=-1.7, g_y2=3.3, g_y3=-2.3, g_y4=-1.6, t_y1=0.24, t_y2=-0.6, t_y3=-1.3, t_y4=0.32) }
-  if (cfg$model_sex=="Male") { par_init <- c(a_x=-2.9, g_x1=-2.5, g_x2=-3.5, g_x3=2.0, t_x1=-0.37, a_s=-2.4, g_s1=3.2, g_s2=1.2, g_s3=3.1, g_s4=0.71, t_s1=-0.057, beta_x1=4.9, beta_x2=-1.2, beta_x3=-3.7, beta_x4=2.2, beta_x5=-1.0, beta_x6=-0.008, beta_x7=2.2, beta_x8=0.30, a_y=-5.8, g_y1=-1.7, g_y2=3.3, g_y3=-2.3, g_y4=-1.6, t_y1=0.24, t_y2=-0.6, t_y3=-1.3, t_y4=0.32) }
+  if (cfg$model_sex=="Female") { par_init <- c(a_x=-5.47, g_x1=1.31, g_x2=-3.04, g_x3=2.34, g_x4=-0.12, t_x1=-0.1, a_s=-2.71, g_s1=3.25, g_s2=1.79, g_s3=3.49, g_s4=0.23, t_s1=-0.04, beta_x1=3.54, beta_x2=-0.53, beta_x3=-3.08, beta_x4=-2.54, beta_x5=-0.85, beta_x6=0.33, beta_x7=1.71, beta_x8=0.31, a_y=-6.68, g_y1=-0.69, g_y2=0.79, g_y3=2.63, g_y4=2.72, t_y1=-0.47, t_y2=-0.56, t_y3=-1.29, t_y4=-0.46) }
+  if (cfg$model_sex=="Male") { par_init <- c(a_x=-6.76, g_x1=-9.16, g_x2=2, g_x3=-0.97, t_x1=-0.13, a_s=-3.49, g_s1=3.85, g_s2=2.8, g_s3=3.68, g_s4=1.79, t_s1=-0.07, beta_x1=4.52, beta_x2=-1.03, beta_x3=-4.67, beta_x4=-1.77, beta_x5=-1.27, beta_x6=0.54, beta_x7=2.29, beta_x8=0.42, a_y=-6.92, g_y1=1, g_y2=1.2, g_y3=3.08, g_y4=2.5, t_y1=0.11, t_y2=0.35, t_y3=0.3, t_y4=0.44) }
+} else if (cfg$model_version==50) {
+  if (cfg$model_sex=="Female") { par_init <- c(a_x=-5.38, g_x1=1.81, g_x2=-0.67, g_x3=1.94, g_x4=-1.97, t_x1=-0.13, a_s=-2.91, g_s1=3.48, g_s2=1.74, g_s3=3.9, g_s4=0.36, t_s1=-0.04, beta_x1=1.52, beta_x2=-0.17, beta_x3=-2.08, beta_x4=-2.43, beta_x5=-0.1, beta_x6=0.2, beta_x7=0.18, a_y=-6.68, g_y1=0.56, g_y2=1.84, g_y3=2.36, g_y4=1.73, t_y1=-0.83, t_y2=-0.4, t_y3=-0.37, t_y4=-0.92) }
+  if (cfg$model_sex=="Male") { par_init <- c(a_x=-7.87, g_x1=-4.44, g_x2=3.67, g_x3=-1.86, t_x1=-0.01, a_s=-3.86, g_s1=4.28, g_s2=2.84, g_s3=4.29, g_s4=2.29, t_s1=-0.03, beta_x1=2.17, beta_x2=-0.21, beta_x3=-2.06, beta_x4=-1.59, beta_x5=-0.16, beta_x6=0.03, beta_x7=-0.06, a_y=-6.56, g_y1=1.32, g_y2=1.78, g_y3=2.99, g_y4=2.98, t_y1=-0.5, t_y2=-0.2, t_y3=-0.55, t_y4=-0.41) }
+} else if (cfg$model_version==51) {
+  if (cfg$model_sex=="Female") { par_init <- c(a_x=-4.98, g_x1=1.04, g_x2=-1.09, g_x3=1.41, g_x4=-1.2, t_x1=-0.11, a_s=-2.85, g_s1=3.47, g_s2=1.73, g_s3=3.78, g_s4=0.3, t_s1=-0.05, beta_x1=2.55, beta_x2=-0.5, beta_x3=-2.66, beta_x4=-2.89, beta_x5=-0.07, beta_x6=-0.02, beta_x7=0.15, a_y=-7, g_y1=0.95, g_y2=1.23, g_y3=2.07, g_y4=2.88, t_y1=-0.22, t_y2=-0.32, t_y3=-0.61, t_y4=-0.06) }
+  if (cfg$model_sex=="Male") { par_init <- c(a_x=-8.41, g_x1=-4.73, g_x2=5.43, g_x3=-3.05, t_x1=-0.15, a_s=-3.64, g_s1=3.95, g_s2=2.82, g_s3=4, g_s4=1.96, t_s1=-0.04, beta_x1=2.46, beta_x2=-0.15, beta_x3=-2.53, beta_x4=-1.67, beta_x5=-0.2, beta_x6=-0.06, beta_x7=-0.03, a_y=-6.74, g_y1=1.44, g_y2=1.59, g_y3=3.16, g_y4=3.04, t_y1=-0.44, t_y2=0.01, t_y3=-0.33, t_y4=-0.17) }
+} else if (cfg$model_version==52) {
+  if (cfg$model_sex=="Female") { par_init <- c(a_x=-4.98, g_x1=1.04, g_x2=-1.09, g_x3=1.41, g_x4=-1.2, t_x1=-0.11, a_s=-2.85, g_s1=3.47, g_s2=1.73, g_s3=3.78, g_s4=0.3, t_s1=-0.05, beta_x1=-0.5, beta_x2=3, beta_x3=-2.89, beta_x4=-0.07, beta_x5=-0.02, beta_x6=0.15, a_y=-7, g_y1=0.95, g_y2=1.23, g_y3=2.07, g_y4=2.88, t_y1=-0.22, t_y2=-0.32, t_y3=-0.61, t_y4=-0.06) }
+  if (cfg$model_sex=="Male") { par_init <- c(a_x=-8.41, g_x1=-4.73, g_x2=5.43, g_x3=-3.05, t_x1=-0.15, a_s=-3.64, g_s1=3.95, g_s2=2.82, g_s3=4, g_s4=1.96, t_s1=-0.04, beta_x1=-0.15, beta_x2=3, beta_x3=-1.67, beta_x4=-0.2, beta_x5=-0.06, beta_x6=-0.03, a_y=-6.74, g_y1=1.44, g_y2=1.59, g_y3=3.16, g_y4=3.04, t_y1=-0.44, t_y2=0.01, t_y3=-0.33, t_y4=-0.17) }
+} else if (cfg$model_version==53) {
+  if (cfg$model_sex=="Female") { par_init <- c(a_x=-4.81, g_x1=0.13, g_x2=-0.73, g_x3=1.41, g_x4=-2.66, t_x1=-0.14, a_s=-3.11, g_s1=3.67, g_s2=1.94, g_s3=4.27, g_s4=0.37, t_s1=-0.03, beta_x1=0.81, beta_x2=3.52, beta_x3=-2.22, beta_x4=-0.06, beta_x5=-0.06, beta_x6=0.1, beta_x7=0.01, a_y=-7.27, g_y1=0.81, g_y2=0.3, g_y3=3.66, g_y4=2.76, t_y1=-0.25, t_y2=-0.2, t_y3=-0.62, t_y4=-0.08) }
+  if (cfg$model_sex=="Male") { par_init <- c(a_x=-8.38, g_x1=-4.78, g_x2=6.45, g_x3=-2.58, t_x1=-0.22, a_s=-3.61, g_s1=3.85, g_s2=2.93, g_s3=3.93, g_s4=1.79, t_s1=-0.04, beta_x1=0.49, beta_x2=4.04, beta_x3=-0.09, beta_x4=-0.08, beta_x5=-0.18, beta_x6=-0.09, beta_x7=0, a_y=-6.94, g_y1=1.51, g_y2=1.23, g_y3=3.78, g_y4=2.62, t_y1=-0.3, t_y2=-0.02, t_y3=-0.33, t_y4=0.03) }
+} else if (cfg$model_version==54) {
+  if (cfg$model_sex=="Female") { par_init <- c(a_x=-4.98, g_x1=1.04, g_x2=-1.09, g_x3=1.41, g_x4=-1.2, t_x1=-0.11, a_s=-2.85, g_s1=3.47, g_s2=1.73, g_s3=3.78, g_s4=0.3, t_s1=-0.05, beta_x1=3, beta_x2=0, beta_x3=0, beta_x4=0, beta_x5=-0.1, beta_x6=0, beta_x7=0, beta_x8=0, a_y=-7, g_y1=0.95, g_y2=1.23, g_y3=2.07, g_y4=2.88, t_y1=-0.22, t_y2=-0.32, t_y3=-0.61, t_y4=-0.06) }
+  if (cfg$model_sex=="Male") { par_init <- c(a_x=-8.41, g_x1=-4.73, g_x2=5.43, g_x3=-3.05, t_x1=-0.15, a_s=-3.64, g_s1=3.95, g_s2=2.82, g_s3=4, g_s4=1.96, t_s1=-0.04, beta_x1=3, beta_x2=0, beta_x3=0, beta_x4=0, beta_x5=-0.1, beta_x6=0, beta_x7=0, beta_x8=0, a_y=-6.74, g_y1=1.44, g_y2=1.59, g_y3=3.16, g_y4=3.04, t_y1=-0.44, t_y2=0.01, t_y3=-0.33, t_y4=-0.17) }
 }
 
 # Outcome model
@@ -170,6 +201,31 @@ if (cfg$model_version==7) {
   terms_y_F <- function(r, x) { c(x, x*r[["b15_1"]], x*r[["b15_2"]], x*r[["b15_3"]], x*r[["j"]], x*r[["j"]]*r[["b15_1"]], x*r[["j"]]*r[["b15_2"]], x*r[["j"]]*r[["b15_3"]], 1, r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]], r[["b14_1"]], r[["b14_2"]], r[["b14_3"]], r[["b14_4"]]) }
   terms_y2_F <- function(x, j, w_1, w_2) { c(x, x*b15(w_1,1), x*b15(w_1,2), x*b15(w_1,3), x*j, x*j*b15(w_1,1), x*j*b15(w_1,2), x*j*b15(w_1,3), 1, b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4), b14(j,1), b14(j,2), b14(j,3), b14(j,4)) }
   par_y_M <- par_y_F; terms_y_M <- terms_y_F; terms_y2_M <- terms_y2_F;
+} else if (cfg$model_version==50) {
+  par_y_F <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "beta_x6", "beta_x7", "a_y", "g_y1", "g_y2", "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
+  terms_y_F <- function(r, x) { c(x, x*r[["b15_1"]], x*r[["b15_2"]], x*r[["b15_3"]], x*r[["j"]]*r[["b15_1"]], x*r[["j"]]*r[["b15_2"]], x*r[["j"]]*r[["b15_3"]], 1, r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]], r[["b14_1"]], r[["b14_2"]], r[["b14_3"]], r[["b14_4"]]) }
+  terms_y2_F <- function(x, j, w_1, w_2) { c(x, x*b15(w_1,1), x*b15(w_1,2), x*b15(w_1,3), x*j*b15(w_1,1), x*j*b15(w_1,2), x*j*b15(w_1,3), 1, b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4), b14(j,1), b14(j,2), b14(j,3), b14(j,4)) }
+  par_y_M <- par_y_F; terms_y_M <- terms_y_F; terms_y2_M <- terms_y2_F;
+} else if (cfg$model_version==51) {
+  par_y_F <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "beta_x6", "beta_x7", "a_y", "g_y1", "g_y2", "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
+  terms_y_F <- function(r, x) { c(x, x*r[["b16_1"]], x*r[["b16_2"]], x*r[["b16_3"]], x*r[["j"]]*r[["b16_1"]], x*r[["j"]]*r[["b16_2"]], x*r[["j"]]*r[["b16_3"]], 1, r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]], r[["b14_1"]], r[["b14_2"]], r[["b14_3"]], r[["b14_4"]]) }
+  terms_y2_F <- function(x, j, w_1, w_2) { c(x, x*b16(w_1,1), x*b16(w_1,2), x*b16(w_1,3), x*j*b16(w_1,1), x*j*b16(w_1,2), x*j*b16(w_1,3), 1, b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4), b14(j,1), b14(j,2), b14(j,3), b14(j,4)) }
+  par_y_M <- par_y_F; terms_y_M <- terms_y_F; terms_y2_M <- terms_y2_F;
+} else if (cfg$model_version==52) {
+  par_y_F <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "beta_x6", "a_y", "g_y1", "g_y2", "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
+  terms_y_F <- function(r, x) { c(x*r[["b16_1"]], x*r[["b16_2"]], x*r[["b16_3"]], x*r[["j"]]*r[["b16_1"]], x*r[["j"]]*r[["b16_2"]], x*r[["j"]]*r[["b16_3"]], 1, r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]], r[["b14_1"]], r[["b14_2"]], r[["b14_3"]], r[["b14_4"]]) }
+  terms_y2_F <- function(x, j, w_1, w_2) { c(x*b16(w_1,1), x*b16(w_1,2), x*b16(w_1,3), x*j*b16(w_1,1), x*j*b16(w_1,2), x*j*b16(w_1,3), 1, b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4), b14(j,1), b14(j,2), b14(j,3), b14(j,4)) }
+  par_y_M <- par_y_F; terms_y_M <- terms_y_F; terms_y2_M <- terms_y2_F;
+} else if (cfg$model_version==53) {
+  par_y_F <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "beta_x6", "beta_x7", "a_y", "g_y1", "g_y2", "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
+  terms_y_F <- function(r, x) { c(x*r[["b16_1"]], x*r[["b16_2"]], x*r[["b16_3"]], x*r[["j"]]*r[["b16_1"]], x*r[["j"]]*r[["b16_2"]], x*r[["j"]]*r[["b16_3"]], x, 1, r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]], r[["b14_1"]], r[["b14_2"]], r[["b14_3"]], r[["b14_4"]]) }
+  terms_y2_F <- function(x, j, w_1, w_2) { c(x*b16(w_1,1), x*b16(w_1,2), x*b16(w_1,3), x*j*b16(w_1,1), x*j*b16(w_1,2), x*j*b16(w_1,3), x, 1, b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4), b14(j,1), b14(j,2), b14(j,3), b14(j,4)) }
+  par_y_M <- par_y_F; terms_y_M <- terms_y_F; terms_y2_M <- terms_y2_F;
+} else if (cfg$model_version==54) {
+  par_y_F <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "beta_x6", "beta_x7", "beta_x8", "a_y", "g_y1", "g_y2", "g_y3", "g_y4", "t_y1", "t_y2", "t_y3", "t_y4")
+  terms_y_F <- function(r, x) { c(x*r[["b13_1"]], x*r[["b13_2"]], x*r[["b13_3"]], x*r[["b13_4"]], x*r[["j"]]*r[["b13_1"]], x*r[["j"]]*r[["b13_2"]], x*r[["j"]]*r[["b13_3"]], x*r[["j"]]*r[["b13_4"]], 1, r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]], r[["b14_1"]], r[["b14_2"]], r[["b14_3"]], r[["b14_4"]]) }
+  terms_y2_F <- function(x, j, w_1, w_2) { c(x*b13(w_1,1), x*b13(w_1,2), x*b13(w_1,3), x*b13(w_1,4), x*j*b13(w_1,1), x*j*b13(w_1,2), x*j*b13(w_1,3), x*j*b13(w_1,4), 1, b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4), b14(j,1), b14(j,2), b14(j,3), b14(j,4)) }
+  par_y_M <- par_y_F; terms_y_M <- terms_y_F; terms_y2_M <- terms_y2_F;
 }
 
 # Seroconversion model
@@ -217,7 +273,7 @@ if (cfg$model_version==7) {
   par_x_M <- c("a_x", "t_x1", "t_x2", "t_x3", "t_x4", "g_x1", "g_x2", "g_x3", "g_x4")
   terms_x_M <- function(r) { c(1, r[["b14_1"]], r[["b14_2"]], r[["b14_3"]], r[["b14_4"]], r[["b15_1"]], r[["b15_2"]], r[["b15_3"]], r[["w_2"]]) }
   terms_x2_M <- function(j, w_1, w_2) { c(1, b14(j,1), b14(j,2), b14(j,3), b14(j,4), b15(w_1,1), b15(w_1,2), b15(w_1,3), w_2) }
-} else if (cfg$model_version %in% c(45:49)) {
+} else if (cfg$model_version %in% c(45:54)) {
   par_x_F <- c("a_x", "t_x1", "g_x1", "g_x2", "g_x3", "g_x4")
   terms_x_F <- function(r) { c(1, r[["j"]], r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]]) }
   terms_x2_F <- function(j, w_1, w_2) { c(1, j, b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4)) }
@@ -242,7 +298,7 @@ if (cfg$model_version==7) {
   terms_s_F <- function(r) { c(1, r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]]) }
   terms_s2_F <- function(j, w_1, w_2) { c(1, b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4)) }
   par_s_M <- par_s_F; terms_s_M <- terms_s_F; terms_s2_M <- terms_s2_F;
-} else if (cfg$model_version %in% c(40:41,43:49)) {
+} else if (cfg$model_version %in% c(40:41,43:54)) {
   par_s_F <- c("a_s", "g_s1", "g_s2", "g_s3", "g_s4", "t_s1")
   terms_s_F <- function(r) { c(1, r[["b13_1"]], r[["b13_2"]], r[["b13_3"]], r[["b13_4"]], r[["j"]]) }
   terms_s2_F <- function(j, w_1, w_2) { c(1, b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4), j) }
@@ -257,7 +313,7 @@ if (cfg$model_version==7) {
 # Helper code to construct par_init(...) statement
 # Construct param init vector
 if (F) {
-  ests <- readRDS("objs/ests_48_full_F_20250129.rds")
+  ests <- readRDS("objs/ests_53_full_F_20250201.rds")
   str <- "par_init <- c("
   for (par in names(ests$opt$par)) {
     str <- paste0(str, par, "=", round(ests$opt$par[[par]], 2), ", ")

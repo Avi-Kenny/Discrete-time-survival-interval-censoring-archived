@@ -7,17 +7,18 @@ cfg <- list(
   
   # These options are for MAIN.R
   run_sims = F,
-  run_analysis = T,
-  run_process_results = F,
+  run_analysis = F,
+  run_process_results = T,
   run_dqa = F,
   
   # These options are for data analysis
-  model_version = 49,
+  model_version = 53,
   w_start = 2010,
   w_end = 2022,
   age_end = 60,
   model_sex = Sys.getenv("model_sex"), # This is set in the Slurm `sbatch` call
   samp_size = 0, # 0 means the full dataset is used, otherwise a subsample is used
+  save_dat = T,
   
   # These options are for simulations
   # model_version = 7,
@@ -39,10 +40,9 @@ cfg <- list(
   process_analysis = T,
   w_2 = 0,
   add_thembisa = T,
-  add_prc = T,
-  ests_M = "objs/ests_49_full_M_20250130.rds",
-  ests_F = "objs/ests_49_full_F_20250130.rds"
-
+  ests_M = "objs/ests_53_full_M_20250202.rds",
+  ests_F = "objs/ests_53_full_F_20250202.rds"
+  
 )
 
 # Change library path

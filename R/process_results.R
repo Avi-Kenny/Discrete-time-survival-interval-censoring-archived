@@ -225,7 +225,7 @@ plot_mort3 <- function(x_axis, w_start, w_end, y_max=NA, title=T) {
     if (w_start==2000) {
       outer <- c(2000,2010,2020)
     } else if (w_start==2010) {
-      outer <- c(2010,2015,2020)
+      outer <- c(2012,2016,2020)
     } else if (w_start==2017) {
       outer <- c(2017,2019,2022)
     }
@@ -291,7 +291,7 @@ plot_mort3 <- function(x_axis, w_start, w_end, y_max=NA, title=T) {
   
   plot <- ggplot(
     plot_data2,
-    aes(x=x, y=Rate, color=color)
+    aes(x=x, y=Rate, color=color, linetype=color)
   ) +
     geom_line() +
     geom_ribbon(
@@ -305,12 +305,14 @@ plot_mort3 <- function(x_axis, w_start, w_end, y_max=NA, title=T) {
       title = title,
       x = x_axis,
       color = "HIV Status",
+      linetype = "HIV Status",
       fill = "HIV Status",
       y = "Deaths per 1,000 person-years"
     ) +
     theme(legend.position = "bottom") +
     scale_x_continuous(breaks=breaks) +
     scale_color_manual(values=c("forestgreen", "#56B4E9")) +
+    scale_linetype_manual(values=c("longdash", "solid")) +
     scale_fill_manual(values=c("forestgreen", "#56B4E9"))
   
   return(plot)
@@ -333,7 +335,7 @@ plot_sero3 <- function(type, w_start, y_max=NA, title=T) {
   if (w_start==2000) {
     outer <- c(2000,2010,2020)
   } else if (w_start==2010) {
-    outer <- c(2010,2015,2020)
+    outer <- c(2012,2016,2020)
   } else if (w_start==2017) {
     outer <- c(2017,2019,2022)
   }
@@ -413,7 +415,7 @@ if (cfg$process_analysis) {
   
   # Mortality by calendar time, with CIs
   plot_05 <- plot_mort3(x_axis="Year", w_start=cfg$w_start, w_end=cfg$w_end,
-                        y_max=65, title=F)
+                        y_max=55, title=F) # y_max=65
   ggsave(
     filename = paste0("../Figures + Tables/", c_date, " p5 (mort CIs, by year)",
                       " - model ", cfg$model_version, ".pdf"),
@@ -422,7 +424,7 @@ if (cfg$process_analysis) {
   
   # Mortality by age, with CIs
   plot_06 <- plot_mort3(x_axis="Age", w_start=cfg$w_start, w_end=cfg$w_end,
-                        y_max=120, title=F)
+                        y_max=75, title=F) # y_max=120
   ggsave(
     filename = paste0("../Figures + Tables/", c_date, " p6 (mort CIs, by age) ",
                       "- model ", cfg$model_version, ".pdf"),
@@ -602,6 +604,9 @@ if (cfg$process_analysis) {
   A_b15 <- function(w_1) {
     t(matrix(c(b15(w_1,1), b15(w_1,2), b15(w_1,3))))
   }
+  A_b16 <- function(w_1) {
+    t(matrix(c(b16(w_1,1), b16(w_1,2), b16(w_1,3))))
+  }
   
   # Extract estimates and SEs
   plot_names <- c(
@@ -684,6 +689,43 @@ if (cfg$process_analysis) {
           j, j*b15(w_1,1), j*b15(w_1,2), j*b15(w_1,3)
         ))) }
         par_F <- par_M <- par; A_M <- A_F <- A;
+      } else if (cfg$model_version==50) {
+        par <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5",
+                 "beta_x6", "beta_x7")
+        A <- function(j, w_1) { t(matrix(c(
+          1, b15(w_1,1), b15(w_1,2), b15(w_1,3),
+          j*b15(w_1,1), j*b15(w_1,2), j*b15(w_1,3)
+        ))) }
+        par_F <- par_M <- par; A_M <- A_F <- A;
+      } else if (cfg$model_version==51) {
+        par <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5",
+                 "beta_x6", "beta_x7")
+        A <- function(j, w_1) { t(matrix(c(
+          1, b16(w_1,1), b16(w_1,2), b16(w_1,3),
+          j*b16(w_1,1), j*b16(w_1,2), j*b16(w_1,3)
+        ))) }
+        par_F <- par_M <- par; A_M <- A_F <- A;
+      } else if (cfg$model_version==52) {
+        par <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "beta_x6")
+        A <- function(j, w_1) { t(matrix(c(
+          b16(w_1,1), b16(w_1,2), b16(w_1,3),
+          j*b16(w_1,1), j*b16(w_1,2), j*b16(w_1,3)
+        ))) }
+        par_F <- par_M <- par; A_M <- A_F <- A;
+      } else if (cfg$model_version==53) {
+        par <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "beta_x6", "beta_x7")
+        A <- function(j, w_1) { t(matrix(c(
+          b16(w_1,1), b16(w_1,2), b16(w_1,3),
+          j*b16(w_1,1), j*b16(w_1,2), j*b16(w_1,3), 1
+        ))) }
+        par_F <- par_M <- par; A_M <- A_F <- A;
+      } else if (cfg$model_version==54) {
+        par <- c("beta_x1", "beta_x2", "beta_x3", "beta_x4", "beta_x5", "beta_x6", "beta_x7", "beta_x8")
+        A <- function(j, w_1) { t(matrix(c(
+          b13(w_1,1), b13(w_1,2), b13(w_1,3), b13(w_1,4),
+          j*b13(w_1,1), j*b13(w_1,2), j*b13(w_1,3), j*b13(w_1,4)
+        ))) }
+        par_F <- par_M <- par; A_M <- A_F <- A;
       }
       
     } else if (plot_name=="HR_mort_age") {
@@ -694,7 +736,7 @@ if (cfg$process_analysis) {
         par <- c("g_y1", "g_y2", "g_y3", "g_y4")
         A <- A_b9
         par_F <- par_M <- par; A_M <- A_F <- A;
-      } else if (cfg$model_version %in% c(37:49)) {
+      } else if (cfg$model_version %in% c(37:54)) {
         par <- c("g_y1", "g_y2", "g_y3", "g_y4")
         A <- A_b13
         par_F <- par_M <- par; A_M <- A_F <- A;
@@ -712,7 +754,7 @@ if (cfg$process_analysis) {
         par <- c("t_y1", "t_y2", "t_y3", "t_y4")
         A <- A_b12
         par_F <- par_M <- par; A_M <- A_F <- A;
-      } else if (cfg$model_version %in% c(37:49)) {
+      } else if (cfg$model_version %in% c(37:54)) {
         par <- c("t_y1", "t_y2", "t_y3", "t_y4")
         A <- A_b14
         par_F <- par_M <- par; A_M <- A_F <- A;
@@ -729,7 +771,7 @@ if (cfg$process_analysis) {
         par <- c("t_x1", "t_x2", "t_x3", "t_x4")
         A <- A_b12
         par_F <- par_M <- par; A_M <- A_F <- A;
-      } else if (cfg$model_version %in% c(35,45:49)) {
+      } else if (cfg$model_version %in% c(35,45:54)) {
         par <- c("t_x1")
         A <- function(j) { matrix(j) }
         par_F <- par_M <- par; A_M <- A_F <- A;
@@ -756,7 +798,7 @@ if (cfg$process_analysis) {
         par <- c("g_x1", "g_x2", "g_x3")
         A <- A_b15
         par_F <- par_M <- par; A_M <- A_F <- A;
-      } else if (cfg$model_version %in% c(39:49)) {
+      } else if (cfg$model_version %in% c(39:54)) {
         par_F <- c("g_x1", "g_x2", "g_x3", "g_x4")
         A_F <- A_b13
         par_M <- c("g_x1", "g_x2", "g_x3")
@@ -771,7 +813,7 @@ if (cfg$process_analysis) {
         par <- c("g_s1", "g_s2", "g_s3", "g_s4")
         A <- A_b9
         par_F <- par_M <- par; A_M <- A_F <- A;
-      } else if (cfg$model_version %in% c(37:49)) {
+      } else if (cfg$model_version %in% c(37:54)) {
         par <- c("g_s1", "g_s2", "g_s3", "g_s4")
         A <- A_b13
         par_F <- par_M <- par; A_M <- A_F <- A;
@@ -835,30 +877,30 @@ if (cfg$process_analysis) {
         y = c(
           sapply(grid, function(j) { hr2(j=j, w_1=20, sex="M", log=log)[1] }),
           sapply(grid, function(j) { hr2(j=j, w_1=20, sex="F", log=log)[1] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=40, sex="M", log=log)[1] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=40, sex="F", log=log)[1] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=60, sex="M", log=log)[1] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=60, sex="F", log=log)[1] })
+          sapply(grid, function(j) { hr2(j=j, w_1=35, sex="M", log=log)[1] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=35, sex="F", log=log)[1] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=50, sex="M", log=log)[1] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=50, sex="F", log=log)[1] })
         ),
         ci_lo = c(
           sapply(grid, function(j) { hr2(j=j, w_1=20, sex="M", log=log)[2] }),
           sapply(grid, function(j) { hr2(j=j, w_1=20, sex="F", log=log)[2] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=40, sex="M", log=log)[2] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=40, sex="F", log=log)[2] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=60, sex="M", log=log)[2] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=60, sex="F", log=log)[2] })
+          sapply(grid, function(j) { hr2(j=j, w_1=35, sex="M", log=log)[2] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=35, sex="F", log=log)[2] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=50, sex="M", log=log)[2] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=50, sex="F", log=log)[2] })
         ),
         ci_up = c(
           sapply(grid, function(j) { hr2(j=j, w_1=20, sex="M", log=log)[3] }),
           sapply(grid, function(j) { hr2(j=j, w_1=20, sex="F", log=log)[3] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=40, sex="M", log=log)[3] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=40, sex="F", log=log)[3] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=60, sex="M", log=log)[3] }),
-          sapply(grid, function(j) { hr2(j=j, w_1=60, sex="F", log=log)[3] })
+          sapply(grid, function(j) { hr2(j=j, w_1=35, sex="M", log=log)[3] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=35, sex="F", log=log)[3] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=50, sex="M", log=log)[3] }),
+          sapply(grid, function(j) { hr2(j=j, w_1=50, sex="F", log=log)[3] })
         ),
         sex = rep(rep(c("Male", "Female"),3), each=length(grid)),
         age = rep(
-          rep(c("Age: 20", "Age: 40", "Age: 60"), each=2),
+          rep(c("Age: 20", "Age: 35", "Age: 50"), each=2),
           each=length(grid)
         )
       )
@@ -876,11 +918,11 @@ if (cfg$process_analysis) {
           minor_breaks = seq(cfg$w_start, cfg$w_end, 1)
         ) +
         scale_y_continuous(
-          breaks = c(1:10),
+          breaks = c(1:16),
           minor_breaks = NULL
           # labels = c(c(1:10), rep("", 5))
         ) +
-        coord_cartesian(ylim=c(1,10)) +
+        coord_cartesian(ylim=c(1,16)) +
         facet_grid(rows=dplyr::vars(sex), cols=dplyr::vars(age)) +
         labs(
           x = "Year",
@@ -895,7 +937,7 @@ if (cfg$process_analysis) {
       plot_paper <- plot + labs(title=NULL)
       ggsave(
         filename = paste0("../Figures + Tables/", c_date, " paper_", plot_name,
-                          " - model ", cfg$model_version, ".pdf"),
+                          " (by year) - model ", cfg$model_version, ".pdf"),
         plot=plot_paper, device="pdf", width=9, height=6
       )
       
@@ -905,32 +947,32 @@ if (cfg$process_analysis) {
       df_plot <- data.frame(
         x = rep(grid,6),
         y = c(
-          sapply(grid, function(w_1) { hr2(j=2010, w_1=w_1, sex="M", log=log)[1] }),
-          sapply(grid, function(w_1) { hr2(j=2010, w_1=w_1, sex="F", log=log)[1] }),
+          sapply(grid, function(w_1) { hr2(j=2012, w_1=w_1, sex="M", log=log)[1] }),
+          sapply(grid, function(w_1) { hr2(j=2012, w_1=w_1, sex="F", log=log)[1] }),
           sapply(grid, function(w_1) { hr2(j=2016, w_1=w_1, sex="M", log=log)[1] }),
           sapply(grid, function(w_1) { hr2(j=2016, w_1=w_1, sex="F", log=log)[1] }),
-          sapply(grid, function(w_1) { hr2(j=2022, w_1=w_1, sex="M", log=log)[1] }),
-          sapply(grid, function(w_1) { hr2(j=2022, w_1=w_1, sex="F", log=log)[1] })
+          sapply(grid, function(w_1) { hr2(j=2020, w_1=w_1, sex="M", log=log)[1] }),
+          sapply(grid, function(w_1) { hr2(j=2020, w_1=w_1, sex="F", log=log)[1] })
         ),
         ci_lo = c(
-          sapply(grid, function(w_1) { hr2(j=2010, w_1=w_1, sex="M", log=log)[2] }),
-          sapply(grid, function(w_1) { hr2(j=2010, w_1=w_1, sex="F", log=log)[2] }),
+          sapply(grid, function(w_1) { hr2(j=2012, w_1=w_1, sex="M", log=log)[2] }),
+          sapply(grid, function(w_1) { hr2(j=2012, w_1=w_1, sex="F", log=log)[2] }),
           sapply(grid, function(w_1) { hr2(j=2016, w_1=w_1, sex="M", log=log)[2] }),
           sapply(grid, function(w_1) { hr2(j=2016, w_1=w_1, sex="F", log=log)[2] }),
-          sapply(grid, function(w_1) { hr2(j=2022, w_1=w_1, sex="M", log=log)[2] }),
-          sapply(grid, function(w_1) { hr2(j=2022, w_1=w_1, sex="F", log=log)[2] })
+          sapply(grid, function(w_1) { hr2(j=2020, w_1=w_1, sex="M", log=log)[2] }),
+          sapply(grid, function(w_1) { hr2(j=2020, w_1=w_1, sex="F", log=log)[2] })
         ),
         ci_up = c(
-          sapply(grid, function(w_1) { hr2(j=2010, w_1=w_1, sex="M", log=log)[3] }),
-          sapply(grid, function(w_1) { hr2(j=2010, w_1=w_1, sex="F", log=log)[3] }),
+          sapply(grid, function(w_1) { hr2(j=2012, w_1=w_1, sex="M", log=log)[3] }),
+          sapply(grid, function(w_1) { hr2(j=2012, w_1=w_1, sex="F", log=log)[3] }),
           sapply(grid, function(w_1) { hr2(j=2016, w_1=w_1, sex="M", log=log)[3] }),
           sapply(grid, function(w_1) { hr2(j=2016, w_1=w_1, sex="F", log=log)[3] }),
-          sapply(grid, function(w_1) { hr2(j=2022, w_1=w_1, sex="M", log=log)[3] }),
-          sapply(grid, function(w_1) { hr2(j=2022, w_1=w_1, sex="F", log=log)[3] })
+          sapply(grid, function(w_1) { hr2(j=2020, w_1=w_1, sex="M", log=log)[3] }),
+          sapply(grid, function(w_1) { hr2(j=2020, w_1=w_1, sex="F", log=log)[3] })
         ),
         sex = rep(rep(c("Male", "Female"),3), each=length(grid)),
         age = rep(
-          rep(c("2010", "2016", "2022"), each=2),
+          rep(c("2012", "2016", "2020"), each=2),
           each=length(grid)
         )
       )
@@ -948,11 +990,11 @@ if (cfg$process_analysis) {
           minor_breaks = seq(cfg$w_start, cfg$w_end, 1)
         ) +
         scale_y_continuous(
-          breaks = c(1:10),
+          breaks = c(1:16),
           minor_breaks = NULL
           # labels = c(c(1:10), rep("", 5))
         ) +
-        coord_cartesian(ylim=c(1,10)) +
+        coord_cartesian(ylim=c(1,16)) +
         facet_grid(rows=dplyr::vars(sex), cols=dplyr::vars(age)) +
         labs(
           x = "Age",
@@ -963,6 +1005,12 @@ if (cfg$process_analysis) {
         filename = paste0("../Figures + Tables/", c_date, " ", plot_name,
                           " (by age) - model ", cfg$model_version, ".pdf"),
         plot=plot, device="pdf", width=9, height=6
+      )
+      plot_paper <- plot + labs(title=NULL)
+      ggsave(
+        filename = paste0("../Figures + Tables/", c_date, " paper_", plot_name,
+                          " (by age) - model ", cfg$model_version, ".pdf"),
+        plot=plot_paper, device="pdf", width=9, height=6
       )
       
     } else {

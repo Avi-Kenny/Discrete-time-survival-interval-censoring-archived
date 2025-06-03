@@ -182,6 +182,10 @@ construct_basis <- function(which, linear=FALSE) {
     grid <- scale_age(seq(13,60, length.out=500))
     k <- scale_age(c(13,30,40,60))
     num_df <- 3
+  } else if (which=="age (13,40,50,60)") {
+    grid <- scale_age(seq(13,60, length.out=500))
+    k <- scale_age(c(13,40,50,60))
+    num_df <- 3
   } else if (which=="age (13,20,30,40,60)") {
     grid <- scale_age(seq(13,60, length.out=500))
     k <- scale_age(c(13,20,30,40,60))
